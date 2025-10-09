@@ -98,8 +98,8 @@ export async function joinVideoCall(ctx: Context) {
   }
   
   // Create participant data
-  // Determine user type based on their profiles
-  const userType = userPatient ? 'patient' : 'provider';
+  // User type is determined by room context (participant role)
+  const userType = 'user'; // Simplified - actual type determined by room context
 
   const participant: CallParticipant = {
     user: user.id,

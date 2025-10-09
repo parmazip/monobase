@@ -62,9 +62,7 @@ export async function endVideoCall(ctx: Context) {
   }
 
   // Check if user has permission to end calls (must be an admin)
-  const isAdmin = userProfileIds.some(profileId =>
-    room.admins.includes(profileId)
-  );
+  const isAdmin = room.admins.includes(user.id);
 
   if (!isAdmin) {
     throw new ForbiddenError('Only room admin can end video calls');

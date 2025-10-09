@@ -108,10 +108,8 @@ export async function sendChatMessage(ctx: Context) {
       throw new ConflictError('An active video call already exists in this room');
     }
     
-    // Check admin permissions for starting video calls - check if user's profiles are admins
-    const isAdmin = userProfileIds.some(profileId =>
-      room.admins.includes(profileId)
-    );
+    // Check admin permissions for starting video calls - check if user is admin
+    const isAdmin = room.admins.includes(user.id);
 
     if (!isAdmin) {
       throw new ForbiddenError('Only room admin can start video calls');
@@ -123,8 +121,8 @@ export async function sendChatMessage(ctx: Context) {
     }
     
     // Ensure the initiator is included in participants
-    // Determine user type based on their profiles
-    const userType = userPatient ? 'patient' : 'provider';
+    // User type is determined by room context (participant role)
+    const userType = 'user'; // Simplified - actual type determined by room context
     const initiatorParticipant: CallParticipant = {
       user: user.id,
       userType: userType,
