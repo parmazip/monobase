@@ -1,6 +1,6 @@
 # `@monobase/typescript-config`
 
-Shared TypeScript configurations for the Monobase Healthcare Platform monorepo.
+Shared TypeScript configurations for the Monobase Application Platform monorepo.
 
 ## Overview
 
@@ -12,8 +12,7 @@ This package provides standardized TypeScript configurations for different proje
 |--------|---------|---------|
 | `base.json` | Base configuration with strict type checking and ES2022 target | Extended by all other configs |
 | `api.json` | Backend API services with decorator support | `services/api` |
-| `app.json` | Frontend applications built with React | `apps/patient`, `apps/provider` |
-| `nextjs.json` | Next.js applications | `apps/website` |
+| `app.json` | Frontend applications built with React | `apps/account` |
 
 ## Installation
 
@@ -29,7 +28,7 @@ Add to your package's `devDependencies`:
 
 ## Usage
 
-### Frontend Apps (TanStack Start, Vite, React)
+### Frontend Apps (Vite, React, TanStack Router)
 
 For React-based frontend applications:
 
@@ -45,31 +44,7 @@ For React-based frontend applications:
 }
 ```
 
-**Example**: `apps/patient/tsconfig.json`, `apps/provider/tsconfig.json`
-
-### Next.js Applications
-
-For Next.js projects:
-
-```json
-{
-  "extends": "@monobase/typescript-config/nextjs.json",
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./*"]
-    }
-  },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts"
-  ]
-}
-```
-
-**Example**: `apps/website/tsconfig.json`
+**Example**: `apps/account/tsconfig.json`
 
 ### API Services (Hono, Bun)
 
@@ -119,15 +94,6 @@ Extends `base.json` with frontend-specific settings:
 - JSX: `react-jsx`
 - Library: ES2022, DOM, DOM.Iterable
 
-### `nextjs.json`
-
-Extends `base.json` with Next.js-specific settings:
-
-- JSX: `preserve` (for Next.js compiler)
-- `allowJs`: true
-- `noEmit`: true (Next.js handles compilation)
-- Next.js plugin support
-
 ## Common Patterns
 
 ### Path Aliases
@@ -147,7 +113,7 @@ All configs support custom path aliases. Add them in your project's `tsconfig.js
 }
 ```
 
-### Extending Multiple Settings
+### Extending Settings
 
 You can override any setting from the base config:
 

@@ -7,8 +7,7 @@
   "exports": {
     "./base.json": "./base.json",
     "./api.json": "./api.json",
-    "./app.json": "./app.json",
-    "./nextjs.json": "./nextjs.json"
+    "./app.json": "./app.json"
   },
   "publishConfig": {
     "access": "public"
