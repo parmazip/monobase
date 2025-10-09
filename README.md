@@ -43,9 +43,8 @@ monobase/
 
 ### Optional Services
 - **AWS S3** or **MinIO** for file storage
-- **Stripe** account for payment processing
 - **SMTP** server or **Postmark** for email delivery
-- **OneSignal** for push notifications (single app ID shared across all frontends)
+- **OneSignal** for push notifications
 
 ## Quick Start
 
@@ -85,16 +84,8 @@ PORT=7213
 cd services/api
 bun dev
 
-# Terminal 2 - User App
+# Terminal 2 - Account App
 cd apps/account
-bun dev
-
-# Terminal 3 - Admin App  
-cd apps/admin
-bun dev
-
-# Terminal 4 - Website
-cd apps/website
 bun dev
 ```
 
@@ -156,77 +147,28 @@ bun run build:types            # Generate TypeScript types
 bun run build:all              # Generate both OpenAPI and types
 ```
 
-### User App (`apps/account/`)
+### Account App (`apps/account/`)
 
 ```bash
 bun dev                        # Start dev server (port 3001)
 bun run build                  # Build production bundle
 bun run typecheck              # TypeScript type checking
 bun run test:e2e               # Run Playwright E2E tests
-```
-
-### Admin App (`apps/admin/`)
-
-```bash
-bun dev                        # Start dev server (port 3001)
-bun run build                  # Build production bundle
-bun run typecheck              # TypeScript type checking
-bun run test:e2e               # Run Playwright E2E tests
-```
-
-### Website (`apps/website/`)
-
-```bash
-bun dev                        # Start Next.js dev server (port 3000)
-bun run build                  # Build production bundle
-bun run start                  # Start production server
 ```
 
 ## Applications
 
-### User Portal
+### Account App
 
 **Technology**: Vite + TanStack Router + React 19
 
 User-facing application for:
 - Account management and profile
-- Service search and booking
-- Video sessions
-- Document access
-- Service management
-- Booking history
+- Video sessions and messaging
+- File access and management
 
-**Development**: `cd apps/account && bun dev`  
+**Development**: `cd apps/account && bun dev`
 **Port**: 3001
-
-### Admin Portal
-
-**Technology**: Vite + TanStack Router + React 19
-
-Admin-facing application for:
-- Professional profile management
-- Schedule and availability management
-- Client booking management
-- Document management
-- Communication with clients
-- Performance analytics
-
-**Development**: `cd apps/admin && bun dev`  
-**Port**: 3001 (configure different port if running simultaneously)
-
-### Marketing Website
-
-**Technology**: Next.js 15 + React 19
-
-Public-facing website for:
-- Platform information
-- Service provider directory
-- Resources
-- Contact and support
-- Public booking interface
-
-**Development**: `cd apps/website && bun dev`  
-**Port**: 3000
 
 ## API Service
 
@@ -234,30 +176,24 @@ Public-facing website for:
 
 The API service is organized into domain-specific modules:
 
-1. **Identity** - Authentication & authorization (Better-Auth)
-2. **Person** - Central PII safeguard (base for User/Admin)
-3. **User** - User-specific features and history
-4. **Admin** - Service provider profiles and credentials
-5. **Booking** - Session scheduling with search/filter capabilities
-6. **EMR** - Document and records management
-7. **Billing** - Invoicing, payments (Stripe), and transaction management
-8. **Audit** - Compliance logging and activity tracking
-9. **Notification** - Multi-channel notifications (email, SMS, push)
-10. **Communication** - Video/chat sessions (WebRTC)
-11. **Reviews** - Rating and feedback system
-12. **Email** - Transactional email delivery
+1. **Person** - User profile management and PII safeguard
+2. **Audit** - Compliance logging and activity tracking
+3. **Comms** - Video/chat sessions (WebRTC) and messaging
+4. **Notifs** - Multi-channel notifications (email, push via OneSignal)
+5. **Storage** - File upload/download (S3/MinIO)
+6. **Email** - Transactional email delivery
+
+**Authentication** is handled by Better-Auth (integrated, not a separate module).
 
 ### Key Architectural Patterns
 
-**Person-Centric Design**: The Person module serves as the central PII safeguard. User and Admin modules extend Person, allowing individuals to have both roles while maintaining data integrity and privacy.
+**Person-Centric Design**: The Person module serves as the central PII safeguard for user data.
 
-**Consent Management**: Consent is managed via JSONB fields on domain models rather than a standalone module:
-- Person: marketing, data sharing, SMS, email consent
-- Booking: video session, booking consent
-- EMR: document access, provider notes consent
-- Billing: payment processing, transaction consent
-
-**Module Analytics**: Each module provides `/stats` endpoints for admin dashboards rather than centralized analytics.
+**Consent Management**: Consent is managed via JSONB fields on the Person model:
+- marketing_consent: Marketing communications
+- data_sharing_consent: Data sharing preferences
+- sms_consent: SMS notifications
+- email_consent: Email communications
 
 ### API Documentation
 
@@ -273,8 +209,6 @@ The API service is organized into domain-specific modules:
 - **ESM** - Modern module system
 
 ### Frontend
-- **TanStack Router** - Type-safe routing library (account/admin apps)
-- **Next.js** 15.4.5 - React framework (website)
 - **React** 19 - UI library
 - **TanStack Router** - Type-safe routing
 - **Radix UI** - Accessible component primitives
@@ -298,9 +232,8 @@ The API service is organized into domain-specific modules:
 
 ### Infrastructure
 - **AWS S3** / **MinIO** - Object storage
-- **Stripe** - Payment processing
 - **Postmark** / **SMTP** - Email delivery
-- **OneSignal** - Push notifications (app-agnostic, targets users by ID)
+- **OneSignal** - Push notifications
 
 ## Testing
 
@@ -312,12 +245,8 @@ bun test
 
 ### End-to-End Tests
 ```bash
-# User app E2E tests
+# Account app E2E tests
 cd apps/account
-bun run test:e2e
-
-# Admin app E2E tests
-cd apps/admin
 bun run test:e2e
 ```
 
@@ -326,14 +255,12 @@ bun run test:e2e
 # Check all TypeScript types
 cd services/api && bun run typecheck
 cd apps/account && bun run typecheck
-cd apps/admin && bun run typecheck
 ```
 
 ## Documentation
 
 - **CLAUDE.md** - Comprehensive project guide for AI assistants and developers
 - **CONTRIBUTING.md** - Developer contribution guidelines
-- **Module Docs** - Individual module documentation in `docs/` (planned)
 
 ## Enterprise Compliance
 
@@ -349,7 +276,6 @@ cd apps/admin && bun run typecheck
 - **Native TypeScript** - No transpilation overhead
 - **Connection Pooling** - Optimized database queries
 - **JSONB Indexing** - Fast consent and config queries
-- **Read Replicas** - Scalable read-heavy workloads (planned)
 
 ## License
 

@@ -12,40 +12,34 @@ For detailed information, refer to:
 
 **Monobase Application Platform** - A comprehensive full-stack monorepo platform providing video sessions, service marketplace, and user management. Built with Bun runtime for 3x faster performance than Node.js.
 
-**Key Technologies**: Bun, PostgreSQL, Drizzle ORM, Hono API, TypeSpec, TanStack Router, Next.js, Better-Auth, Stripe
+**Key Technologies**: Bun, PostgreSQL, Drizzle ORM, Hono API, TypeSpec, TanStack Router, Better-Auth, OneSignal, S3/MinIO
 
 **Monorepo Structure**:
-- `apps/` - Frontend applications (client, service provider, website)
+- `apps/` - Frontend applications (currently only account app)
 - `services/api/` - Backend API service with business modules
 - `specs/api/` - TypeSpec API definitions
-- `packages/` - Shared packages (currently only typescript-config)
+- `packages/` - Shared packages (typescript-config and ui)
 
 ## Business Domain Modules
 
-The platform implements business-specific modules:
+The platform implements the following core modules:
 
-1. **person** - Central PII safeguard (base for Client/Service Provider)
-2. **client** - Client-specific features (extends Person)
-3. **service_provider** - Service provider features (extends Person)
-4. **booking** - Marketplace-style session scheduling
-5. **records** - Document and records management
-6. **billing** - Invoicing and payments (Stripe)
-7. **audit** - Compliance logging (Pino structured logging)
-8. **notifs** - Multi-channel notifications (OneSignal)
-9. **comms** - Video/chat sessions
-10. **reviews** - Service provider rating system
-11. **storage** - File upload/download (S3/MinIO)
-12. **email** - Transactional emails (SMTP/Postmark)
+1. **person** - User profile management and central PII safeguard
+2. **audit** - Compliance logging (Pino structured logging)
+3. **notifs** - Multi-channel notifications (email, push via OneSignal)
+4. **comms** - Video/chat sessions (WebRTC) and messaging
+5. **storage** - File upload/download (S3/MinIO)
+6. **email** - Transactional emails (SMTP/Postmark)
 
-**Note**: Authentication is handled by Better-Auth (not a separate module). Consent management is implemented as JSONB fields on domain models (not a standalone module).
+**Note**: Authentication is handled by Better-Auth (integrated, not a separate module). Consent management is implemented as JSONB fields on the Person model (not a standalone module).
 
 ## Key Architectural Patterns
 
 ### Person-Centric Design
-The Person module is the central PII safeguard. Client and Service Provider modules extend Person, allowing users to have both roles while maintaining data integrity and privacy.
+The Person module is the central PII safeguard for user data.
 
 ### Consent Management
-Consent is embedded in domain models as JSONB fields rather than a standalone module:
+Consent is embedded in the Person model as JSONB fields rather than a standalone module:
 ```typescript
 {
   granted: boolean,
@@ -56,11 +50,11 @@ Consent is embedded in domain models as JSONB fields rather than a standalone mo
 }
 ```
 
-Consent types by module:
-- **Person**: marketing, data sharing, SMS, email
-- **Booking**: remote sessions, booking confirmations
-- **Records**: document access, service provider notes
-- **Billing**: payment processing, transaction notifications
+Consent types on Person:
+- **marketing_consent**: Marketing communications
+- **data_sharing_consent**: Data sharing preferences
+- **sms_consent**: SMS notifications
+- **email_consent**: Email communications
 
 ### API-First Development
 Always follow this workflow:
@@ -179,25 +173,19 @@ The canonical API reference is at: `specs/api/dist/openapi/openapi.json`
 
 ## Frontend Development
 
-### Client & Service Provider Apps (Vite + TanStack Router)
-- **Port**: 3001 (both apps)
+### Account App (Vite + TanStack Router)
+- **Port**: 3001
 - **Routing**: File-based in `src/routes/`
 - **Auth**: Better-Auth with TanStack integration
 - **Data Fetching**: TanStack Query with React Query
 - **UI Components**: Radix UI primitives (shadcn/ui patterns)
-
-### Website App (Next.js 15)
-- **Port**: 3000
-- **Routing**: Next.js App Router
-- **Auth**: Better-Auth
-- **Framework**: React 19, Next.js 15.4.5
 
 **Standards**: See [CONTRIBUTING.md#coding-standards](./CONTRIBUTING.md#coding-standards)
 
 ## Testing Approach
 
 - **API**: Bun test framework (`cd services/api && bun test`)
-- **Frontend**: Playwright E2E tests (`cd apps/client && bun run test:e2e`)
+- **Frontend**: Playwright E2E tests (`cd apps/account && bun run test:e2e`)
 - **Type Safety**: TypeScript checking across all workspaces
 
 **Details**: See [CONTRIBUTING.md#testing-requirements](./CONTRIBUTING.md#testing-requirements)
@@ -217,9 +205,7 @@ cd ../../services/api && bun run generate  # Generate routes/validators
 
 # Start development
 cd services/api && bun dev        # API on port 7213
-cd apps/client && bun dev         # Client app on port 3001
-cd apps/service_provider && bun dev  # Service Provider app on port 3001
-cd apps/website && bun dev        # Website on port 3000
+cd apps/account && bun dev        # Account app on port 3001
 
 # Database
 cd services/api && bun run db:generate  # Generate migration
@@ -227,22 +213,25 @@ cd services/api && bun run db:studio    # Open Drizzle Studio
 
 # Testing
 cd services/api && bun test             # API tests
-cd apps/client && bun run test:e2e      # E2E tests
+cd apps/account && bun run test:e2e     # E2E tests
 ```
 
 ## Important Notes
 
-### What Exists vs. Planned
-- ❌ **packages/ui/** does not exist (apps manage their own UI)
-- ❌ **identity** and **consent** are not separate modules
-- ✅ **Authentication** via Better-Auth
-- ✅ **Consent** as JSONB fields on models
-- ⚠️ Some features are partial implementations
+### What Exists
+- ✅ **packages/ui/** - Shared UI component library
+- ✅ **Authentication** via Better-Auth (integrated, not a separate module)
+- ✅ **Consent** as JSONB fields on Person model (not a separate module)
+- ✅ **6 Core Modules**: person, audit, notifs, comms, storage, email
 
-### Current Limitations
-- No shared UI component library
-- Module analytics `/stats` endpoints implementation varies
-- Some compliance features are aspirational
+### What Does Not Exist
+- ❌ **apps/admin/** - No admin/service provider app yet
+- ❌ **apps/website/** - No Next.js marketing website yet
+- ❌ **Billing module** - No Stripe integration yet
+- ❌ **Booking module** - No scheduling system yet
+- ❌ **Client/Service Provider modules** - No role-specific extensions yet
+- ❌ **Records/EMR module** - No document management yet
+- ❌ **Reviews module** - No rating system yet
 
 ## When in Doubt
 

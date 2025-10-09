@@ -119,33 +119,35 @@ Monobase follows an **API-first workflow** using TypeSpec. This ensures frontend
 Edit or create TypeSpec definitions in `specs/api/src/modules/`:
 
 ```typescript
-// specs/api/src/modules/client.tsp
+// specs/api/src/modules/person.tsp
 import "@typespec/http";
 import "@typespec/openapi3";
 
-namespace Clients {
-  @route("/clients")
-  interface ClientOperations {
+namespace Persons {
+  @route("/persons")
+  interface PersonOperations {
     @get
-    @summary("List all clients")
-    listClients(): Client[];
+    @summary("List all persons")
+    listPersons(): Person[];
 
     @post
-    @summary("Create a new client")
-    createClient(@body client: CreateClientRequest): Client;
+    @summary("Create a new person")
+    createPerson(@body person: CreatePersonRequest): Person;
   }
 }
 
-model Client {
+model Person {
   id: string;
-  person_id: string;
-  service_history: string;
+  firstName: string;
+  lastName: string;
+  email: string;
   created_at: utcDateTime;
 }
 
-model CreateClientRequest {
-  person_id: string;
-  service_history?: string;
+model CreatePersonRequest {
+  firstName: string;
+  lastName: string;
+  email: string;
 }
 ```
 
@@ -165,28 +167,28 @@ This generates:
 Create or update the handler in `services/api/src/handlers/`:
 
 ```typescript
-// services/api/src/handlers/client.ts
+// services/api/src/handlers/person.ts
 import { Hono } from 'hono';
 import { z } from 'zod';
-import type { Client } from '@monobase/api-spec';
+import type { Person } from '@monobase/api-spec';
 
-const clientRouter = new Hono();
+const personRouter = new Hono();
 
-clientRouter.get('/', async (c) => {
+personRouter.get('/', async (c) => {
   // Implementation
-  const clients = await db.select().from(clientsTable);
-  return c.json(clients);
+  const persons = await db.select().from(personsTable);
+  return c.json(persons);
 });
 
-clientRouter.post('/', async (c) => {
+personRouter.post('/', async (c) => {
   // Validation with Zod
   const body = await c.req.json();
   // Implementation
-  const client = await db.insert(clientsTable).values(body);
-  return c.json(client);
+  const person = await db.insert(personsTable).values(body);
+  return c.json(person);
 });
 
-export default clientRouter;
+export default personRouter;
 ```
 
 #### 4. Use Types in Frontend
@@ -195,10 +197,10 @@ Import generated types in your frontend apps:
 
 ```typescript
 // apps/account/src/lib/api.ts
-import type { Client, CreateClientRequest } from '@monobase/api-spec';
+import type { Person, CreatePersonRequest } from '@monobase/api-spec';
 
-export async function createClient(data: CreateClientRequest): Promise<Client> {
-  const response = await fetch('/api/clients', {
+export async function createPerson(data: CreatePersonRequest): Promise<Person> {
+  const response = await fetch('/api/persons', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -342,19 +344,20 @@ cd ../../services/api && bun run generate  # Regenerate routes
 
 **Good**:
 ```typescript
-interface ClientData {
-  name: string;
-  status: string;
+interface PersonData {
+  firstName: string;
+  lastName: string;
+  email: string;
 }
 
-function processClient(data: ClientData): void {
+function processPerson(data: PersonData): void {
   // Implementation
 }
 ```
 
 **Avoid**:
 ```typescript
-function processClient(data: any) {
+function processPerson(data: any) {
   // No type safety
 }
 ```
@@ -369,15 +372,15 @@ function processClient(data: any) {
 
 ```typescript
 // Good component structure
-interface ClientCardProps {
-  client: Client;
+interface PersonCardProps {
+  person: Person;
   onSelect: (id: string) => void;
 }
 
-export function ClientCard({ client, onSelect }: ClientCardProps) {
+export function PersonCard({ person, onSelect }: PersonCardProps) {
   return (
-    <div onClick={() => onSelect(client.id)}>
-      <h3>{client.name}</h3>
+    <div onClick={() => onSelect(person.id)}>
+      <h3>{person.firstName} {person.lastName}</h3>
     </div>
   );
 }
@@ -393,22 +396,23 @@ export function ClientCard({ client, onSelect }: ClientCardProps) {
 
 ```typescript
 // Good handler pattern
-clientRouter.post('/', authMiddleware, async (c) => {
+personRouter.post('/', authMiddleware, async (c) => {
   try {
     // Validate request
     const schema = z.object({
-      person_id: z.string().uuid(),
-      service_history: z.string().optional(),
+      firstName: z.string(),
+      lastName: z.string(),
+      email: z.string().email(),
     });
     const body = schema.parse(await c.req.json());
 
     // Audit log
-    logger.info({ user_id: c.get('user').id, action: 'create_client' });
+    logger.info({ user_id: c.get('user').id, action: 'create_person' });
 
     // Implementation
-    const client = await createClient(body);
-    
-    return c.json(client, 201);
+    const person = await createPerson(body);
+
+    return c.json(person, 201);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return c.json({ error: 'Validation failed', details: error.errors }, 400);
@@ -430,15 +434,14 @@ clientRouter.post('/', authMiddleware, async (c) => {
 ```typescript
 // Good database pattern
 import { db } from '../db';
-import { clients, persons } from '../db/schema';
+import { persons } from '../db/schema';
 import { eq } from 'drizzle-orm';
 
-async function getClientWithPerson(clientId: string) {
+async function getPersonByEmail(email: string) {
   return await db
     .select()
-    .from(clients)
-    .innerJoin(persons, eq(clients.person_id, persons.id))
-    .where(eq(clients.id, clientId))
+    .from(persons)
+    .where(eq(persons.email, email))
     .limit(1);
 }
 ```
@@ -499,25 +502,25 @@ The API handles Personally Identifiable Information (PII) and sensitive business
 
 ```typescript
 // ❌ WRONG - Logs PII
-logger.info('Client record accessed', { client })
+logger.info('Person record accessed', { person })
 
 // ✅ CORRECT - Logs event without PII
-logger.info('Client record accessed', {
+logger.info('Person record accessed', {
   correlationId: req.correlationId,
   userId: user.id,
-  clientId: client.id,  // ID only, not full record
+  personId: person.id,  // ID only, not full record
   action: 'read',
-  resource: 'client_record'
+  resource: 'person_record'
 })
 ```
 
-#### Frontend Logging (Patient, Provider, Website Apps)
+#### Frontend Logging (Account App)
 
 **Technology**: Native console methods with automatic production stripping
 
 **Configuration**:
 
-*Vite Apps (Patient, Provider)*:
+*Vite Apps (Account)*:
 ```typescript
 // vite.config.ts
 export default defineConfig({
@@ -531,17 +534,6 @@ export default defineConfig({
 })
 ```
 
-*Next.js Apps (Website)*:
-```typescript
-// next.config.mjs
-const nextConfig = {
-  compiler: {
-    removeConsole: {
-      exclude: ['error', 'warn', 'info'],
-    },
-  },
-}
-```
 
 **Usage**:
 ```typescript
@@ -578,11 +570,11 @@ console.info('Feature flag enabled:', featureName)
 Even though frontend logs are stripped in production, follow these rules during development:
 
 ```typescript
-// ❌ WRONG - Logs full client data
-console.log('Appointment created:', appointmentData)
+// ❌ WRONG - Logs full person data
+console.log('Profile updated:', personData)
 
 // ✅ CORRECT - Logs confirmation without PII
-console.log('Appointment created successfully')
+console.log('Profile updated successfully')
 
 // ❌ WRONG - Logs API response with PII
 console.log('Video call joined:', response)
@@ -616,7 +608,7 @@ console.log('Video call joined successfully')
 - Add correlation IDs and structured context
 - Ensure PHI sanitization
 
-**Frontend (Patient/Provider/Website)**:
+**Frontend (Account)**:
 - Keep existing `console.*` statements
 - Build configuration handles production stripping
 - Review logs that might expose PHI
@@ -919,81 +911,70 @@ Each business module follows a consistent structure for maintainability:
 ### Backend Module Structure
 
 ```
-services/api/src/handlers/client/
-├── index.ts              # Router export
-├── handlers.ts           # Route handlers
-├── validators.ts         # Zod schemas
-├── service.ts            # Business logic
-└── __tests__/
-    └── client.test.ts   # Module tests
+services/api/src/handlers/person/
+├── createPerson.ts         # Handler: Create person
+├── getPerson.ts            # Handler: Get person by ID
+├── updatePerson.ts         # Handler: Update person
+├── deletePerson.ts         # Handler: Delete person
+├── repos/
+│   └── person.repo.ts      # Database repository
+└── utils/
+    └── validation.ts       # Person-specific validators
 ```
 
 ### Module Implementation Pattern
 
-**1. Router (index.ts)**:
+**Handler Example (createPerson.ts)**:
 ```typescript
-import { Hono } from 'hono';
-import { authMiddleware } from '../../middleware/auth';
-import * as handlers from './handlers';
+import { Context } from 'hono';
+import { PersonRepository } from './repos/person.repo';
 
-const clientRouter = new Hono();
+export async function createPerson(ctx: Context) {
+  const body = ctx.req.valid('json');
+  const repo = ctx.get('personRepo') as PersonRepository;
 
-clientRouter.use('*', authMiddleware);
-clientRouter.get('/', handlers.listClients);
-clientRouter.post('/', handlers.createClient);
-clientRouter.get('/:id', handlers.getClient);
-clientRouter.patch('/:id', handlers.updateClient);
-clientRouter.delete('/:id', handlers.deleteClient);
+  const person = await repo.create(body);
 
-export default clientRouter;
+  return ctx.json(person, 201);
+}
 ```
 
-**2. Validators (validators.ts)**:
+**Repository Example (repos/person.repo.ts)**:
 ```typescript
-import { z } from 'zod';
+import { db } from '@/core/database';
+import { persons } from '@/core/database.schema';
+import { eq } from 'drizzle-orm';
+import type { Logger } from '@/types/logger';
 
-export const createClientSchema = z.object({
-  person_id: z.string().uuid(),
-  service_history: z.string().optional(),
-  account_info: z.object({
-    tier: z.string(),
-    account_number: z.string(),
-  }).optional(),
-});
+export class PersonRepository {
+  constructor(
+    private db: typeof db,
+    private logger: Logger
+  ) {}
 
-export const updateClientSchema = createClientSchema.partial();
-```
+  async create(data: CreatePersonData) {
+    this.logger.info({ action: 'create_person' });
 
-**3. Service (service.ts)**:
-```typescript
-import { db } from '../../db';
-import { clients } from '../../db/schema';
-import { logger } from '../../utils/logger';
-
-export class ClientService {
-  async createClient(data: CreateClientData) {
-    logger.info({ action: 'create_client', person_id: data.person_id });
-    
-    const [client] = await db
-      .insert(clients)
+    const [person] = await this.db
+      .insert(persons)
       .values(data)
       .returning();
-    
-    return client;
+
+    return person;
   }
-  
-  async getClient(id: string) {
-    const [client] = await db
+
+  async findById(id: string) {
+    const [person] = await this.db
       .select()
-      .from(clients)
-      .where(eq(clients.id, id))
+      .from(persons)
+      .where(eq(persons.id, id))
       .limit(1);
-    
-    if (!client) {
-      throw new Error('Client not found');
+
+    if (!person) {
+      throw new Error('Person not found');
     }
-    
-    return client;
+
+    return person;
   }
 }
 ```
@@ -1054,13 +1035,15 @@ export const clients = pgTable('clients', {
 
 1. **Modify Drizzle Schema**:
 ```typescript
-// services/api/src/db/schema/clients.ts
-export const clients = pgTable('clients', {
+// services/api/src/core/database.schema.ts
+export const persons = pgTable('persons', {
   id: uuid('id').defaultRandom().primaryKey(),
-  person_id: uuid('person_id').references(() => persons.id),
-  service_history: text('service_history'),
+  firstName: text('first_name').notNull(),
+  lastName: text('last_name').notNull(),
+  email: text('email').notNull().unique(),
   // Add new field
-  preferences: jsonb('preferences').$type<string[]>(),
+  phoneNumber: text('phone_number'),
+  created_at: timestamp('created_at').defaultNow(),
 });
 ```
 
@@ -1072,7 +1055,7 @@ bun run db:generate
 
 3. **Review Generated SQL**:
 ```bash
-cat src/generated/migrations/0001_add_preferences_field.sql
+cat src/generated/migrations/0001_add_phone_number_field.sql
 ```
 
 4. **Apply Migration**:
