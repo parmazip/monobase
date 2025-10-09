@@ -8,8 +8,7 @@ export const personalInfoSchema = z.object({
   lastName: z.string().min(1, 'Last name is required').max(50, 'Last name must be less than 50 characters'),
   middleName: z.string().max(50, 'Middle name must be less than 50 characters').optional().or(z.literal('')),
   dateOfBirth: z.date({
-    required_error: 'Date of birth is required',
-    invalid_type_error: 'Invalid date',
+    message: 'Date of birth is required',
   }).refine((date) => {
     const age = differenceInYears(new Date(), date)
     return age >= 0 && age <= 150
