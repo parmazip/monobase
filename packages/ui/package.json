@@ -8,15 +8,7 @@
     "./constants/*": "./src/constants/*.ts",
     "./hooks/*": "./src/hooks/*",
     "./components/*": "./src/components/*",
-    "./person/*": "./src/person/*",
-    "./person/components/*": "./src/person/components/*",
-    "./comms/*": "./src/comms/**/*",
-    "./comms/components/*": "./src/comms/components/*",
-    "./comms/hooks/*": "./src/comms/hooks/*",
-    "./comms/lib/*": "./src/comms/lib/*",
-    "./booking/types": "./src/booking/types.ts",
-    "./booking/components/*": "./src/booking/components/*",
-    "./provider/components/*": "./src/provider/components/*"
+    "./person/*": "./src/person/*"
   },
   "files": ["src"],
   "sideEffects": ["**/*.css"],
