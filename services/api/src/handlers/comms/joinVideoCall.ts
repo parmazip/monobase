@@ -126,15 +126,47 @@ export async function joinVideoCall(ctx: Context) {
     });
   }
   
+  // Send notifications to other participants already in the call
+  // Use finalMessage (updated data) instead of activeCall (stale data)
+  const notifs = ctx.get('notifs');
+  const activeParticipants = finalMessage.videoCallData!.participants
+    .filter(p => p.user !== user.id && p.joinedAt && !p.leftAt)
+    .map(p => p.user);
+
+  let notificationsSent = 0;
+  for (const participantId of activeParticipants) {
+    try {
+      await notifs.createNotification({
+        recipient: participantId,
+        type: 'comms.video-call-joined',
+        channel: 'in-app',
+        title: 'User Joined Call',
+        message: `${body.displayName} joined the video call`,
+        relatedEntityType: 'chat-room',
+        relatedEntity: params.room,
+        consentValidated: true
+      });
+      notificationsSent++;
+    } catch (error) {
+      // Log notification error but don't fail the join operation
+      logger?.warn({
+        participantId,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        action: 'send_join_notification'
+      }, 'Failed to send join notification to participant');
+    }
+  }
+
   // Log audit trail
   logger?.info({
     userId: user.id,
     roomId: params.room,
     callMessageId: activeCall.id,
     displayName: body.displayName,
+    notificationsCount: notificationsSent,
     action: 'join_video_call'
   }, 'User joined video call');
-  
+
   // Create system message for user joining
   await messageRepo.createSystemMessage(
     params.room,

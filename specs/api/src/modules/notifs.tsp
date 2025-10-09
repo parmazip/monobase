@@ -16,15 +16,31 @@ using TypeSpec.OpenAPI;
 enum NotificationType {
   @doc("Booking reminder")
   bookingReminder: "booking-reminder",
-  
+
   @doc("Billing notification")
   billing: "billing",
-  
+
   @doc("Security alert")
   security: "security",
-  
+
   @doc("System notification")
   system: "system",
+
+  // Comms module notifications
+  @doc("Video call started")
+  commsVideoCallStarted: "comms.video-call-started",
+
+  @doc("User joined video call")
+  commsVideoCallJoined: "comms.video-call-joined",
+
+  @doc("User left video call")
+  commsVideoCallLeft: "comms.video-call-left",
+
+  @doc("Video call ended")
+  commsVideoCallEnded: "comms.video-call-ended",
+
+  @doc("Chat message received")
+  commsChatMessage: "comms.chat-message",
 }
 
 /**

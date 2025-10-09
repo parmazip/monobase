@@ -380,7 +380,7 @@ export const NotFoundErrorSchema = z.intersection(ErrorDetailSchema, z.object({
   suggestions: z.array(z.string()).optional()
 }));
 
-export const NotificationTypeSchema = z.enum(["booking-reminder", "billing", "security", "system"]);
+export const NotificationTypeSchema = z.enum(["booking-reminder", "billing", "security", "system", "comms.video-call-started", "comms.video-call-joined", "comms.video-call-left", "comms.video-call-ended", "comms.chat-message"]);
 
 export const NotificationChannelSchema = z.enum(["email", "push", "in-app"]);
 

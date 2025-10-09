@@ -9,7 +9,13 @@ import { baseEntityFields } from '@/core/database.schema';
 // Notification type enum - matches TypeSpec definition
 export const notificationTypeEnum = pgEnum('notification_type', [
   'security',
-  'system'
+  'system',
+  // Comms module notifications
+  'comms.video-call-started',
+  'comms.video-call-joined',
+  'comms.video-call-left',
+  'comms.video-call-ended',
+  'comms.chat-message'
 ]);
 
 // Notification channel enum - matches TypeSpec definition
@@ -88,7 +94,7 @@ export interface NotificationResponse {
 // Request type for creating notifications (used by other modules)
 export interface CreateNotificationRequest {
   recipient: string;
-  type: 'security' | 'system';
+  type: 'security' | 'system' | 'comms.video-call-started' | 'comms.video-call-joined' | 'comms.video-call-left' | 'comms.video-call-ended' | 'comms.chat-message';
   channel: 'email' | 'push' | 'in-app';
   title: string;
   message: string;

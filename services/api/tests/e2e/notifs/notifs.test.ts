@@ -15,26 +15,20 @@ import {
   getExpectedPriority
 } from '../../helpers/notification.helper';
 import {
-  createAppointment,
-  confirmAppointment,
-  cancelAppointment,
-  rejectAppointment,
-  generateAppointmentCreateData,
-  generateAppointmentActionData,
-  createProviderSchedule,
-  generateTestProviderScheduleData
-} from '../../helpers/booking';
+  startTestVideoCall,
+  joinVideoCall,
+  endVideoCall
+} from '../../helpers/comms';
 
 describe('Notification Module E2E Tests', () => {
   let testApp: TestApp;
-  let apiClient: ApiClient;  // Client (patient)
+  let apiClient: ApiClient;  // First user
   let adminClient: ApiClient;
-  let providerClient: ApiClient;  // Provider for creating appointments
+  let participantClient: ApiClient;  // Second user for video calls
 
   // Store IDs for cleanup and assertions
-  let clientPersonId: string;
-  let providerPersonId: string;
-  let providerProfileId: string;
+  let user1PersonId: string;
+  let user2PersonId: string;
 
   beforeAll(async () => {
     testApp = await createTestApp({ storage: true });
@@ -42,7 +36,7 @@ describe('Notification Module E2E Tests', () => {
     // Create API clients with embedded app instance
     apiClient = createApiClient({ app: testApp.app });
     adminClient = createApiClient({ app: testApp.app });
-    providerClient = createApiClient({ app: testApp.app });
+    participantClient = createApiClient({ app: testApp.app });
   }, 30000);
 
   afterAll(async () => {
@@ -53,24 +47,16 @@ describe('Notification Module E2E Tests', () => {
     // Create fresh API clients for each test
     apiClient = createApiClient({ app: testApp.app });
     adminClient = createApiClient({ app: testApp.app });
-    providerClient = createApiClient({ app: testApp.app });
+    participantClient = createApiClient({ app: testApp.app });
 
     // Sign up and authenticate clients for each test
     await apiClient.signup();
     await adminClient.signinAsAdmin();
-    await providerClient.signup();
-
-    // Create patient and provider profiles
-    await apiClient.createPatientProfile();
-    const providerProfile = await providerClient.createProviderProfile({
-      providerType: 'other',
-      specialization: 'General Practice'
-    });
+    await participantClient.signup();
 
     // Store person IDs for assertions
-    clientPersonId = apiClient.currentUser!.id;
-    providerPersonId = providerClient.currentUser!.id;
-    providerProfileId = providerProfile.id;
+    user1PersonId = apiClient.currentUser!.id;
+    user2PersonId = participantClient.currentUser!.id;
 
     // Skip notification cleanup - each test creates fresh users with unique IDs
     // so there's no risk of notification collision between tests
@@ -79,47 +65,22 @@ describe('Notification Module E2E Tests', () => {
     testApp.resetMocks();
   }, 30000);
 
-  // Helper function to create an appointment (which generates notifications)
-  async function createTestAppointment() {
-    // Create provider schedule with weekly slots
-    const scheduleData = generateTestProviderScheduleData();
-    const { response: scheduleResponse, data: schedule } = await createProviderSchedule(
-      providerClient,
-      providerProfileId,
-      scheduleData
+  // Helper function to start a video call (which generates notifications)
+  async function createTestVideoCall() {
+    // Start video call using the helper (generates notifications for both users)
+    const result = await startTestVideoCall(
+      apiClient,
+      participantClient,
+      user1PersonId,
+      user2PersonId,
+      'User 1',
+      'User 2'
     );
 
-    expect(scheduleResponse.status).toBe(201);
-    expect(schedule).toBeDefined();
-
-    // Get available slots from the provider (with slots expansion)
-    const slotsResponse = await apiClient.fetch(`/booking/providers/${providerProfileId}`, {
-      searchParams: { expand: 'slots:7d' }
-    });
-    expect(slotsResponse.status).toBe(200);
-
-    const slotsData = await slotsResponse.json();
-    
-    const availableSlot = slotsData.slots?.find((s: any) => s.status === 'available');
-
-    if (!availableSlot) {
-      throw new Error('No available slots found for provider');
-    }
-
-    // Create appointment (generates notifications for both client and provider)
-    const appointmentData = {
-      ...generateAppointmentCreateData(),
-      provider: providerPersonId,
-      slot: availableSlot.id
-    };
-
-    const { response, data } = await createAppointment(apiClient, appointmentData);
-    expect(response.status).toBe(201);
-
     // Small delay to ensure notifications are fully committed to database
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 500));
 
-    return data!;
+    return result;
   }
 
   describe('List Notifications', () => {
@@ -163,14 +124,14 @@ describe('Notification Module E2E Tests', () => {
 
     test('should filter unread notifications only', async () => {
       // Create appointment to generate notifications
-      await createTestAppointment();
+      await createTestVideoCall();
 
       // List all notifications (should have unread ones)
       const allResponse = await apiClient.fetch('/notifs');
       expect(allResponse.status).toBe(200);
       const allData = await allResponse.json();
 
-      const clientNotifs = allData.data.filter((n: any) => n.recipient === clientPersonId);
+      const clientNotifs = allData.data.filter((n: any) => n.recipient === user1PersonId);
       expect(clientNotifs.length).toBeGreaterThan(0);
 
       // All should be unread initially (status: 'sent' or 'delivered')
@@ -188,7 +149,7 @@ describe('Notification Module E2E Tests', () => {
 
       expect(unreadResponse.status).toBe(200);
       const unreadData = await unreadResponse.json();
-      const unreadClientNotifs = unreadData.data.filter((n: any) => n.recipient === clientPersonId);
+      const unreadClientNotifs = unreadData.data.filter((n: any) => n.recipient === user1PersonId);
 
       // Unread filter returns sent/delivered notifications
       const initialUnreadCount = unreadClientNotifs.length;
@@ -211,7 +172,7 @@ describe('Notification Module E2E Tests', () => {
         });
 
         const unreadAfterData = await unreadAfterResponse.json();
-        const unreadAfter = unreadAfterData.data.filter((n: any) => n.recipient === clientPersonId);
+        const unreadAfter = unreadAfterData.data.filter((n: any) => n.recipient === user1PersonId);
 
         // Should have one less unread notification
         expect(unreadAfter.length).toBe(initialUnreadCount - 1);
@@ -265,12 +226,12 @@ describe('Notification Module E2E Tests', () => {
   describe('Mark Notification as Read', () => {
     test('should successfully mark notification as read', async () => {
       // Create appointment to generate notification
-      await createTestAppointment();
+      await createTestVideoCall();
 
       // Get the notification
       const listResponse = await apiClient.fetch('/notifs');
       const listData = await listResponse.json();
-      const clientNotif = listData.data.find((n: any) => n.recipient === clientPersonId);
+      const clientNotif = listData.data.find((n: any) => n.recipient === user1PersonId);
 
       expect(clientNotif).toBeDefined();
       expect(['queued', 'sent', 'delivered']).toContain(clientNotif.status);
@@ -279,8 +240,8 @@ describe('Notification Module E2E Tests', () => {
       console.log('DEBUG: About to mark notification', {
         notifId: clientNotif.id,
         recipient: clientNotif.recipient,
-        clientPersonId,
-        match: clientNotif.recipient === clientPersonId
+        user1PersonId,
+        match: clientNotif.recipient === user1PersonId
       });
 
       // Mark as read
@@ -309,10 +270,10 @@ describe('Notification Module E2E Tests', () => {
 
     test('should be idempotent when marking already-read notification', async () => {
       // Create and mark notification
-      await createTestAppointment();
+      await createTestVideoCall();
       const listResponse = await apiClient.fetch('/notifs');
       const listData = await listResponse.json();
-      const clientNotif = listData.data.find((n: any) => n.recipient === clientPersonId);
+      const clientNotif = listData.data.find((n: any) => n.recipient === user1PersonId);
 
       // Mark once
       const firstMark = await apiClient.fetch(`/notifs/${clientNotif.id}/read`, { method: 'POST' });
@@ -332,12 +293,12 @@ describe('Notification Module E2E Tests', () => {
 
     test('should enforce ownership - user cannot mark other user notifications', async () => {
       // Create appointment (generates notifications for both client and provider)
-      await createTestAppointment();
+      await createTestVideoCall();
 
       // Get provider's notification
-      const providerListResponse = await providerClient.fetch('/notifs');
+      const providerListResponse = await participantClient.fetch('/notifs');
       const providerListData = await providerListResponse.json();
-      const providerNotif = providerListData.data.find((n: any) => n.recipient === providerPersonId);
+      const providerNotif = providerListData.data.find((n: any) => n.recipient === user2PersonId);
 
       expect(providerNotif).toBeDefined();
 
@@ -373,15 +334,15 @@ describe('Notification Module E2E Tests', () => {
   describe('Mark All Notifications as Read', () => {
     test('should mark all unread notifications as read', async () => {
       // Create multiple appointments to generate multiple notifications
-      await createTestAppointment();
-      await createTestAppointment();
+      await createTestVideoCall();
+      await createTestVideoCall();
 
       // Get initial unread count
       const initialResponse = await apiClient.fetch('/notifs', {
         searchParams: { status: 'unread' }
       });
       const initialData = await initialResponse.json();
-      const initialUnreadCount = initialData.data.filter((n: any) => n.recipient === clientPersonId).length;
+      const initialUnreadCount = initialData.data.filter((n: any) => n.recipient === user1PersonId).length;
 
       expect(initialUnreadCount).toBeGreaterThan(0);
 
@@ -400,42 +361,42 @@ describe('Notification Module E2E Tests', () => {
         searchParams: { status: 'unread' }
       });
       const afterData = await afterResponse.json();
-      const afterUnreadCount = afterData.data.filter((n: any) => n.recipient === clientPersonId).length;
+      const afterUnreadCount = afterData.data.filter((n: any) => n.recipient === user1PersonId).length;
 
       expect(afterUnreadCount).toBe(0);
     });
 
     test('should filter by type when marking all as read', async () => {
-      // Create appointment (generates 'appointment-reminder' type)
-      await createTestAppointment();
+      // Create video call (generates 'comms.video-call-joined' type for user1)
+      await createTestVideoCall();
 
       // Get all notifications for client
       const listResponse = await apiClient.fetch('/notifs');
       const listData = await listResponse.json();
-      const clientNotifs = listData.data.filter((n: any) => n.recipient === clientPersonId);
-      const appointmentNotifs = clientNotifs.filter((n: any) => n.type === 'appointment-reminder');
+      const clientNotifs = listData.data.filter((n: any) => n.recipient === user1PersonId);
+      const videoCallNotifs = clientNotifs.filter((n: any) => n.type === 'comms.video-call-joined');
 
-      expect(appointmentNotifs.length).toBeGreaterThan(0);
+      expect(videoCallNotifs.length).toBeGreaterThan(0);
 
-      // Mark all appointment-reminder notifications as read
+      // Mark all comms.video-call-joined notifications as read
       const markResponse = await apiClient.fetch('/notifs/read-all', {
         method: 'POST',
         searchParams: {
-          type: 'appointment-reminder'
+          type: 'comms.video-call-joined'
         }
       });
 
       expect(markResponse.status).toBe(200);
       const markData = await markResponse.json();
 
-      expect(markData.markedCount).toBe(appointmentNotifs.length);
+      expect(markData.markedCount).toBe(videoCallNotifs.length);
 
       // Verify they're marked
       const verifyResponse = await apiClient.fetch('/notifs', {
-        searchParams: { type: 'appointment-reminder' }
+        searchParams: { type: 'comms.video-call-joined' }
       });
       const verifyData = await verifyResponse.json();
-      const verifyClientNotifs = verifyData.data.filter((n: any) => n.recipient === clientPersonId);
+      const verifyClientNotifs = verifyData.data.filter((n: any) => n.recipient === user1PersonId);
 
       verifyClientNotifs.forEach((n: any) => {
         expect(n.status).toBe('read');
@@ -444,14 +405,14 @@ describe('Notification Module E2E Tests', () => {
 
     test('should not affect other users notifications', async () => {
       // Create appointment (generates notifications for both users)
-      await createTestAppointment();
+      await createTestVideoCall();
 
       // Get provider's unread count
-      const providerInitialResponse = await providerClient.fetch('/notifs', {
+      const providerInitialResponse = await participantClient.fetch('/notifs', {
         searchParams: { status: 'unread' }
       });
       const providerInitialData = await providerInitialResponse.json();
-      const providerUnreadCount = providerInitialData.data.filter((n: any) => n.recipient === providerPersonId).length;
+      const providerUnreadCount = providerInitialData.data.filter((n: any) => n.recipient === user2PersonId).length;
 
       expect(providerUnreadCount).toBeGreaterThan(0);
 
@@ -462,11 +423,11 @@ describe('Notification Module E2E Tests', () => {
       expect(clientMarkResponse.status).toBe(200);
 
       // Provider's notifications should still be unread
-      const providerAfterResponse = await providerClient.fetch('/notifs', {
+      const providerAfterResponse = await participantClient.fetch('/notifs', {
         searchParams: { status: 'unread' }
       });
       const providerAfterData = await providerAfterResponse.json();
-      const providerAfterUnreadCount = providerAfterData.data.filter((n: any) => n.recipient === providerPersonId).length;
+      const providerAfterUnreadCount = providerAfterData.data.filter((n: any) => n.recipient === user2PersonId).length;
 
       expect(providerAfterUnreadCount).toBe(providerUnreadCount);
     });
@@ -594,21 +555,21 @@ describe('Notification Module E2E Tests', () => {
   describe('Integration Workflow Tests', () => {
     test('complete workflow: create → list unread → mark one → list → mark all → verify all read', async () => {
       // Step 1: Create appointments to generate notifications
-      await createTestAppointment();
-      await createTestAppointment();
+      await createTestVideoCall();
+      await createTestVideoCall();
 
       // Step 2: List unread notifications
       const unread1Response = await apiClient.fetch('/notifs', {
         searchParams: { status: 'unread' }
       });
       const unread1Data = await unread1Response.json();
-      const unread1Count = unread1Data.data.filter((n: any) => n.recipient === clientPersonId).length;
+      const unread1Count = unread1Data.data.filter((n: any) => n.recipient === user1PersonId).length;
 
       expect(unread1Count).toBeGreaterThan(0);
       const initialUnreadCount = unread1Count;
 
       // Step 3: Mark one notification as read
-      const firstNotif = unread1Data.data.find((n: any) => n.recipient === clientPersonId);
+      const firstNotif = unread1Data.data.find((n: any) => n.recipient === user1PersonId);
       await apiClient.fetch(`/notifs/${firstNotif.id}/read`, { method: 'POST' });
 
       // Step 4: List unread again (should have one less)
@@ -616,7 +577,7 @@ describe('Notification Module E2E Tests', () => {
         searchParams: { status: 'unread' }
       });
       const unread2Data = await unread2Response.json();
-      const unread2Count = unread2Data.data.filter((n: any) => n.recipient === clientPersonId).length;
+      const unread2Count = unread2Data.data.filter((n: any) => n.recipient === user1PersonId).length;
 
       expect(unread2Count).toBe(initialUnreadCount - 1);
 
@@ -631,25 +592,23 @@ describe('Notification Module E2E Tests', () => {
         searchParams: { status: 'unread' }
       });
       const unread3Data = await unread3Response.json();
-      const unread3Count = unread3Data.data.filter((n: any) => n.recipient === clientPersonId).length;
+      const unread3Count = unread3Data.data.filter((n: any) => n.recipient === user1PersonId).length;
 
       expect(unread3Count).toBe(0);
     });
 
-    test('different notification types from different appointment actions', async () => {
-      // Create appointment
-      const appointment = await createTestAppointment();
+    test('different notification types from different video call actions', async () => {
+      // Start video call (both users join via createTestVideoCall helper)
+      // This generates notifications: user2 receives 'comms.video-call-started'
+      // and user1 receives 'comms.video-call-joined' when user2 joins
+      const { room } = await createTestVideoCall();
 
-      // Confirm appointment (generates confirmation notifications)
-      const confirmData = generateAppointmentActionData({ reason: 'Confirmed' });
-      await confirmAppointment(providerClient, appointment.id, confirmData);
-
-      // List all client notifications
+      // List all user1 notifications
       const listResponse = await apiClient.fetch('/notifs');
       const listData = await listResponse.json();
-      const clientNotifs = listData.data.filter((n: any) => n.recipient === clientPersonId);
+      const clientNotifs = listData.data.filter((n: any) => n.recipient === user1PersonId);
 
-      // Should have notifications from both create and confirm actions
+      // Should have notifications from video call actions
       const notifTypes = [...new Set(clientNotifs.map((n: any) => n.type))];
       expect(notifTypes.length).toBeGreaterThan(0);
 
@@ -659,7 +618,7 @@ describe('Notification Module E2E Tests', () => {
           searchParams: { type }
         });
         const typeData = await typeResponse.json();
-        const typeClientNotifs = typeData.data.filter((n: any) => n.recipient === clientPersonId);
+        const typeClientNotifs = typeData.data.filter((n: any) => n.recipient === user1PersonId);
 
         expect(typeClientNotifs.length).toBeGreaterThan(0);
         typeClientNotifs.forEach((n: any) => {
@@ -671,7 +630,7 @@ describe('Notification Module E2E Tests', () => {
     test('pagination with read/unread filtering', async () => {
       // Create multiple appointments
       for (let i = 0; i < 3; i++) {
-        await createTestAppointment();
+        await createTestVideoCall();
       }
 
       // Get all notifications with pagination
@@ -684,7 +643,7 @@ describe('Notification Module E2E Tests', () => {
       expect(page1Data.pagination.hasNextPage).toBe(true);
 
       // Mark first page as read
-      const page1ClientNotifs = page1Data.data.filter((n: any) => n.recipient === clientPersonId);
+      const page1ClientNotifs = page1Data.data.filter((n: any) => n.recipient === user1PersonId);
       for (const notif of page1ClientNotifs) {
         await apiClient.fetch(`/notifs/${notif.id}/read`, { method: 'POST' });
       }
@@ -694,7 +653,7 @@ describe('Notification Module E2E Tests', () => {
         searchParams: { limit: 2, offset: 2, unreadOnly: 'true' }
       });
       const page2Data = await page2Response.json();
-      const page2ClientNotifs = page2Data.data.filter((n: any) => n.recipient === clientPersonId);
+      const page2ClientNotifs = page2Data.data.filter((n: any) => n.recipient === user1PersonId);
 
       // Should have unread notifications in second page
       expect(page2ClientNotifs.length).toBeGreaterThan(0);

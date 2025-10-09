@@ -117,7 +117,7 @@ export async function createChatRoom(
     method: 'POST',
     body: requestBody
   });
-  const data = response.ok ? await response.json() : await response.json().catch(() => null);
+  const data = response.ok ? await response.json() : null;
 
   return { response, data: data as ChatRoom | null };
 }
@@ -318,6 +318,91 @@ export async function updateVideoCallParticipant(
   const data = response.ok ? await response.json() : null;
   
   return { response, data };
+}
+
+// ============================================================================
+// COMPOSITE TEST HELPERS
+// ============================================================================
+
+/**
+ * Start a test video call with two participants
+ * This is a composite helper that creates a room, starts a video call, and returns all necessary data
+ * Useful for tests that need a quick video call setup
+ */
+export async function startTestVideoCall(
+  adminClient: ApiClient,
+  participantClient: ApiClient,
+  adminUserId: string,
+  participantUserId: string,
+  adminName: string = 'Admin User',
+  participantName: string = 'Participant User'
+) {
+  // Create chat room with admin as room admin (use upsert to avoid duplicate room errors)
+  const { response, data: room } = await createChatRoom(
+    adminClient,
+    [adminUserId, participantUserId],
+    [adminUserId], // Admin is the room admin
+    { upsert: true } // Get existing room if it exists
+  );
+
+  if (!room) {
+    const errorBody = await response.text().catch(() => 'Unable to read error response');
+    console.error(`createChatRoom failed with ${response.status}:`, errorBody);
+    throw new Error(`Failed to create chat room for test video call. Status: ${response.status}`);
+  }
+
+  // Clean up any existing video call in the room to avoid conflicts
+  await cleanupActiveVideoCall(adminClient, room.id);
+
+  // Start video call as admin (admin is automatically added as initiator with no joinedAt)
+  // Include participant in participants list so they are invited
+  const { response: startResponse, data: videoCallMessage } = await startVideoCall(
+    adminClient,
+    room.id,
+    [
+      { user: participantUserId, displayName: participantName }
+    ]
+  );
+
+  if (!videoCallMessage) {
+    const errorBody = await startResponse.text().catch(() => 'Unable to read error response');
+    console.error(`startVideoCall failed with ${startResponse.status}:`, errorBody);
+    throw new Error('Failed to start video call');
+  }
+
+  // Admin is already in the call as initiator (no explicit join needed)
+  // Admin will join explicitly to get proper joinedAt timestamp
+  const { response: adminJoinResp, data: adminJoinResponse } = await joinVideoCall(
+    adminClient,
+    room.id,
+    adminName
+  );
+
+  if (!adminJoinResponse) {
+    const errorBody = await adminJoinResp.text().catch(() => 'Unable to read error response');
+    console.error(`Admin joinVideoCall failed with ${adminJoinResp.status}:`, errorBody);
+    throw new Error('Admin failed to join video call');
+  }
+
+  // Participant joins the call (this generates notification to admin who is already joined)
+  const { response: participantJoinResp, data: participantJoinResponse } = await joinVideoCall(
+    participantClient,
+    room.id,
+    participantName
+  );
+
+  if (!participantJoinResponse) {
+    const errorBody = await participantJoinResp.text().catch(() => 'Unable to read error response');
+    console.error(`Participant joinVideoCall failed with ${participantJoinResp.status}:`, errorBody);
+    throw new Error('Participant failed to join video call');
+  }
+
+  return {
+    room,
+    videoCallMessage,
+    adminJoinResponse,
+    participantJoinResponse
+  };
 }
 
 // ============================================================================

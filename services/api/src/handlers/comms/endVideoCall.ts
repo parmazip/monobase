@@ -95,10 +95,40 @@ export async function endVideoCall(ctx: Context) {
     endedAt: endTime.toISOString(),
     durationMinutes
   });
-  
+
   // Clear the room's active video call reference
   await roomRepo.setActiveVideoCall(params.room, null);
-  
+
+  // Send notifications to all participants who were in the call
+  const notifs = ctx.get('notifs');
+  const participantsInCall = activeCall.videoCallData.participants
+    .filter(p => p.joinedAt && !p.leftAt && p.user !== user.id)
+    .map(p => p.user);
+
+  let notificationsSent = 0;
+  for (const participantId of participantsInCall) {
+    try {
+      await notifs.createNotification({
+        recipient: participantId,
+        type: 'comms.video-call-ended',
+        channel: 'in-app',
+        title: 'Video Call Ended',
+        message: `Video call ended by ${user.name || 'admin'} (${durationMinutes} minutes)`,
+        relatedEntityType: 'chat-room',
+        relatedEntity: params.room,
+        consentValidated: true
+      });
+      notificationsSent++;
+    } catch (error) {
+      // Log notification error but don't fail the end operation
+      logger?.warn({
+        participantId,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        action: 'send_end_notification'
+      }, 'Failed to send end notification to participant');
+    }
+  }
+
   // Create system message for call ended
   const systemMessage = await messageRepo.createSystemMessage(
     params.room,
@@ -115,6 +145,7 @@ export async function endVideoCall(ctx: Context) {
     roomId: params.room,
     callMessageId: activeCall.id,
     durationMinutes,
+    notificationsCount: notificationsSent,
     action: 'end_video_call'
   }, 'Video call ended by admin');
   

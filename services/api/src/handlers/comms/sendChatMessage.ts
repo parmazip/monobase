@@ -153,13 +153,42 @@ export async function sendChatMessage(ctx: Context) {
     
     // Update room's active video call reference
     await roomRepo.setActiveVideoCall(params.room, message.id);
-    
+
+    // Send notifications to other participants
+    const notifs = ctx.get('notifs');
+    const otherParticipants = room.participants.filter(p => p !== user.id);
+
+    let notificationsSent = 0;
+    for (const participantId of otherParticipants) {
+      try {
+        await notifs.createNotification({
+          recipient: participantId,
+          type: 'comms.video-call-started',
+          channel: 'in-app',
+          title: 'Video Call Started',
+          message: `${user.name || 'Someone'} started a video call`,
+          relatedEntityType: 'chat-room',
+          relatedEntity: params.room,
+          consentValidated: true // Room participation implies consent
+        });
+        notificationsSent++;
+      } catch (error) {
+        // Log notification error but don't fail the video call creation
+        logger?.warn({
+          participantId,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          action: 'send_video_call_notification'
+        }, 'Failed to send video call notification to participant');
+      }
+    }
+
     logger?.info({
       messageId: message.id,
       userId: user.id,
       roomId: params.room,
       messageType: 'video_call',
       participantCount: participants.length,
+      notificationsCount: notificationsSent,
       action: 'start_video_call'
     }, 'Video call started');
     

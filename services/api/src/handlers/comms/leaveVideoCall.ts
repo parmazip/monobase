@@ -105,9 +105,37 @@ export async function leaveVideoCall(ctx: Context) {
   const remainingParticipants = updatedMessage.videoCallData?.participants.filter(
     p => p.joinedAt && !p.leftAt
   ) || [];
-  
+
   const callStillActive = remainingParticipants.length > 0;
-  
+
+  // Send notifications to remaining participants
+  const notifs = ctx.get('notifs');
+  const remainingParticipantIds = remainingParticipants.map(p => p.user);
+
+  let notificationsSent = 0;
+  for (const participantId of remainingParticipantIds) {
+    try {
+      await notifs.createNotification({
+        recipient: participantId,
+        type: 'comms.video-call-left',
+        channel: 'in-app',
+        title: 'User Left Call',
+        message: `${participant.displayName} left the video call`,
+        relatedEntityType: 'chat-room',
+        relatedEntity: params.room,
+        consentValidated: true
+      });
+      notificationsSent++;
+    } catch (error) {
+      // Log notification error but don't fail the leave operation
+      logger?.warn({
+        participantId,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        action: 'send_leave_notification'
+      }, 'Failed to send leave notification to participant');
+    }
+  }
+
   // Create system message for user leaving
   await messageRepo.createSystemMessage(
     params.room,
@@ -145,7 +173,9 @@ export async function leaveVideoCall(ctx: Context) {
     userId: user.id,
     roomId: params.room,
     callMessageId: activeCall.id,
+    displayName: participant.displayName,
     remainingParticipants: remainingParticipants.length,
+    notificationsCount: notificationsSent,
     callStillActive,
     action: 'leave_video_call'
   }, 'User left video call');

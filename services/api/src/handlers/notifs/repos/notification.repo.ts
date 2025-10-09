@@ -97,11 +97,16 @@ export class NotificationRepository extends DatabaseRepository<Notification, New
   async createNotificationForModule(request: CreateNotificationRequest): Promise<Notification> {
     this.logger?.debug({ request }, 'Creating notification from module');
 
-    // Validate recipient exists
+    // Validate recipient exists (optional - Person records may not exist for all User IDs)
     const recipient = await this.personRepo.findOneById(request.recipient);
 
     if (!recipient) {
-      throw new ValidationError(`Invalid recipient: ${request.recipient}`);
+      // Log warning but allow notification creation
+      // In production, Person records should be created via Better-Auth hooks
+      this.logger?.warn({
+        recipient: request.recipient,
+        type: request.type
+      }, 'Creating notification for recipient without Person record');
     }
 
     // Validate consent for medical notifications
@@ -114,7 +119,17 @@ export class NotificationRepository extends DatabaseRepository<Notification, New
       }, 'Medical notification created without explicit consent validation');
     }
 
-    // Create notification record with optional targetApp in metadata
+    // Determine final status and sentAt based on scheduling and channel
+    // This allows us to create the notification with its final state in a single operation
+    const isImmediate = !request.scheduledAt || request.scheduledAt <= new Date();
+    const isInApp = request.channel === 'in-app';
+
+    // For immediate in-app notifications, create with 'sent' status directly
+    // For scheduled or non-in-app notifications, create with 'queued' status
+    const finalStatus = (isImmediate && isInApp) ? 'sent' : 'queued';
+    const sentAt = (isImmediate && isInApp) ? new Date() : null;
+
+    // Create notification record with final status in single operation
     const notification = await this.createOne({
       recipient: request.recipient,
       type: request.type as any,
@@ -124,7 +139,8 @@ export class NotificationRepository extends DatabaseRepository<Notification, New
       scheduledAt: request.scheduledAt || null,
       relatedEntityType: request.relatedEntityType || null,
       relatedEntity: request.relatedEntity || null,
-      status: 'queued',
+      status: finalStatus,
+      sentAt: sentAt,
       consentValidated: request.consentValidated || false,
       createdBy: SYSTEM_USER_ID, // Module-created notifications are system-generated
       updatedBy: SYSTEM_USER_ID,
@@ -133,26 +149,14 @@ export class NotificationRepository extends DatabaseRepository<Notification, New
         data: { targetApp: request.targetApp }
       } as any),
     });
-    
-    this.logger?.info({ 
+
+    this.logger?.info({
       notificationId: notification.id,
       type: notification.type,
       channel: notification.channel,
-      scheduled: !!notification.scheduledAt 
+      status: notification.status,
+      scheduled: !!notification.scheduledAt
     }, 'Notification created successfully');
-    
-    // If immediate notification, mark as ready for processing
-    if (!notification.scheduledAt || notification.scheduledAt <= new Date()) {
-      // In production, this would queue for immediate delivery
-      // For now, we'll just update status for in-app notifications
-      if (notification.channel === 'in-app') {
-        const updated = await this.updateOneById(notification.id, {
-          status: 'sent',
-          sentAt: new Date()
-        });
-        return updated;
-      }
-    }
 
     return notification;
   }
