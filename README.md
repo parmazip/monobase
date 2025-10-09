@@ -1,37 +1,31 @@
 # Monobase Application Platform
 
-A comprehensive full-stack monorepo platform providing video sessions, service management, and user management. Built with Bun runtime for 3x faster performance than Node.js.
+A full-stack monorepo platform providing video sessions, messaging, and user management. Built with Bun runtime for 3x faster performance than Node.js.
 
 ## Overview
 
-Monobase is a modern application platform designed to streamline user management, administrative operations, and business workflows. The platform provides:
+Monobase is a modern application platform designed to streamline user management and business workflows. The platform provides:
 
-- **User Portal** - Self-service account management and video sessions
-- **Admin Portal** - Administrative tools and user management
-- **Marketing Website** - Public-facing platform information
-- **API Service** - Enterprise-grade backend with comprehensive business modules
+- **Account App** - Self-service account management and video sessions
+- **API Service** - Backend with core business modules
 
 ## Key Features
 
-- **Advanced Booking** - Search, filtering, and session scheduling
-- **Video Sessions** - Real-time video calls and secure messaging
+- **Video Sessions** - Real-time video calls and secure messaging (WebRTC)
 - **User Management** - Comprehensive user profiles and role management
-- **Service Management** - Service coordination and delivery workflows
-- **Billing & Payments** - Stripe integration with flexible payment options
 - **Enterprise Compliance** - Audit trails, consent management, and secure data handling
-- **Multi-Role Support** - Users can have multiple roles within the system
-- **Real-time Notifications** - Multi-channel delivery (email, SMS, push)
+- **Real-time Notifications** - Multi-channel delivery (email, push via OneSignal)
+- **File Storage** - Secure file upload and download (S3/MinIO)
 
 ## Monorepo Structure
 
 ```
 monobase/
 ├── apps/                      # Frontend applications
-│   ├── account/              # User portal (Vite + TanStack Router)
-│   ├── admin/                # Admin portal (Vite + TanStack Router)
-│   └── website/              # Marketing website (Next.js 15)
+│   └── account/              # Account app (Vite + TanStack Router)
 ├── packages/                  # Shared libraries
-│   └── typescript-config/    # Shared TypeScript configurations
+│   ├── typescript-config/    # Shared TypeScript configurations
+│   └── ui/                   # Shared UI components
 ├── services/                  # Backend services
 │   └── api/                  # Main API service (Hono + Bun)
 ├── specs/                     # API specifications
