@@ -1,10 +1,10 @@
-# Admin Portal
+# Account App
 
-Admin-facing web application for the Monobase Application Platform. Built with modern React patterns for appointment management, user consultations, records documentation, and business administration.
+User-facing web application for the Monobase Application Platform. Built with modern React patterns for account management, notifications, and file storage.
 
 ## Tech Stack
 
-- **Framework**: [TanStack Start](https://tanstack.com/start) - Full-stack React framework with file-based routing
+- **Framework**: [TanStack Router](https://tanstack.com/router) - Type-safe file-based routing for React
 - **Runtime**: [Bun](https://bun.sh) - 3× faster than Node.js with native TypeScript
 - **UI**: [shadcn/ui](https://ui.shadcn.com) + [Tailwind CSS](https://tailwindcss.com) - Accessible components built on Radix UI
 - **State Management**: [TanStack Query v5](https://tanstack.com/query) - Server state and data fetching
@@ -58,20 +58,23 @@ src/
 ├── api/              # API client functions
 ├── components/       # React components (organized by domain)
 │   ├── person/      # Person domain (profiles, contact info)
-│   ├── provider/    # Provider domain (credentials, roles)
+│   ├── notifications/ # Notifications domain
+│   ├── storage/     # File storage domain
 │   └── ui/          # shadcn/ui base components (CLI-managed)
 ├── hooks/           # TanStack Query hooks
 ├── routes/          # File-based routing
+│   ├── dashboard/   # Dashboard route
+│   ├── notifications/ # Notifications route
+│   └── settings/    # Settings routes (account, security)
 └── utils/           # Utilities (API sanitization, config)
 ```
 
 ## Features
 
-- **Provider Profiles**: Manage admin credentials, roles, and organization information
-- **Appointments**: View and manage user appointments and scheduling
-- **Patient Consultations**: Access user records and conduct video consultation visits
-- **Practice Management**: Configure availability, organization settings, and billing
-- **Medical Documentation**: Document user sessions, notes, and action plans
+- **User Profiles**: Manage personal information and contact details
+- **Notifications**: Multi-channel notification preferences (email, push via OneSignal)
+- **File Storage**: Upload and download files (S3/MinIO backend)
+- **Account Settings**: Configure account preferences and security settings
 - **Secure Auth**: Cookie-based sessions with Better-Auth
 - **Responsive Design**: Mobile-first UI with Tailwind CSS
 
@@ -91,8 +94,8 @@ src/
 - Routing and route guards
 - Type safety rules
 
-**Provider App Specifics**: See [CONTRIBUTING.md](./CONTRIBUTING.md) for:
-- Domain modules (Person, Provider)
+**Account App Specifics**: See [CONTRIBUTING.md](./CONTRIBUTING.md) for:
+- Domain modules (Person, Notifications, Storage)
 - Routes structure
 - Development commands
 

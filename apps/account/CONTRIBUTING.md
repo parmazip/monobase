@@ -1,6 +1,6 @@
-# Admin App Development Guide
+# Account App Development Guide
 
-This guide covers admin app-specific development details. **For shared frontend patterns**, see [Root CONTRIBUTING.md > Frontend Development Patterns](../../CONTRIBUTING.md#frontend-development-patterns).
+This guide covers account app-specific development details. **For shared frontend patterns**, see [Root CONTRIBUTING.md > Frontend Development Patterns](../../CONTRIBUTING.md#frontend-development-patterns).
 
 ## Table of Contents
 
@@ -15,19 +15,18 @@ This guide covers admin app-specific development details. **For shared frontend 
 
 ## App Overview
 
-**Purpose**: Admin Portal for Monobase Application Platform
+**Purpose**: User-facing account management portal for Monobase Application Platform
 
 **Features**:
-- Admin profile management (Person + Admin credentials)
-- Appointment management and scheduling
-- User records access
-- Billing and invoicing
-- Organization management
+- User profile management (personal information, contact, address)
+- Multi-channel notifications (email, push via OneSignal)
+- File storage (upload/download via S3/MinIO)
+- Account security settings
 - Secure authentication with Better-Auth
 
 **Key Principles**:
 - **API-First**: OpenAPI spec at `specs/api/dist/openapi/openapi.json` is source of truth
-- **Module-Based**: Organize by domain (person, provider, appointments)
+- **Module-Based**: Organize by domain (person, notifications, storage)
 - **Type-Safe**: Strict TypeScript with Zod validation
 - **Sanitized**: Proper null/omit handling via `sanitizeObject()`
 
@@ -35,7 +34,7 @@ This guide covers admin app-specific development details. **For shared frontend 
 
 ## Tech Stack
 
-- **Framework**: TanStack Start (full-stack React framework)
+- **Framework**: TanStack Router (type-safe file-based routing for React)
 - **Runtime**: Bun 1.2.21+
 - **State**: TanStack Query v5, React Hook Form
 - **UI**: shadcn/ui + Tailwind CSS
@@ -53,6 +52,8 @@ src/
 ├── api/                      # API client functions
 │   ├── client.ts            # Base HTTP client
 │   ├── person.ts            # Person API functions
+│   ├── notifications.ts     # Notifications API functions
+│   ├── storage.ts           # Storage API functions
 │   └── query.ts             # Centralized query keys
 │
 ├── components/               # React components (by domain)
@@ -63,31 +64,33 @@ src/
 │   │   ├── address-form.tsx
 │   │   └── preferences-form.tsx
 │   │
-│   ├── provider/            # Provider domain
-│   │   ├── schema.ts        # Zod schemas + types
-│   │   ├── credentials-form.tsx
-│   │   ├── specialties-form.tsx
-│   │   └── practice-info-form.tsx
+│   ├── notifications/       # Notifications domain
+│   │   ├── schema.ts        # Notification schemas
+│   │   └── notification-preferences-form.tsx
+│   │
+│   ├── storage/             # File storage domain
+│   │   ├── file-upload.tsx
+│   │   └── file-list.tsx
 │   │
 │   └── ui/                  # shadcn/ui (CLI-managed only)
 │
 ├── hooks/                    # TanStack Query hooks
 │   ├── use-person.ts        # Person query/mutation hooks
-│   ├── use-provider.ts      # Provider hooks
+│   ├── use-notifications.ts # Notifications hooks
+│   ├── use-storage.ts       # Storage hooks
 │   └── use-mobile.tsx       # Utility hooks
 │
 ├── routes/                   # File-based routing
 │   ├── __root.tsx           # Root layout
 │   ├── index.tsx            # Landing page
-│   ├── onboarding.tsx       # Onboarding flow
 │   ├── auth/                # Auth pages
 │   │   └── $authView.tsx    # Dynamic auth view
 │   └── _dashboard/          # Protected routes
 │       ├── dashboard.tsx    # Dashboard home
-│       ├── appointments.tsx
-│       ├── patients.tsx
+│       ├── notifications.tsx # Notifications view
 │       └── settings/
-│           └── account.tsx
+│           ├── account.tsx  # Account settings
+│           └── security.tsx # Security settings
 │
 ├── services/                 # Business logic
 │   ├── auth.ts              # Auth client
@@ -104,7 +107,7 @@ src/
 
 ### Person Module
 
-**Purpose**: Central PII safeguard - manages personal information shared across patient and provider roles
+**Purpose**: Central PII safeguard - manages personal information for user accounts
 
 **Files**:
 - `components/person/schema.ts` - Personal info, contact, address, preferences schemas
@@ -122,36 +125,37 @@ src/
 - Check OpenAPI spec for `PersonUpdateRequest` nullable fields
 - Use `sanitizeObject()` with nullable: `['lastName', 'middleName', 'dateOfBirth', 'gender']`
 
-### Provider Module
+### Notifications Module
 
-**Purpose**: Healthcare provider-specific credentials and practice information
+**Purpose**: Multi-channel notification management (email, push via OneSignal)
 
 **Files**:
-- `components/provider/schema.ts` - Credentials, specialties, practice info schemas
-- `components/provider/*-form.tsx` - Provider-specific forms
-- `api/provider.ts` - Provider API functions
-- `hooks/use-provider.ts` - Provider query/mutation hooks
-
-**Forms** (Planned):
-- `CredentialsForm` - License number, NPI, DEA, board certifications
-- `SpecialtiesForm` - Primary and secondary specialties
-- `PracticeInfoForm` - Practice name, address, contact information
-- `AvailabilityForm` - Practice hours, appointment availability
-
-**Key Patterns**:
-- Provider extends Person (has `person_id` reference)
-- Credentials require validation and expiration tracking
-- Specialties support multi-select
-
-### Appointments Module (Planned)
-
-**Purpose**: Provider-side appointment management
+- `components/notifications/schema.ts` - Notification preferences schemas
+- `components/notifications/notification-preferences-form.tsx` - Preference management
+- `api/notifications.ts` - Notifications API functions
+- `hooks/use-notifications.ts` - Notification query/mutation hooks
 
 **Features**:
-- View upcoming appointments
-- Manage availability calendar
-- Confirm/cancel appointments
-- Access patient information for appointments
+- Email notification preferences
+- Push notification settings (OneSignal)
+- Notification history and status
+- Channel-specific preferences
+
+### Storage Module
+
+**Purpose**: File upload/download management (S3/MinIO backend)
+
+**Files**:
+- `components/storage/file-upload.tsx` - File upload component
+- `components/storage/file-list.tsx` - File listing component
+- `api/storage.ts` - Storage API functions
+- `hooks/use-storage.ts` - Storage query/mutation hooks
+
+**Features**:
+- File upload with progress tracking
+- File download and preview
+- File metadata management
+- Secure file access via signed URLs
 
 ---
 
@@ -167,20 +171,14 @@ src/
 All dashboard routes use `requireAuthWithProfile()` guard.
 
 **Dashboard**:
-- `/dashboard` - Dashboard home (today's appointments, upcoming schedule)
+- `/dashboard` - Dashboard home (notifications, storage summary)
 
-**Appointments**:
-- `/dashboard/appointments` - Appointment calendar/list
-- `/dashboard/appointments/$appointmentId` - Appointment details (planned)
-
-**Patients**:
-- `/dashboard/patients` - Patient list (planned)
-- `/dashboard/patients/$patientId` - Patient details (planned)
+**Notifications**:
+- `/dashboard/notifications` - Notification center and preferences
 
 **Settings**:
 - `/dashboard/settings/account` - Account settings (person profile management)
-- `/dashboard/settings/practice` - Practice settings (planned)
-- `/dashboard/settings/availability` - Availability management (planned)
+- `/dashboard/settings/security` - Security settings (password, 2FA)
 
 ### Special Routes
 
@@ -196,7 +194,7 @@ See [Root Frontend Patterns > Routing](../../CONTRIBUTING.md#routing-tanstack-ro
 ### Development Commands
 
 ```bash
-cd apps/provider
+cd apps/account
 
 # Development
 bun install          # Install dependencies
@@ -234,7 +232,7 @@ bunx shadcn@latest add [component-name]
 
 **Loading States**:
 ```typescript
-const { data, isLoading, error } = useProviderProfile()
+const { data, isLoading, error } = usePersonProfile()
 
 if (isLoading) return <Skeleton />
 if (error) return <ErrorAlert error={error} />
@@ -269,11 +267,10 @@ For complete details on:
 
 ---
 
-**For code examples, refer to patient app modules** (same patterns apply):
-- Complete module: `apps/patient/src/components/person/`
-- Simpler module: `apps/patient/src/components/patient/`
-- Query hooks: `apps/patient/src/hooks/use-person.ts`
-- API functions: `apps/patient/src/api/person.ts`
-- Route guards: `apps/patient/src/services/guards.ts`
+**For code examples, refer to existing modules in this app**:
+- Complete module: `apps/account/src/components/person/`
+- Query hooks: `apps/account/src/hooks/use-person.ts`
+- API functions: `apps/account/src/api/person.ts`
+- Route guards: `apps/account/src/services/guards.ts`
 
-**Last Updated**: 2025-10-02
+**Last Updated**: 2025-10-09
