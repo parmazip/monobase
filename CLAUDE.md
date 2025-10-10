@@ -30,6 +30,7 @@ The platform implements the following core modules:
 4. **comms** - Video/chat sessions (WebRTC) and messaging
 5. **storage** - File upload/download (S3/MinIO)
 6. **email** - Transactional emails (SMTP/Postmark)
+7. **billing** - Invoice-based payments (Stripe integration)
 
 **Note**: Authentication is handled by Better-Auth (integrated, not a separate module). Consent management is implemented as JSONB fields on the Person model (not a standalone module).
 
@@ -222,12 +223,11 @@ cd apps/account && bun run test:e2e     # E2E tests
 - ✅ **packages/ui/** - Shared UI component library
 - ✅ **Authentication** via Better-Auth (integrated, not a separate module)
 - ✅ **Consent** as JSONB fields on Person model (not a separate module)
-- ✅ **6 Core Modules**: person, audit, notifs, comms, storage, email
+- ✅ **7 Core Modules**: person, audit, notifs, comms, storage, email, billing
 
 ### What Does Not Exist
 - ❌ **apps/admin/** - No admin/service provider app yet
 - ❌ **apps/website/** - No Next.js marketing website yet
-- ❌ **Billing module** - No Stripe integration yet
 - ❌ **Booking module** - No scheduling system yet
 - ❌ **Client/Service Provider modules** - No role-specific extensions yet
 - ❌ **Records/EMR module** - No document management yet

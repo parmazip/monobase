@@ -16,9 +16,13 @@ packages/ui/src/
 ├── lib/             # Common utilities
 ├── constants/       # Common constants (countries, languages, timezones)
 ├── styles/          # Global CSS and theme
-└── person/          # Person domain module
-    ├── components/  # Person-specific forms
-    └── schemas.ts   # Person validation schemas
+├── person/          # Person domain module
+│   ├── components/  # Person-specific forms
+│   └── schemas.ts   # Person validation schemas
+└── comms/           # Comms domain module
+    ├── components/  # Video call UI components
+    ├── hooks/       # Media device hooks
+    └── lib/         # Browser media APIs
 ```
 
 ## Installation
@@ -88,27 +92,379 @@ import { PreferencesForm } from "@monobase/ui/person/components/preferences-form
 import { personalInfoSchema, contactInfoSchema } from "@monobase/ui/person/schemas"
 ```
 
-## Usage Example
+### Domain: Comms
+```typescript
+// Video call UI components
+import { VideoTile } from "@monobase/ui/comms/components/video-tile"
+import { CallControls } from "@monobase/ui/comms/components/call-controls"
+import { ConnectionStatus } from "@monobase/ui/comms/components/connection-status"
+import { VideoCallUI } from "@monobase/ui/comms/components/video-call-ui"
+
+// Media device hooks
+import { useMediaStream } from "@monobase/ui/comms/hooks/use-media-stream"
+import { useVideoCall } from "@monobase/ui/comms/hooks/use-video-call"
+
+// Browser media APIs
+import {
+  getLocalMediaStream,
+  getDisplayMediaStream,
+  toggleAudio,
+  toggleVideo,
+  stopMediaStream,
+} from "@monobase/ui/comms/lib/media-devices"
+```
+
+## Usage Examples
+
+### Person Forms
 
 ```tsx
 import "@monobase/ui/styles"
-import { Button } from "@monobase/ui/components/button"
-import { Input } from "@monobase/ui/components/input"
 import { PersonalInfoForm } from "@monobase/ui/person/components/personal-info-form"
 import { useDetectCountry } from "@monobase/ui/hooks/use-detect-country"
-import { COUNTRIES } from "@monobase/ui/constants/countries"
 
-export function MyComponent() {
+export function ProfilePage() {
   const country = useDetectCountry()
 
   return (
+    <PersonalInfoForm 
+      onSubmit={handleSubmit}
+      defaultValues={{ country }}
+    />
+  )
+}
+```
+
+### Video Call UI
+
+```tsx
+import "@monobase/ui/styles"
+import { VideoCallUI } from "@monobase/ui/comms/components/video-call-ui"
+import { useMediaStream } from "@monobase/ui/comms/hooks/use-media-stream"
+import { useVideoCall } from "@monobase/ui/comms/hooks/use-video-call"
+import { VideoPeerConnection } from "@monobase/sdk/lib/peer-connection"
+
+export function VideoCallPage({ roomId }: { roomId: string }) {
+  // Get local media (camera/mic)
+  const {
+    localStream,
+    audioEnabled,
+    videoEnabled,
+    isScreenSharing,
+    toggleMic,
+    toggleCamera,
+    startScreenShare,
+    stopScreenShare,
+  } = useMediaStream()
+
+  // Create peer connection (from SDK)
+  const peerConnection = new VideoPeerConnection(
+    signalingClient,
+    iceServers,
+    localStream
+  )
+
+  // Manage video call state
+  const {
+    remoteStream,
+    connectionState,
+    handleEndCall,
+  } = useVideoCall({
+    peerConnection,
+    roomId,
+    onCallEnded: () => {
+      console.log('Call ended')
+    },
+  })
+
+  return (
+    <VideoCallUI
+      localStream={localStream}
+      remoteStream={remoteStream}
+      connectionState={connectionState}
+      audioEnabled={audioEnabled}
+      videoEnabled={videoEnabled}
+      isScreenSharing={isScreenSharing}
+      onToggleMic={toggleMic}
+      onToggleCamera={toggleCamera}
+      onStartScreenShare={startScreenShare}
+      onStopScreenShare={stopScreenShare}
+      onEndCall={handleEndCall}
+      localLabel="You"
+      remoteLabel="Remote User"
+    />
+  )
+}
+```
+
+## Comms Module
+
+The UI package provides browser-based media device access and presentation components for video calls. All components are **prop-based** and stateless - they receive all state as props and have no internal network/API logic.
+
+### Architecture
+
+- **`lib/media-devices.ts`** - Browser MediaDevices API wrappers (camera, mic, screen)
+- **`hooks/use-media-stream.ts`** - React hook for managing local media streams
+- **`hooks/use-video-call.ts`** - React hook for orchestrating video calls (accepts peer connection as prop)
+- **`components/`** - Pure presentation components for video call UI
+
+**Important**: The UI package handles only browser APIs and presentation. For network layer (REST API, WebSocket, WebRTC peer connections), use `@monobase/sdk/services/comms` and `@monobase/sdk/lib/`.
+
+### Browser Media APIs
+
+```typescript
+import {
+  getLocalMediaStream,
+  getDisplayMediaStream,
+  toggleAudio,
+  toggleVideo,
+  stopMediaStream,
+} from "@monobase/ui/comms/lib/media-devices"
+
+// Get camera and microphone access
+const stream = await getLocalMediaStream(true, true)
+
+// Get screen sharing stream
+const screenStream = await getDisplayMediaStream()
+
+// Toggle audio/video tracks
+toggleAudio(stream, false) // Mute
+toggleVideo(stream, false) // Turn off camera
+
+// Cleanup
+stopMediaStream(stream)
+```
+
+### Media Stream Hook
+
+```typescript
+import { useMediaStream } from "@monobase/ui/comms/hooks/use-media-stream"
+
+function VideoCallComponent() {
+  const {
+    localStream,
+    audioEnabled,
+    videoEnabled,
+    isScreenSharing,
+    toggleMic,
+    toggleCamera,
+    startScreenShare,
+    stopScreenShare,
+    error,
+  } = useMediaStream({
+    autoStart: true, // Automatically request media on mount
+    audio: true,
+    video: true,
+  })
+
+  return (
     <div>
-      <Button>Click me</Button>
-      <PersonalInfoForm onSubmit={handleSubmit} />
+      <video ref={videoRef} srcObject={localStream} autoPlay muted />
+      <button onClick={toggleMic}>
+        {audioEnabled ? 'Mute' : 'Unmute'}
+      </button>
+      <button onClick={toggleCamera}>
+        {videoEnabled ? 'Stop Video' : 'Start Video'}
+      </button>
+      <button onClick={isScreenSharing ? stopScreenShare : startScreenShare}>
+        {isScreenSharing ? 'Stop Sharing' : 'Share Screen'}
+      </button>
     </div>
   )
 }
 ```
+
+### Video Call Hook
+
+The `useVideoCall` hook orchestrates video calls by coordinating with a peer connection (from SDK).
+
+```typescript
+import { useVideoCall } from "@monobase/ui/comms/hooks/use-video-call"
+import { VideoPeerConnection } from "@monobase/sdk/lib/peer-connection"
+
+function VideoCall({ roomId, peerConnection }: {
+  roomId: string
+  peerConnection: VideoPeerConnection // From SDK
+}) {
+  const {
+    remoteStream,
+    connectionState,
+    handleEndCall,
+  } = useVideoCall({
+    peerConnection,
+    roomId,
+    onCallEnded: () => {
+      console.log('Call ended')
+    },
+  })
+
+  return (
+    <div>
+      <p>Connection: {connectionState}</p>
+      <video srcObject={remoteStream} autoPlay />
+      <button onClick={handleEndCall}>End Call</button>
+    </div>
+  )
+}
+```
+
+**Connection States**: `'idle' | 'connecting' | 'connected' | 'reconnecting' | 'disconnected' | 'failed'`
+
+### UI Components
+
+All components are pure presentation components that receive state as props.
+
+#### VideoTile
+
+```typescript
+import { VideoTile } from "@monobase/ui/comms/components/video-tile"
+
+<VideoTile
+  stream={mediaStream}
+  label="John Doe"
+  muted={false}
+  className="aspect-video"
+/>
+```
+
+#### CallControls
+
+```typescript
+import { CallControls } from "@monobase/ui/comms/components/call-controls"
+
+<CallControls
+  audioEnabled={true}
+  videoEnabled={true}
+  isScreenSharing={false}
+  onToggleMic={() => console.log('Toggle mic')}
+  onToggleCamera={() => console.log('Toggle camera')}
+  onStartScreenShare={() => console.log('Start screen share')}
+  onStopScreenShare={() => console.log('Stop screen share')}
+  onEndCall={() => console.log('End call')}
+/>
+```
+
+#### ConnectionStatus
+
+```typescript
+import { ConnectionStatus } from "@monobase/ui/comms/components/connection-status"
+
+<ConnectionStatus state="connected" />
+<ConnectionStatus state="connecting" />
+<ConnectionStatus state="failed" />
+```
+
+#### VideoCallUI (Complete Interface)
+
+```typescript
+import { VideoCallUI } from "@monobase/ui/comms/components/video-call-ui"
+
+<VideoCallUI
+  localStream={localMediaStream}
+  remoteStream={remoteMediaStream}
+  connectionState="connected"
+  audioEnabled={true}
+  videoEnabled={true}
+  isScreenSharing={false}
+  onToggleMic={handleToggleMic}
+  onToggleCamera={handleToggleCamera}
+  onStartScreenShare={handleStartScreenShare}
+  onStopScreenShare={handleStopScreenShare}
+  onEndCall={handleEndCall}
+  localLabel="You"
+  remoteLabel="Remote Participant"
+  className="h-screen"
+/>
+```
+
+### Complete Example
+
+```tsx
+import { VideoCallUI } from "@monobase/ui/comms/components/video-call-ui"
+import { useMediaStream } from "@monobase/ui/comms/hooks/use-media-stream"
+import { useVideoCall } from "@monobase/ui/comms/hooks/use-video-call"
+import { VideoPeerConnection } from "@monobase/sdk/lib/peer-connection"
+import { SignalingClient } from "@monobase/sdk/lib/signaling-client"
+import { getIceServers } from "@monobase/sdk/services/comms"
+
+export function VideoCallPage({ roomId, authToken }: {
+  roomId: string
+  authToken: string
+}) {
+  // Step 1: Get local media (UI package)
+  const {
+    localStream,
+    audioEnabled,
+    videoEnabled,
+    isScreenSharing,
+    toggleMic,
+    toggleCamera,
+    startScreenShare,
+    stopScreenShare,
+  } = useMediaStream({ autoStart: true, audio: true, video: true })
+
+  // Step 2: Create signaling client (SDK)
+  const signalingClient = new SignalingClient(
+    'http://localhost:7213',
+    roomId,
+    authToken
+  )
+
+  // Step 3: Get ICE servers and create peer connection (SDK)
+  const [iceServers, setIceServers] = useState([])
+  const [peerConnection, setPeerConnection] = useState(null)
+
+  useEffect(() => {
+    getIceServers().then(servers => {
+      setIceServers(servers)
+      const pc = new VideoPeerConnection(
+        signalingClient,
+        servers,
+        localStream
+      )
+      setPeerConnection(pc)
+    })
+  }, [localStream])
+
+  // Step 4: Orchestrate video call (UI package)
+  const {
+    remoteStream,
+    connectionState,
+    handleEndCall,
+  } = useVideoCall({
+    peerConnection,
+    roomId,
+    onCallEnded: () => {
+      console.log('Call ended')
+    },
+  })
+
+  // Step 5: Render UI (UI package)
+  return (
+    <VideoCallUI
+      localStream={localStream}
+      remoteStream={remoteStream}
+      connectionState={connectionState}
+      audioEnabled={audioEnabled}
+      videoEnabled={videoEnabled}
+      isScreenSharing={isScreenSharing}
+      onToggleMic={toggleMic}
+      onToggleCamera={toggleCamera}
+      onStartScreenShare={startScreenShare}
+      onStopScreenShare={stopScreenShare}
+      onEndCall={handleEndCall}
+      localLabel="You"
+      remoteLabel="Remote User"
+    />
+  )
+}
+```
+
+**Key Principles**:
+1. **UI package** handles browser APIs (MediaDevices) and presentation
+2. **SDK package** handles network layer (REST, WebSocket, WebRTC peer connection)
+3. **Apps** wire them together
+4. Zero cross-dependencies between packages
 
 ## shadcn/ui Configuration
 
