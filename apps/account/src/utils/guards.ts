@@ -18,6 +18,7 @@ export type { Person, CreatePersonData, UpdatePersonData } from '@monobase/sdk/s
  * Guard that requires user to be authenticated
  * Reads auth state from router context - no querying!
  * Redirects to sign-in if not authenticated
+ * Returns user object to route context
  */
 export async function requireAuth({ context, location }: { context: RouterContext; location?: any }) {
   if (!context.auth.user) {
@@ -27,6 +28,10 @@ export async function requireAuth({ context, location }: { context: RouterContex
         redirect: location ? location.pathname + location.search : window.location.pathname + window.location.search,
       },
     })
+  }
+
+  return {
+    user: context.auth.user
   }
 }
 

@@ -8,7 +8,7 @@ import {
 import type { RouterContext } from '@/router'
 import { AuthUIProviderTanstack } from '@daveyplate/better-auth-ui/tanstack'
 import { Toaster } from 'sonner'
-import { getAuthClient } from '@monobase/sdk/react/auth-client'
+import { useAuthClient } from '@monobase/sdk/react/auth-client'
 import '@/styles/globals.css'
 
 export const Route = createRootRouteWithContext<RouterContext>()({
@@ -17,7 +17,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 
 function RootComponent() {
   const router = useRouter()
-  const authClient = getAuthClient()
+  const authClient = useAuthClient()
 
   return (
     <AuthUIProviderTanstack

@@ -82,9 +82,10 @@ export function PersonalInfoForm({
   })
 
   // Update form when defaultValues change (e.g., when data loads)
-  // Only reset if form hasn't been modified by user
+  // In create mode: always accept new defaults (no isDirty check needed)
+  // In edit mode: only update if user hasn't modified the form yet
   useEffect(() => {
-    if (defaultValues && !form.formState.isDirty) {
+    if (defaultValues && (mode === 'create' || !form.formState.isDirty)) {
       form.reset({
         firstName: defaultValues.firstName || '',
         lastName: defaultValues.lastName || '',
@@ -103,7 +104,8 @@ export function PersonalInfoForm({
     defaultValues?.dateOfBirth,
     defaultValues?.gender,
     defaultValues?.avatar,
-    form.formState.isDirty
+    mode,
+    mode === 'edit' ? form.formState.isDirty : null
   ])
 
   const handleAvatarClick = () => {

@@ -1,27 +1,32 @@
 /**
- * Auth client singleton for React hooks
+ * Auth client context for React hooks
  *
- * This module manages a singleton Better-Auth client instance that can be
- * configured at runtime (via ApiProvider) and accessed by hooks.
+ * This module provides a React context for accessing the Better-Auth client
+ * configured by ApiProvider.
  */
+import { createContext, useContext } from 'react'
 import { createAuth, type AuthClient } from '../auth'
 
-let authClient: AuthClient | null = null
+/**
+ * React context for the auth client
+ * Provided by ApiProvider
+ */
+export const AuthClientContext = createContext<AuthClient | null>(null)
 
 /**
  * Initialize the auth client with the given base URL
  * Called by ApiProvider during setup
  */
 export function initAuthClient(baseURL: string): AuthClient {
-  authClient = createAuth({ baseURL })
-  return authClient
+  return createAuth({ baseURL })
 }
 
 /**
- * Get the current auth client instance
- * Throws if not initialized (ApiProvider not mounted)
+ * Hook to access the auth client from context
+ * Must be used within ApiProvider
  */
-export function getAuthClient(): AuthClient {
+export function useAuthClient(): AuthClient {
+  const authClient = useContext(AuthClientContext)
   if (!authClient) {
     throw new Error(
       'Auth client not initialized. Make sure ApiProvider is mounted before using auth hooks.'

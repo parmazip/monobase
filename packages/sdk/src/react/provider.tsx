@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthQueryProvider } from '@daveyplate/better-auth-tanstack'
 import { setApiBaseUrl } from '../api'
-import { initAuthClient } from './auth-client'
+import { initAuthClient, AuthClientContext } from './auth-client'
 import type { ReactNode } from 'react'
 import { useEffect, useRef, useMemo } from 'react'
 
@@ -41,18 +41,17 @@ export function ApiProvider({
   )
 
   // Initialize auth client and API base URL only once
-  const initialized = useRef(false)
-
-  if (!initialized.current) {
+  const authClient = useMemo(() => {
     setApiBaseUrl(apiBaseUrl)
-    initAuthClient(apiBaseUrl)
-    initialized.current = true
-  }
+    return initAuthClient(apiBaseUrl)
+  }, [apiBaseUrl])
 
   return (
     <QueryClientProvider client={queryClient}>
       <AuthQueryProvider>
-        {children}
+        <AuthClientContext.Provider value={authClient}>
+          {children}
+        </AuthClientContext.Provider>
       </AuthQueryProvider>
     </QueryClientProvider>
   )

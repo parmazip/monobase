@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as DashboardRouteImport } from './routes/_dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthAuthViewRouteImport } from './routes/auth/$authView'
@@ -17,6 +18,11 @@ import { Route as DashboardDashboardRouteImport } from './routes/_dashboard/dash
 import { Route as DashboardSettingsSecurityRouteImport } from './routes/_dashboard/settings/security'
 import { Route as DashboardSettingsAccountRouteImport } from './routes/_dashboard/settings/account'
 
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/_dashboard',
   getParentRoute: () => rootRouteImport,
@@ -56,6 +62,7 @@ const DashboardSettingsAccountRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/onboarding': typeof OnboardingRoute
   '/dashboard': typeof DashboardDashboardRoute
   '/notifications': typeof DashboardNotificationsRoute
   '/auth/$authView': typeof AuthAuthViewRoute
@@ -64,6 +71,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/onboarding': typeof OnboardingRoute
   '/dashboard': typeof DashboardDashboardRoute
   '/notifications': typeof DashboardNotificationsRoute
   '/auth/$authView': typeof AuthAuthViewRoute
@@ -74,6 +82,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_dashboard': typeof DashboardRouteWithChildren
+  '/onboarding': typeof OnboardingRoute
   '/_dashboard/dashboard': typeof DashboardDashboardRoute
   '/_dashboard/notifications': typeof DashboardNotificationsRoute
   '/auth/$authView': typeof AuthAuthViewRoute
@@ -84,6 +93,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/onboarding'
     | '/dashboard'
     | '/notifications'
     | '/auth/$authView'
@@ -92,6 +102,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/onboarding'
     | '/dashboard'
     | '/notifications'
     | '/auth/$authView'
@@ -101,6 +112,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_dashboard'
+    | '/onboarding'
     | '/_dashboard/dashboard'
     | '/_dashboard/notifications'
     | '/auth/$authView'
@@ -111,11 +123,19 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRouteWithChildren
+  OnboardingRoute: typeof OnboardingRoute
   AuthAuthViewRoute: typeof AuthAuthViewRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_dashboard': {
       id: '/_dashboard'
       path: ''
@@ -189,6 +209,7 @@ const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRouteWithChildren,
+  OnboardingRoute: OnboardingRoute,
   AuthAuthViewRoute: AuthAuthViewRoute,
 }
 export const routeTree = rootRouteImport
