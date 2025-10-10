@@ -1,7 +1,5 @@
 import { createFileRoute, Outlet } from '@tanstack/react-router'
-import { requireAuth } from '@/services/auth'
-import { requirePerson } from '@/services/person'
-import { composeGuards } from '@/utils/guards'
+import { requireAuth, requirePerson, composeGuards } from '@/utils/guards'
 import { AppSidebar, type NavGroup } from '@/components/app-sidebar'
 import {
   SidebarProvider,
@@ -15,7 +13,7 @@ import {
   Bell,
 } from 'lucide-react'
 import { UserButton } from '@daveyplate/better-auth-ui'
-import { useUnreadNotifications } from '@/hooks/use-notifications'
+import { useUnreadNotifications } from '@monobase/sdk/react/hooks/use-notifications'
 
 export const Route = createFileRoute('/_dashboard')({
   beforeLoad: composeGuards(requireAuth, requirePerson),

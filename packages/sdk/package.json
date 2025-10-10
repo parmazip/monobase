@@ -1,0 +1,44 @@
+{
+  "name": "@monobase/sdk",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    "./auth": "./src/auth.ts",
+    "./api": "./src/api.ts",
+    "./types": "./src/types.ts",
+    "./utils/api": "./src/utils/api.ts",
+    "./services/person": "./src/services/person.ts",
+    "./services/notifications": "./src/services/notifications.ts",
+    "./services/storage": "./src/services/storage.ts",
+    "./react/auth-client": "./src/react/auth-client.ts",
+    "./react/provider": "./src/react/provider.tsx",
+    "./react/query-keys": "./src/react/query-keys.ts",
+    "./react/hooks/use-auth": "./src/react/hooks/use-auth.ts",
+    "./react/hooks/use-person": "./src/react/hooks/use-person.ts",
+    "./react/hooks/use-notifications": "./src/react/hooks/use-notifications.ts",
+    "./react/hooks/use-storage": "./src/react/hooks/use-storage.ts"
+  },
+  "files": ["src"],
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@daveyplate/better-auth-tanstack": "^1.3.6",
+    "@monobase/api-spec": "workspace:*",
+    "@monobase/ui": "workspace:*",
+    "better-auth": "^1.3.7",
+    "zod": "^4.1.12"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": "^5.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "sonner": "^2.0.0"
+  },
+  "devDependencies": {
+    "@monobase/typescript-config": "workspace:*",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.9.2"
+  }
+}

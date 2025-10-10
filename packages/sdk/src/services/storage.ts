@@ -1,4 +1,4 @@
-import { apiPost, apiGet } from '@/services/api'
+import { apiPost, apiGet } from '../api'
 import type { components } from '@monobase/api-spec/types'
 
 // ============================================================================
@@ -64,7 +64,7 @@ export interface FileDownload {
 /**
  * Convert API FileUploadResponse to Frontend FileUpload
  */
-function mapApiFileUploadResponseToFrontend(api: ApiFileUploadResponse): FileUpload {
+export function mapApiFileUploadResponseToFrontend(api: ApiFileUploadResponse): FileUpload {
   return {
     file: api.file,
     uploadUrl: api.uploadUrl,
@@ -76,7 +76,7 @@ function mapApiFileUploadResponseToFrontend(api: ApiFileUploadResponse): FileUpl
 /**
  * Convert API StoredFile to Frontend StoredFile
  */
-function mapApiStoredFileToFrontend(api: ApiStoredFile): StoredFile {
+export function mapApiStoredFileToFrontend(api: ApiStoredFile): StoredFile {
   return {
     id: api.id,
     filename: api.filename,
@@ -93,7 +93,7 @@ function mapApiStoredFileToFrontend(api: ApiStoredFile): StoredFile {
 /**
  * Convert API FileDownloadResponse to Frontend FileDownload
  */
-function mapApiFileDownloadResponseToFrontend(api: ApiFileDownloadResponse): FileDownload {
+export function mapApiFileDownloadResponseToFrontend(api: ApiFileDownloadResponse): FileDownload {
   return {
     downloadUrl: api.downloadUrl,
     expiresAt: new Date(api.expiresAt),

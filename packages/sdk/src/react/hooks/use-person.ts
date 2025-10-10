@@ -9,9 +9,9 @@ import {
   updateMyPreferences,
   type Person,
   type CreatePersonData
-} from '@/services/person'
-import { queryKeys } from '@/services/query'
-import { ApiError } from '@/services/api'
+} from '../../services/person'
+import { queryKeys } from '../query-keys'
+import { ApiError } from '../../api'
 import type { PersonalInfo, OptionalAddress, ContactInfo, Preferences } from '@monobase/ui/person/schemas'
 
 // ============================================================================
@@ -154,5 +154,3 @@ export function useUpdateMyPreferences() {
     },
   })
 }
-
-

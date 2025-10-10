@@ -16,7 +16,7 @@ import {
   Loader2,
   Shield,
 } from 'lucide-react'
-import { useNotifications, useMarkNotificationAsRead, useMarkAllNotificationsAsRead } from '@/hooks/use-notifications'
+import { useNotifications, useMarkNotificationAsRead, useMarkAllNotificationsAsRead } from '@monobase/sdk/react/hooks/use-notifications'
 import { useFormatDate } from '@monobase/ui/hooks/use-format-date'
 import { Button } from "@monobase/ui/components/button"
 import { 
@@ -57,7 +57,7 @@ function NotificationsPage() {
       let color = 'text-gray-500'
 
       switch (notif.type) {
-        case 'appointment-reminder':
+        case 'booking-reminder':
           icon = Calendar
           color = 'text-blue-500'
           break

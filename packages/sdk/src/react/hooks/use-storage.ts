@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import * as storageApi from '@/services/storage'
+import * as storageApi from '../../services/storage'
 
 // ============================================================================
 // Types
@@ -53,7 +53,7 @@ export interface UseFileUploadResult {
  *
  * @example
  * ```tsx
- * import { useFileUpload } from '@/hooks/use-storage'
+ * import { useFileUpload } from '@monobase/sdk/react/hooks/use-storage'
  *
  * function MyComponent() {
  *   const { upload, isUploading, progress } = useFileUpload()
@@ -134,4 +134,3 @@ export function useFileUpload(options?: UseFileUploadOptions): UseFileUploadResu
     reset,
   }
 }
-

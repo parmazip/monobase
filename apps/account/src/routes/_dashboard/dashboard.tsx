@@ -22,7 +22,7 @@ import {
 import { Badge } from "@monobase/ui/components/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@monobase/ui/components/avatar"
 import { Separator } from "@monobase/ui/components/separator"
-import { useListSessions, useListPasskeys, useEmailVerification } from '@/hooks/use-auth'
+import { useListSessions, useListPasskeys, useEmailVerification } from '@monobase/sdk/react/hooks/use-auth'
 import { toast } from 'sonner'
 
 export const Route = createFileRoute('/_dashboard/dashboard')({
@@ -30,11 +30,12 @@ export const Route = createFileRoute('/_dashboard/dashboard')({
 })
 
 function DashboardPage() {
-  const { user } = Route.useRouteContext()
+  const { auth } = Route.useRouteContext()
+  const user = auth.user
 
   const initials = user?.name
     ?.split(' ')
-    .map(n => n[0])
+    .map((n) => n[0])
     .join('')
     .toUpperCase() || 'U'
 

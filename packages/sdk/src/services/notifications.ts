@@ -1,6 +1,6 @@
-import { apiGet, apiPost, ApiError } from '@/services/api'
+import { apiGet, apiPost } from '../api'
 import type { components } from '@monobase/api-spec/types'
-import { PaginatedResponse, mapPaginatedResponse } from '@/utils/api'
+import { PaginatedResponse, mapPaginatedResponse } from '../utils/api'
 
 // ============================================================================
 // API Type Aliases
@@ -65,7 +65,7 @@ export interface ListNotificationsParams {
 /**
  * Convert API Notification response to Frontend Notification
  */
-function mapApiNotificationToFrontend(api: ApiNotification): Notification {
+export function mapApiNotificationToFrontend(api: ApiNotification): Notification {
   return {
     id: api.id,
     recipient: api.recipient,

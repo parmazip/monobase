@@ -1,13 +1,12 @@
 import { RouterProvider } from '@tanstack/react-router'
-import { QueryClientProvider } from '@tanstack/react-query'
-import { AuthQueryProvider } from '@daveyplate/better-auth-tanstack'
+import { ApiProvider } from '@monobase/sdk/react/provider'
 import { createRoot } from 'react-dom/client'
 import { createRouter } from './router'
 import { initializeOneSignal } from '@/services/onesignal'
-import { queryClient } from '@/services/query'
-import { useSession } from '@/hooks/use-auth'
-import { useMyPerson } from '@/hooks/use-person'
+import { useSession } from '@monobase/sdk/react/hooks/use-auth'
+import { useMyPerson } from '@monobase/sdk/react/hooks/use-person'
 import { useOneSignal } from '@/hooks/use-onesignal'
+import { apiBaseUrl } from '@/utils/config'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
@@ -45,10 +44,8 @@ function InnerApp() {
  */
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthQueryProvider>
-        <InnerApp />
-      </AuthQueryProvider>
+    <ApiProvider apiBaseUrl={apiBaseUrl}>
+      <InnerApp />
       <TanStackDevtools
         position="bottom-right"
         plugins={[
@@ -62,7 +59,7 @@ function App() {
           }
         ]}
       />
-    </QueryClientProvider>
+    </ApiProvider>
   )
 }
 

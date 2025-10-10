@@ -1,12 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import * as notificationsApi from '@/services/notifications'
-import { queryKeys } from '@/services/query'
+import * as notificationsApi from '../../services/notifications'
+import { queryKeys } from '../query-keys'
 import { toast } from 'sonner'
 import type {
   ListNotificationsParams,
   Notification,
-} from '@/services/notifications'
-import { formatDate } from '@monobase/ui/lib/format-date'
+} from '../../services/notifications'
 
 // ============================================================================
 // Query Hooks

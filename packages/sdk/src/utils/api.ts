@@ -28,8 +28,7 @@ export interface PaginatedResponse<T> {
  * const apiResponse = await apiGet<PaginatedResponse<ApiNotification>>('/notifications')
  * return mapPaginatedResponse(apiResponse, mapApiNotificationToFrontend)
  * ```
- */
-export function mapPaginatedResponse<TApi, TFrontend>(
+ */export function mapPaginatedResponse<TApi, TFrontend>(
   response: PaginatedResponse<TApi>,
   mapper: (item: TApi) => TFrontend
 ): PaginatedResponse<TFrontend> {
@@ -59,9 +58,7 @@ export function normalizeStringField(value: string | undefined): string | undefi
 export interface SanitizeConfig {
   /** Fields that can be set to null (supports dot notation for nested fields) */
   nullable?: string[]
-}
-
-/**
+}/**
  * Sanitize object for API submission with nullable configuration
  *
  * Rules:
@@ -87,8 +84,7 @@ export interface SanitizeConfig {
  * sanitizeObject(data, {
  *   nullable: ['primaryAddress', 'primaryAddress.street2', 'primaryAddress.coordinates']
  * })
- */
-export function sanitizeObject<T extends Record<string, any>>(
+ */export function sanitizeObject<T extends Record<string, any>>(
   data: T,
   config: SanitizeConfig,
   prefix: string = ''
@@ -117,9 +113,7 @@ export function sanitizeObject<T extends Record<string, any>>(
       }
       // Non-nullable + empty → omit
       continue
-    }
-
-    // Process value based on type
+    }    // Process value based on type
     let processedValue = value
 
     if (typeof value === 'string') {

@@ -10,8 +10,8 @@ import {
   useUpdateMyContactInfo,
   useUpdateMyAddress,
   useUpdateMyPreferences
-} from '@/hooks/use-person'
-import { useFileUpload } from '@/hooks/use-storage'
+} from '@monobase/sdk/react/hooks/use-person'
+import { useFileUpload } from '@monobase/sdk/react/hooks/use-storage'
 
 export const Route = createFileRoute('/_dashboard/settings/account')({
   component: AccountSettingsPage,
@@ -63,7 +63,7 @@ function AccountSettingsPage() {
         </CardHeader>
         <CardContent>
           <PersonalInfoForm
-            defaultValues={person}
+            defaultValues={person || undefined}
             onSubmit={async (data) => {
               await updatePersonalInfo.mutateAsync(data)
             }}
@@ -111,7 +111,7 @@ function AccountSettingsPage() {
         </CardHeader>
         <CardContent>
           <PreferencesForm
-            defaultValues={person}
+            defaultValues={person || undefined}
             onSubmit={async (data) => {
               await updatePreferences.mutateAsync(data)
             }}

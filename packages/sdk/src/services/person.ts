@@ -1,9 +1,7 @@
-import { apiGet, apiPost, apiPatch, ApiError } from '@/services/api'
-import { sanitizeObject } from '@/utils/api'
+import { apiGet, apiPost, apiPatch, ApiError } from '../api'
+import { sanitizeObject } from '../utils/api'
 import type { PersonalInfo, OptionalAddress, ContactInfo, Preferences } from '@monobase/ui/person/schemas'
 import { formatDate } from '@monobase/ui/lib/format-date'
-import { redirect } from '@tanstack/react-router'
-import type { RouterContext } from '@/router'
 import type { components } from '@monobase/api-spec/types'
 
 // ============================================================================
@@ -12,7 +10,6 @@ import type { components } from '@monobase/api-spec/types'
 
 type ApiPerson = components["schemas"]["Person"]
 type ApiPersonCreate = components["schemas"]["PersonCreateRequest"]
-type ApiPersonUpdate = components["schemas"]["PersonUpdateRequest"]
 
 // ============================================================================
 // Frontend Types
@@ -110,7 +107,7 @@ export interface UpdatePersonData {
 /**
  * Convert API Person response to Frontend Person
  */
-function mapApiPersonToFrontend(api: ApiPerson): Person {
+export function mapApiPersonToFrontend(api: ApiPerson): Person {
   return {
     id: api.id,
     version: api.version,
@@ -130,39 +127,6 @@ function mapApiPersonToFrontend(api: ApiPerson): Person {
     primaryAddress: api.primaryAddress,
     languagesSpoken: api.languagesSpoken,
     timezone: api.timezone,
-  }
-}
-
-
-
-// ============================================================================
-// Route Guards
-// ============================================================================
-
-/**
- * Guard that requires user to have a complete person profile
- * Reads auth state from router context - no querying!
- * Redirects to onboarding if person profile is incomplete
- */
-export async function requirePerson({ context }: { context: RouterContext }) {
-  if (!context.auth.person) {
-    throw redirect({
-      to: '/onboarding' as any,
-    })
-  }
-  return { person: context.auth.person }
-}
-
-/**
- * Guard that requires user to NOT have a person profile
- * Reads auth state from router context - no querying!
- * Used for onboarding flow - redirects to dashboard if person profile already exists
- */
-export async function requireNoPerson({ context }: { context: RouterContext }) {
-  if (context.auth.person) {
-    throw redirect({
-      to: '/dashboard',
-    })
   }
 }
 

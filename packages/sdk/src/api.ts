@@ -1,5 +1,3 @@
-import { apiBaseUrl } from '@/utils/config'
-
 /**
  * API Error class for handling API errors consistently
  */
@@ -14,6 +12,23 @@ export class ApiError extends Error {
   }
 }
 
+// Global API base URL - set by ApiProvider or manually
+let globalApiBaseUrl = 'http://localhost:7213'
+
+/**
+ * Set the global API base URL
+ */
+export function setApiBaseUrl(url: string) {
+  globalApiBaseUrl = url
+}
+
+/**
+ * Get the current API base URL
+ */
+export function getApiBaseUrl(): string {
+  return globalApiBaseUrl
+}
+
 /**
  * Simple fetch wrapper with authentication
  */
@@ -22,7 +37,7 @@ async function api<T = any>(
   options?: RequestInit
 ): Promise<T> {
   // Make request with explicit credentials handling
-  const response = await fetch(`${apiBaseUrl}${url}`, {
+  const response = await fetch(`${globalApiBaseUrl}${url}`, {
     ...options,
     credentials: 'include',  // This sends cookies which is managed by better-auth/client
     headers: {
@@ -65,12 +80,12 @@ async function api<T = any>(
  */
 export const apiGet = <T = any>(url: string, params?: Record<string, any>) => {
   // Filter out undefined values to prevent URLSearchParams converting them to "undefined" strings
-  const cleanParams = params 
+  const cleanParams = params
     ? Object.fromEntries(
         Object.entries(params).filter(([_, value]) => value !== undefined)
       )
     : undefined
-  
+
   const queryString = cleanParams ? `?${new URLSearchParams(cleanParams).toString()}` : ''
   return api<T>(`${url}${queryString}`, { method: 'GET' })
 }

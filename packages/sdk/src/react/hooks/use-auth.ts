@@ -10,13 +10,12 @@
  * @see https://github.com/daveyplate/better-auth-tanstack
  */
 import { createAuthHooks } from '@daveyplate/better-auth-tanstack'
-import { authClient } from '@/services/auth'
-import type { RouterContext } from '@/router'
+import { getAuthClient } from '../auth-client'
 
 // Create auth hooks with TanStack Query integration
-const authHooks = createAuthHooks(authClient)
+const authHooks = createAuthHooks(getAuthClient())
 
-// Export other hooks directly from authHooks
+// Export hooks directly from authHooks
 export const {
   useSession,
   usePrefetchSession,
@@ -40,7 +39,9 @@ export const {
 // Custom email verification hook
 export function useEmailVerification() {
   return useAuthMutation({
+    queryKey: ['email-verification'],
     mutationFn: async ({ email, callbackURL }: { email: string; callbackURL?: string }) => {
+      const authClient = getAuthClient()
       return authClient.sendVerificationEmail({
         email,
         callbackURL: callbackURL || window.location.origin + '/dashboard',

@@ -7,8 +7,7 @@
     "dev": "bun src/index.ts",
     "dev:deps:up": "docker compose -f docker-compose.deps.yml up -d --wait",
     "dev:deps:down": "docker compose -f docker-compose.deps.yml down -v",
-    "build": "bun build src/index.ts --outdir dist --target bun",
-    "start": "bun src/index.ts",
+    "build": "bun build --compile --minify --sourcemap --external ajv --external ajv-draft-04 src/index.ts --outfile dist/server",
     "generate": "bun scripts/generate.ts",
     "db:generate": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio",
@@ -45,7 +44,7 @@
     "postgres": "^3.4.7",
     "postmark": "^4.0.5",
     "uuid": "^11.1.0",
-    "zod": "^3.24.0"
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@faker-js/faker": "^9.0.0",

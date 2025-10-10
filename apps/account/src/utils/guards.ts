@@ -1,13 +1,83 @@
 /**
- * Guard Composition Utility
- * 
- * Provides helpers for composing multiple route guard functions together.
+ * Route Guards and Guard Composition Utilities
+ *
+ * Provides both individual route guard functions and helpers for composing
+ * multiple route guard functions together.
  */
+import { redirect } from '@tanstack/react-router'
+import type { RouterContext } from '@/router'
+
+// Re-export types for convenience
+export type { Person, CreatePersonData, UpdatePersonData } from '@monobase/sdk/services/person'
+
+// ============================================================================
+// Route Guard Functions
+// ============================================================================
+
+/**
+ * Guard that requires user to be authenticated
+ * Reads auth state from router context - no querying!
+ * Redirects to sign-in if not authenticated
+ */
+export async function requireAuth({ context, location }: { context: RouterContext; location?: any }) {
+  if (!context.auth.user) {
+    throw redirect({
+      to: '/auth/sign-in',
+      search: {
+        redirect: location ? location.pathname + location.search : window.location.pathname + window.location.search,
+      },
+    })
+  }
+}
+
+/**
+ * Guard that requires user to be a guest (not authenticated)
+ * Reads auth state from router context - no querying!
+ * Redirects to dashboard if already authenticated
+ */
+export async function requireGuest({ context }: { context: RouterContext }) {
+  if (context.auth.user) {
+    throw redirect({
+      to: '/dashboard',
+    })
+  }
+}
+
+/**
+ * Guard that requires user to have a complete person profile
+ * Reads auth state from router context - no querying!
+ * Redirects to onboarding if person profile is incomplete
+ */
+export async function requirePerson({ context }: { context: RouterContext }) {
+  if (!context.auth.person) {
+    throw redirect({
+      to: '/onboarding' as any,
+    })
+  }
+  return { person: context.auth.person }
+}
+
+/**
+ * Guard that requires user to NOT have a person profile
+ * Reads auth state from router context - no querying!
+ * Used for onboarding flow - redirects to dashboard if person profile already exists
+ */
+export async function requireNoPerson({ context }: { context: RouterContext }) {
+  if (context.auth.person) {
+    throw redirect({
+      to: '/dashboard',
+    })
+  }
+}
+
+// ============================================================================
+// Guard Composition Utility
+// ============================================================================
 
 /**
  * Compose multiple guard functions into a single beforeLoad handler
  * Guards are executed in order, and their return values are merged
- * 
+ *
  * @example
  * beforeLoad: composeGuards(requireAuth, requirePerson)
  */

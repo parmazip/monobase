@@ -2,7 +2,7 @@
 import { createRouter as createTanStackRouter } from '@tanstack/react-router'
 import { routeTree } from './routeTree.gen.ts'
 import { NotFound } from '@/components/not-found'
-import type { Person } from '@/services/person'
+import type { Person } from '@/utils/guards'
 
 // ============================================================================
 // Router Context Type
