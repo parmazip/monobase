@@ -17,7 +17,7 @@ import {
   Shield,
 } from 'lucide-react'
 import { useNotifications, useMarkNotificationAsRead, useMarkAllNotificationsAsRead } from '@/hooks/use-notifications'
-import { formatNotificationTime, isNotificationUnread } from '@/api/notifications'
+import { useFormatDate } from '@monobase/ui/hooks/use-format-date'
 import { Button } from "@monobase/ui/components/button"
 import { 
   Card, 
@@ -45,6 +45,7 @@ function NotificationsPage() {
   const { data: notificationsData, isLoading, error } = useNotifications({ limit: 100 })
   const markAsReadMutation = useMarkNotificationAsRead()
   const markAllAsReadMutation = useMarkAllNotificationsAsRead()
+  const { formatRelativeDate } = useFormatDate()
 
   const notifications = notificationsData?.data || []
 
@@ -80,7 +81,7 @@ function NotificationsPage() {
         title: notif.title,
         message: notif.message,
         timestamp: notif.createdAt,
-        read: !isNotificationUnread(notif),
+        read: notif.status !== 'unread',
         priority: 'medium' as const,
         actionUrl: notif.relatedEntityType ? `/${notif.relatedEntityType}` : '/',
         icon,
@@ -216,7 +217,7 @@ function NotificationsPage() {
                                 {notification.message}
                               </p>
                               <p className="text-sm text-muted-foreground">
-                                {formatNotificationTime(notification.timestamp)}
+                                {formatRelativeDate(notification.timestamp, { style: 'short' })}
                               </p>
                             </div>
 
@@ -272,7 +273,7 @@ function NotificationsPage() {
                               {notification.message}
                             </p>
                             <p className="text-sm text-muted-foreground">
-                              {formatNotificationTime(notification.timestamp)}
+                              {formatRelativeDate(notification.timestamp, { style: 'short' })}
                             </p>
                           </div>
 

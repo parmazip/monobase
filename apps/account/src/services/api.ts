@@ -64,7 +64,14 @@ async function api<T = any>(
  * Convenience methods for common HTTP methods
  */
 export const apiGet = <T = any>(url: string, params?: Record<string, any>) => {
-  const queryString = params ? `?${new URLSearchParams(params).toString()}` : ''
+  // Filter out undefined values to prevent URLSearchParams converting them to "undefined" strings
+  const cleanParams = params 
+    ? Object.fromEntries(
+        Object.entries(params).filter(([_, value]) => value !== undefined)
+      )
+    : undefined
+  
+  const queryString = cleanParams ? `?${new URLSearchParams(cleanParams).toString()}` : ''
   return api<T>(`${url}${queryString}`, { method: 'GET' })
 }
 
@@ -73,9 +80,6 @@ export const apiPost = <T = any>(url: string, data?: any) =>
 
 export const apiPatch = <T = any>(url: string, data?: any) =>
   api<T>(url, { method: 'PATCH', body: data ? JSON.stringify(data) : undefined })
-
-export const apiPut = <T = any>(url: string, data?: any) =>
-  api<T>(url, { method: 'PUT', body: data ? JSON.stringify(data) : undefined })
 
 export const apiDelete = <T = any>(url: string) =>
   api<T>(url, { method: 'DELETE' })

@@ -45,7 +45,7 @@ interface PersonalInfoFormProps {
   /**
    * Member since date for avatar section
    */
-  memberSince?: string
+  memberSince?: Date | string | number
 }
 
 export function PersonalInfoForm({
@@ -248,7 +248,7 @@ export function PersonalInfoForm({
                 </div>
                 {memberSince && (
                   <p className="text-sm text-muted-foreground">
-                    Member since {format(new Date(memberSince), 'MMMM yyyy')}
+                    Member since {formatDate(memberSince)}
                   </p>
                 )}
               </div>

@@ -1,11 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import * as notificationsApi from '@/api/notifications'
-import { queryKeys } from '@/api/query'
+import * as notificationsApi from '@/services/notifications'
+import { queryKeys } from '@/services/query'
 import { toast } from 'sonner'
 import type {
   ListNotificationsParams,
   Notification,
-} from '@/api/notifications'
+} from '@/services/notifications'
 import { formatDate } from '@monobase/ui/lib/format-date'
 
 // ============================================================================
@@ -23,21 +23,6 @@ export function useNotifications(params?: ListNotificationsParams) {
     queryKey: queryKeys.notificationsList(params),
     queryFn: () => notificationsApi.listNotifications(params),
     staleTime: 1 * 60 * 1000, // 1 minute - notifications should be fresh
-  })
-}
-
-/**
- * Get single notification by ID
- *
- * @param notificationId - Notification UUID
- * @returns Query result with notification data
- */
-export function useNotification(notificationId: string) {
-  return useQuery({
-    queryKey: queryKeys.notification(notificationId),
-    queryFn: () => notificationsApi.getNotification(notificationId),
-    enabled: !!notificationId,
-    staleTime: 1 * 60 * 1000, // 1 minute
   })
 }
 
@@ -86,7 +71,7 @@ export function useMarkNotificationAsRead() {
           queryKeys.notification(notificationId),
           {
             ...previousNotification,
-            readAt: formatDate(new Date(), { format: 'iso' }),
+            readAt: new Date(),
             status: 'read',
           }
         )

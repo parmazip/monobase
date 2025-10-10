@@ -1,3 +1,48 @@
+// ============================================================================
+// Paginated Response Types
+// ============================================================================
+
+/**
+ * Generic interface for paginated API responses
+ * Used for list endpoints that return data with pagination metadata
+ */
+export interface PaginatedResponse<T> {
+  data: T[]
+  pagination: {
+    offset: number
+    limit: number
+    totalCount: number
+  }
+}
+
+/**
+ * Map a paginated API response to frontend types
+ * Applies a mapper function to each item in the data array
+ * 
+ * @param response - Paginated API response
+ * @param mapper - Function to transform individual items from API to Frontend type
+ * @returns Paginated response with transformed data
+ * 
+ * @example
+ * ```typescript
+ * const apiResponse = await apiGet<PaginatedResponse<ApiNotification>>('/notifications')
+ * return mapPaginatedResponse(apiResponse, mapApiNotificationToFrontend)
+ * ```
+ */
+export function mapPaginatedResponse<TApi, TFrontend>(
+  response: PaginatedResponse<TApi>,
+  mapper: (item: TApi) => TFrontend
+): PaginatedResponse<TFrontend> {
+  return {
+    data: response.data.map(mapper),
+    pagination: response.pagination,
+  }
+}
+
+// ============================================================================
+// String Normalization
+// ============================================================================
+
 /**
  * Normalize string field - trim and convert empty strings to undefined
  * Used for cleaning form data before API submission
@@ -109,28 +154,4 @@ export function sanitizeObject<T extends Record<string, any>>(
   }
 
   return result
-}
-
-/**
- * Sanitize object that may be null at the top level
- * Returns null if data is null
- *
- * @param data - Object to sanitize, or null to clear
- * @param config - Configuration specifying which fields are nullable
- * @returns Sanitized object or null
- *
- * @example
- * // Clear entire object
- * sanitizeOptionalObject(null, config)  // Returns null
- *
- * @example
- * // Update object
- * sanitizeOptionalObject(data, config)  // Returns sanitized object
- */
-export function sanitizeOptionalObject<T extends Record<string, any>>(
-  data: T | null,
-  config: SanitizeConfig
-): Partial<T> | null {
-  if (data === null) return null
-  return sanitizeObject(data, config)
 }

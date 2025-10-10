@@ -232,7 +232,7 @@ bunx shadcn@latest add [component-name]
 
 **Loading States**:
 ```typescript
-const { data, isLoading, error } = usePersonProfile()
+const { data, isLoading, error } = useMyPerson()
 
 if (isLoading) return <Skeleton />
 if (error) return <ErrorAlert error={error} />

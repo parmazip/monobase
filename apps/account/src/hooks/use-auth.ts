@@ -11,6 +11,7 @@
  */
 import { createAuthHooks } from '@daveyplate/better-auth-tanstack'
 import { authClient } from '@/services/auth'
+import type { RouterContext } from '@/router'
 
 // Create auth hooks with TanStack Query integration
 const authHooks = createAuthHooks(authClient)

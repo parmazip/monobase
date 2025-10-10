@@ -11,10 +11,10 @@ import {
   ArrowRight,
   Lock
 } from "lucide-react"
-import { requireGuest } from '@/services/guards'
+import { requireGuest } from '@/services/auth'
 
 export const Route = createFileRoute('/')({
-  beforeLoad: requireGuest(),
+  beforeLoad: requireGuest,
   component: HomePage,
 })
 

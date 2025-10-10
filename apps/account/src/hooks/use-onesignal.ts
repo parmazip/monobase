@@ -3,12 +3,12 @@ import { useSession } from '@/hooks/use-auth'
 import { setOneSignalUserId, clearOneSignalUserId } from '@/services/onesignal'
 
 /**
- * OneSignal User ID Sync Component
+ * OneSignal User ID Sync Hook
  * 
  * Synchronizes the authenticated user's ID with OneSignal for push notifications.
- * Must be placed inside QueryClientProvider and AuthQueryProvider to use useSession().
+ * Call this hook inside a component that has access to QueryClientProvider and AuthQueryProvider.
  */
-export function OneSignalSync() {
+export function useOneSignal() {
   const { data: session } = useSession()
 
   useEffect(() => {
@@ -20,7 +20,4 @@ export function OneSignalSync() {
       clearOneSignalUserId()
     }
   }, [session?.user?.id])
-
-  // This component doesn't render anything
-  return null
 }

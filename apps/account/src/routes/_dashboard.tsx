@@ -1,5 +1,7 @@
 import { createFileRoute, Outlet } from '@tanstack/react-router'
-import { requireAuthWithProfile } from '@/services/guards'
+import { requireAuth } from '@/services/auth'
+import { requirePerson } from '@/services/person'
+import { composeGuards } from '@/utils/guards'
 import { AppSidebar, type NavGroup } from '@/components/app-sidebar'
 import {
   SidebarProvider,
@@ -16,7 +18,7 @@ import { UserButton } from '@daveyplate/better-auth-ui'
 import { useUnreadNotifications } from '@/hooks/use-notifications'
 
 export const Route = createFileRoute('/_dashboard')({
-  beforeLoad: requireAuthWithProfile(),
+  beforeLoad: composeGuards(requireAuth, requirePerson),
   component: DashboardLayout,
 })
 

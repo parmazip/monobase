@@ -1,56 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useMemo } from 'react'
 import { toast } from 'sonner'
 import {
   getMyProfile,
-  createPerson,
-  updatePersonalInfo,
-  updateContactInfo,
-  updateAddress,
-  updatePreferences,
-  type PersonResponse,
-  type PersonCreateRequest
-} from '@/api/person'
-import { queryKeys } from '@/api/query'
-import { ApiError } from '@/api/client'
-import { detectTimezone } from '@monobase/ui/lib/detect-timezone'
+  createMyPerson,
+  updateMyPersonalInfo,
+  updateMyContactInfo,
+  updateMyAddress,
+  updateMyPreferences,
+  type Person,
+  type CreatePersonData
+} from '@/services/person'
+import { queryKeys } from '@/services/query'
+import { ApiError } from '@/services/api'
 import type { PersonalInfo, OptionalAddress, ContactInfo, Preferences } from '@monobase/ui/person/schemas'
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * Transform API Person data to frontend form format
- */
-function getPersonFormData(person: PersonResponse) {
-  return {
-    personalInfo: {
-      firstName: person.firstName || '',
-      lastName: person.lastName || '',
-      middleName: person.middleName || '',
-      dateOfBirth: person.dateOfBirth ? new Date(person.dateOfBirth) : new Date(),
-      gender: person.gender as PersonalInfo['gender'] || undefined,
-      avatar: person.avatar,
-    },
-    contactInfo: {
-      email: (person as any).contactInfo?.email || '',
-      phone: (person as any).contactInfo?.phone || '',
-    },
-    address: {
-      street1: (person as any).primaryAddress?.street1 || '',
-      street2: (person as any).primaryAddress?.street2 || '',
-      city: (person as any).primaryAddress?.city || '',
-      state: (person as any).primaryAddress?.state || '',
-      postalCode: (person as any).primaryAddress?.postalCode || '',
-      country: (person as any).primaryAddress?.country || '',
-    },
-    preferences: {
-      languagesSpoken: person.languagesSpoken || ['en'],
-      timezone: person.timezone || detectTimezone(),
-    }
-  }
-}
 
 // ============================================================================
 // Hooks
@@ -59,7 +21,7 @@ function getPersonFormData(person: PersonResponse) {
 /**
  * Hook to get the current person's person profile
  */
-export function usePersonProfile() {
+export function useMyPerson() {
   return useQuery({
     queryKey: queryKeys.personProfile('me'),
     queryFn: getMyProfile,
@@ -74,16 +36,16 @@ export function usePersonProfile() {
 }
 
 /**
- * Hook to create a new person profile
+ * Hook to create a new person profile for the current user
  */
-export function useCreatePerson(options?: {
-  onSuccess?: (data: PersonResponse) => void
+export function useCreateMyPerson(options?: {
+  onSuccess?: (data: Person) => void
   onError?: (error: Error) => void
 }) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: createPerson,
+    mutationFn: createMyPerson,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.person() })
       toast.success('Profile created successfully!')
@@ -102,13 +64,13 @@ export function useCreatePerson(options?: {
 }
 
 /**
- * Hook to update person's personal information
+ * Hook to update the current user's personal information
  */
-export function useUpdatePersonalInfo(personId: string) {
+export function useUpdateMyPersonalInfo() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (data: PersonalInfo) => updatePersonalInfo(personId, data),
+    mutationFn: updateMyPersonalInfo,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.personProfile('me') })
       toast.success('Personal information updated successfully!')
@@ -125,13 +87,13 @@ export function useUpdatePersonalInfo(personId: string) {
 }
 
 /**
- * Hook to update person's contact information
+ * Hook to update the current user's contact information
  */
-export function useUpdateContactInfo(personId: string) {
+export function useUpdateMyContactInfo() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (data: ContactInfo) => updateContactInfo(personId, data),
+    mutationFn: updateMyContactInfo,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.personProfile('me') })
       toast.success('Contact information updated successfully!')
@@ -148,13 +110,13 @@ export function useUpdateContactInfo(personId: string) {
 }
 
 /**
- * Hook to update person's address
+ * Hook to update the current user's address
  */
-export function useUpdateAddress(personId: string) {
+export function useUpdateMyAddress() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (data: OptionalAddress) => updateAddress(personId, data),
+    mutationFn: updateMyAddress,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.personProfile('me') })
       toast.success('Address updated successfully!')
@@ -171,13 +133,13 @@ export function useUpdateAddress(personId: string) {
 }
 
 /**
- * Hook to update person's preferences
+ * Hook to update the current user's preferences
  */
-export function useUpdatePreferences(personId: string) {
+export function useUpdateMyPreferences() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (data: Preferences) => updatePreferences(personId, data),
+    mutationFn: updateMyPreferences,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.personProfile('me') })
       toast.success('Preferences updated successfully!')
@@ -193,21 +155,4 @@ export function useUpdatePreferences(personId: string) {
   })
 }
 
-/**
- * Hook to get person form data ready for components
- */
-export function usePersonFormData() {
-  const { data: person, ...rest } = usePersonProfile()
 
-  // Memoize the form data to prevent infinite loops
-  // Recalculate when person object changes (including nested fields)
-  const formData = useMemo(() => {
-    return person ? getPersonFormData(person) : null
-  }, [person])
-
-  return {
-    data: formData,
-    person, // Also expose raw person data if needed
-    ...rest
-  }
-}

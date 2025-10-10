@@ -28,6 +28,7 @@
     "@fontsource/montserrat": "^5.2.8",
     "@fontsource/open-sans": "^5.2.7",
     "@hookform/resolvers": "^3.9.0",
+    "@monobase/api-spec": "workspace:*",
     "@monobase/ui": "workspace:*",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-avatar": "^1.1.10",

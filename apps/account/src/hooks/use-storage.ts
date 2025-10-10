@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import * as storageApi from '@/api/storage'
+import * as storageApi from '@/services/storage'
 
 // ============================================================================
 // Types
