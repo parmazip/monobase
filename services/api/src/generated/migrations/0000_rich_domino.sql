@@ -3,6 +3,15 @@ CREATE TYPE "public"."audit_category" AS ENUM('hipaa', 'security', 'privacy', 'a
 CREATE TYPE "public"."audit_event_type" AS ENUM('authentication', 'data-access', 'data-modification', 'system-config', 'security', 'compliance');--> statement-breakpoint
 CREATE TYPE "public"."audit_outcome" AS ENUM('success', 'failure', 'partial', 'denied');--> statement-breakpoint
 CREATE TYPE "public"."audit_retention_status" AS ENUM('active', 'archived', 'pending-purge');--> statement-breakpoint
+CREATE TYPE "public"."capture_method" AS ENUM('automatic', 'manual');--> statement-breakpoint
+CREATE TYPE "public"."invoice_status" AS ENUM('draft', 'open', 'paid', 'void', 'uncollectible');--> statement-breakpoint
+CREATE TYPE "public"."payment_status" AS ENUM('pending', 'requires_capture', 'processing', 'succeeded', 'failed', 'canceled');--> statement-breakpoint
+CREATE TYPE "public"."booking_event_status" AS ENUM('draft', 'active', 'paused', 'archived');--> statement-breakpoint
+CREATE TYPE "public"."booking_status" AS ENUM('pending', 'confirmed', 'rejected', 'cancelled', 'completed', 'no_show_client', 'no_show_provider');--> statement-breakpoint
+CREATE TYPE "public"."consultation_mode" AS ENUM('video', 'phone', 'in-person');--> statement-breakpoint
+CREATE TYPE "public"."location_type" AS ENUM('video', 'phone', 'in-person');--> statement-breakpoint
+CREATE TYPE "public"."recurrence_type" AS ENUM('daily', 'weekly', 'monthly');--> statement-breakpoint
+CREATE TYPE "public"."slot_status" AS ENUM('available', 'booked', 'blocked');--> statement-breakpoint
 CREATE TYPE "public"."chat_room_status" AS ENUM('active', 'archived');--> statement-breakpoint
 CREATE TYPE "public"."message_type" AS ENUM('text', 'system', 'video_call');--> statement-breakpoint
 CREATE TYPE "public"."participant_type" AS ENUM('patient', 'provider');--> statement-breakpoint
@@ -13,7 +22,7 @@ CREATE TYPE "public"."template_status" AS ENUM('draft', 'active', 'archived');--
 CREATE TYPE "public"."variable_type" AS ENUM('string', 'number', 'boolean', 'date', 'datetime', 'url', 'email', 'array');--> statement-breakpoint
 CREATE TYPE "public"."notification_channel" AS ENUM('email', 'push', 'in-app');--> statement-breakpoint
 CREATE TYPE "public"."notification_status" AS ENUM('queued', 'sent', 'delivered', 'read', 'failed', 'expired');--> statement-breakpoint
-CREATE TYPE "public"."notification_type" AS ENUM('security', 'system');--> statement-breakpoint
+CREATE TYPE "public"."notification_type" AS ENUM('billing', 'security', 'system', 'booking.created', 'booking.confirmed', 'booking.rejected', 'booking.cancelled', 'booking.no-show-client', 'booking.no-show-provider', 'comms.video-call-started', 'comms.video-call-joined', 'comms.video-call-left', 'comms.video-call-ended', 'comms.chat-message');--> statement-breakpoint
 CREATE TYPE "public"."gender" AS ENUM('male', 'female', 'non-binary', 'other', 'prefer-not-to-say');--> statement-breakpoint
 CREATE TYPE "public"."file_status" AS ENUM('uploading', 'processing', 'available', 'failed');--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "account" (
@@ -143,6 +152,173 @@ CREATE TABLE IF NOT EXISTS "audit_log_entry" (
 	"archived_at" timestamp,
 	"archived_by" text,
 	"purge_after" timestamp
+);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "invoice_line_item" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp,
+	"version" integer DEFAULT 1 NOT NULL,
+	"created_by" uuid,
+	"updated_by" uuid,
+	"deleted_by" uuid,
+	"invoice" uuid NOT NULL,
+	"description" varchar(500) NOT NULL,
+	"quantity" integer DEFAULT 1 NOT NULL,
+	"unit_price" integer NOT NULL,
+	"amount" integer NOT NULL,
+	"metadata" jsonb
+);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "invoice" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp,
+	"version" integer DEFAULT 1 NOT NULL,
+	"created_by" uuid,
+	"updated_by" uuid,
+	"deleted_by" uuid,
+	"invoice_number" varchar(50) NOT NULL,
+	"customer" uuid NOT NULL,
+	"merchant" uuid NOT NULL,
+	"merchant_account" uuid,
+	"context" varchar(255),
+	"status" "invoice_status" DEFAULT 'draft' NOT NULL,
+	"subtotal" integer NOT NULL,
+	"tax" integer,
+	"total" integer NOT NULL,
+	"currency" varchar(3) DEFAULT 'USD' NOT NULL,
+	"payment_capture_method" "capture_method" DEFAULT 'automatic' NOT NULL,
+	"payment_due_at" timestamp,
+	"payment_status" "payment_status",
+	"paid_at" timestamp,
+	"paid_by" uuid,
+	"voided_at" timestamp,
+	"voided_by" uuid,
+	"void_threshold_minutes" integer,
+	"authorized_at" timestamp,
+	"authorized_by" uuid,
+	"metadata" jsonb,
+	CONSTRAINT "invoices_invoice_number_unique" UNIQUE("invoice_number"),
+	CONSTRAINT "invoices_context_unique" UNIQUE("context")
+);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "merchant_account" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp,
+	"version" integer DEFAULT 1 NOT NULL,
+	"created_by" uuid,
+	"updated_by" uuid,
+	"deleted_by" uuid,
+	"person" uuid NOT NULL,
+	"active" boolean DEFAULT true NOT NULL,
+	"metadata" jsonb NOT NULL,
+	CONSTRAINT "merchant_accounts_person_unique" UNIQUE("person")
+);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "booking_event" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp,
+	"version" integer DEFAULT 1 NOT NULL,
+	"created_by" uuid,
+	"updated_by" uuid,
+	"deleted_by" uuid,
+	"owner_id" uuid NOT NULL,
+	"context_id" uuid,
+	"title" text NOT NULL,
+	"description" text,
+	"timezone" text DEFAULT 'America/New_York' NOT NULL,
+	"location_types" jsonb DEFAULT '["video","phone","in-person"]'::jsonb NOT NULL,
+	"max_booking_days" integer DEFAULT 30 NOT NULL,
+	"min_booking_minutes" integer DEFAULT 1440 NOT NULL,
+	"form_config" jsonb,
+	"billing_config" jsonb,
+	"status" "booking_event_status" DEFAULT 'active' NOT NULL,
+	"effective_from" timestamp DEFAULT now() NOT NULL,
+	"effective_to" timestamp,
+	"daily_configs" jsonb NOT NULL,
+	CONSTRAINT "booking_events_max_booking_days_check" CHECK ("booking_event"."max_booking_days" >= 0 AND "booking_event"."max_booking_days" <= 365),
+	CONSTRAINT "booking_events_min_booking_minutes_check" CHECK ("booking_event"."min_booking_minutes" >= 0 AND "booking_event"."min_booking_minutes" <= 4320)
+);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "booking" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp,
+	"version" integer DEFAULT 1 NOT NULL,
+	"created_by" uuid,
+	"updated_by" uuid,
+	"deleted_by" uuid,
+	"client_id" uuid NOT NULL,
+	"provider_id" uuid NOT NULL,
+	"slot_id" uuid NOT NULL,
+	"location_type" "location_type" NOT NULL,
+	"reason" text,
+	"status" "booking_status" DEFAULT 'pending' NOT NULL,
+	"booked_at" timestamp DEFAULT now() NOT NULL,
+	"confirmation_timestamp" timestamp,
+	"scheduled_at" timestamp NOT NULL,
+	"duration_minutes" integer NOT NULL,
+	"cancellation_reason" text,
+	"cancelled_by" text,
+	"cancelled_at" timestamp,
+	"no_show_marked_by" text,
+	"no_show_marked_at" timestamp,
+	"form_responses" jsonb,
+	"invoice" uuid,
+	CONSTRAINT "bookings_reason_check" CHECK (LENGTH("booking"."reason") <= 500),
+	CONSTRAINT "bookings_duration_minutes_check" CHECK ("booking"."duration_minutes" >= 15 AND "booking"."duration_minutes" <= 480)
+);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "schedule_exception" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp,
+	"version" integer DEFAULT 1 NOT NULL,
+	"created_by" uuid,
+	"updated_by" uuid,
+	"deleted_by" uuid,
+	"event_id" uuid NOT NULL,
+	"owner_id" uuid NOT NULL,
+	"context_id" uuid,
+	"timezone" text DEFAULT 'America/New_York' NOT NULL,
+	"start_datetime" timestamp NOT NULL,
+	"end_datetime" timestamp NOT NULL,
+	"reason" text NOT NULL,
+	"recurring" boolean DEFAULT false NOT NULL,
+	"recurrence_pattern" jsonb,
+	CONSTRAINT "schedule_exceptions_reason_check" CHECK (LENGTH("schedule_exception"."reason") <= 500),
+	CONSTRAINT "schedule_exceptions_date_range_check" CHECK ("schedule_exception"."end_datetime" > "schedule_exception"."start_datetime")
+);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "time_slot" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp,
+	"version" integer DEFAULT 1 NOT NULL,
+	"created_by" uuid,
+	"updated_by" uuid,
+	"deleted_by" uuid,
+	"owner_id" uuid NOT NULL,
+	"event_id" uuid NOT NULL,
+	"context_id" uuid,
+	"date" date NOT NULL,
+	"start_time" timestamp NOT NULL,
+	"end_time" timestamp NOT NULL,
+	"location_types" jsonb NOT NULL,
+	"status" "slot_status" DEFAULT 'available' NOT NULL,
+	"billing_override" jsonb,
+	"booking_id" uuid,
+	CONSTRAINT "time_slots_owner_time_unique" UNIQUE("owner_id","start_time")
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "chat_message" (
@@ -331,6 +507,90 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
+ ALTER TABLE "invoice_line_item" ADD CONSTRAINT "invoice_line_item_invoice_invoice_id_fk" FOREIGN KEY ("invoice") REFERENCES "public"."invoice"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "invoice" ADD CONSTRAINT "invoice_customer_person_id_fk" FOREIGN KEY ("customer") REFERENCES "public"."person"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "invoice" ADD CONSTRAINT "invoice_merchant_person_id_fk" FOREIGN KEY ("merchant") REFERENCES "public"."person"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "invoice" ADD CONSTRAINT "invoice_merchant_account_merchant_account_id_fk" FOREIGN KEY ("merchant_account") REFERENCES "public"."merchant_account"("id") ON DELETE set null ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "merchant_account" ADD CONSTRAINT "merchant_account_person_person_id_fk" FOREIGN KEY ("person") REFERENCES "public"."person"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "booking_event" ADD CONSTRAINT "booking_event_owner_id_person_id_fk" FOREIGN KEY ("owner_id") REFERENCES "public"."person"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "booking" ADD CONSTRAINT "booking_client_id_person_id_fk" FOREIGN KEY ("client_id") REFERENCES "public"."person"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "booking" ADD CONSTRAINT "booking_provider_id_person_id_fk" FOREIGN KEY ("provider_id") REFERENCES "public"."person"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "booking" ADD CONSTRAINT "booking_slot_id_time_slot_id_fk" FOREIGN KEY ("slot_id") REFERENCES "public"."time_slot"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "schedule_exception" ADD CONSTRAINT "schedule_exception_event_id_booking_event_id_fk" FOREIGN KEY ("event_id") REFERENCES "public"."booking_event"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "schedule_exception" ADD CONSTRAINT "schedule_exception_owner_id_person_id_fk" FOREIGN KEY ("owner_id") REFERENCES "public"."person"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "time_slot" ADD CONSTRAINT "time_slot_owner_id_person_id_fk" FOREIGN KEY ("owner_id") REFERENCES "public"."person"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "time_slot" ADD CONSTRAINT "time_slot_event_id_booking_event_id_fk" FOREIGN KEY ("event_id") REFERENCES "public"."booking_event"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "time_slot" ADD CONSTRAINT "time_slot_booking_id_booking_id_fk" FOREIGN KEY ("booking_id") REFERENCES "public"."booking"("id") ON DELETE set null ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
  ALTER TABLE "chat_message" ADD CONSTRAINT "chat_message_chat_room_id_chat_room_id_fk" FOREIGN KEY ("chat_room_id") REFERENCES "public"."chat_room"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
@@ -351,6 +611,50 @@ CREATE INDEX IF NOT EXISTS "audit_retention_status_idx" ON "audit_log_entry" USI
 CREATE INDEX IF NOT EXISTS "audit_user_event_idx" ON "audit_log_entry" USING btree ("user","event_type");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "audit_resource_type_event_idx" ON "audit_log_entry" USING btree ("resource_type","event_type");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "audit_date_range_idx" ON "audit_log_entry" USING btree ("created_at","retention_status");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "invoice_line_items_invoice_idx" ON "invoice_line_item" USING btree ("invoice");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "invoice_line_items_deleted_at_idx" ON "invoice_line_item" USING btree ("deleted_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "invoices_customer_idx" ON "invoice" USING btree ("customer");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "invoices_merchant_idx" ON "invoice" USING btree ("merchant");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "invoices_merchant_account_idx" ON "invoice" USING btree ("merchant_account");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "invoices_status_idx" ON "invoice" USING btree ("status");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "invoices_payment_status_idx" ON "invoice" USING btree ("payment_status");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "invoices_context_idx" ON "invoice" USING btree ("context");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "invoices_payment_due_at_idx" ON "invoice" USING btree ("payment_due_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "invoices_customer_status_idx" ON "invoice" USING btree ("customer","status");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "invoices_merchant_status_idx" ON "invoice" USING btree ("merchant","status");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "invoices_deleted_at_idx" ON "invoice" USING btree ("deleted_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "merchant_accounts_person_idx" ON "merchant_account" USING btree ("person");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "merchant_accounts_active_idx" ON "merchant_account" USING btree ("active");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "merchant_accounts_deleted_at_idx" ON "merchant_account" USING btree ("deleted_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "booking_events_owner_id_idx" ON "booking_event" USING btree ("owner_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "booking_events_context_id_idx" ON "booking_event" USING btree ("context_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "booking_events_status_idx" ON "booking_event" USING btree ("status");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "booking_events_active_idx" ON "booking_event" USING btree ("owner_id","status") WHERE "booking_event"."status" = 'active';--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "booking_events_deleted_at_idx" ON "booking_event" USING btree ("deleted_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "booking_events_effective_dates_idx" ON "booking_event" USING btree ("effective_from","effective_to");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "bookings_client_id_idx" ON "booking" USING btree ("client_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "bookings_provider_id_idx" ON "booking" USING btree ("provider_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "bookings_status_idx" ON "booking" USING btree ("status");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "bookings_scheduled_at_idx" ON "booking" USING btree ("scheduled_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "bookings_slot_id_idx" ON "booking" USING btree ("slot_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "bookings_client_status_idx" ON "booking" USING btree ("client_id","status");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "bookings_provider_status_idx" ON "booking" USING btree ("provider_id","status");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "bookings_provider_date_idx" ON "booking" USING btree ("provider_id","scheduled_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "bookings_deleted_at_idx" ON "booking" USING btree ("deleted_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "bookings_pending_idx" ON "booking" USING btree ("status","booked_at") WHERE "booking"."status" = 'pending';--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "schedule_exceptions_event_id_idx" ON "schedule_exception" USING btree ("event_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "schedule_exceptions_owner_id_idx" ON "schedule_exception" USING btree ("owner_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "schedule_exceptions_context_id_idx" ON "schedule_exception" USING btree ("context_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "schedule_exceptions_date_range_idx" ON "schedule_exception" USING btree ("start_datetime","end_datetime");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "schedule_exceptions_owner_date_range_idx" ON "schedule_exception" USING btree ("owner_id","start_datetime","end_datetime");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "schedule_exceptions_deleted_at_idx" ON "schedule_exception" USING btree ("deleted_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "time_slots_owner_date_idx" ON "time_slot" USING btree ("owner_id","date");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "time_slots_status_idx" ON "time_slot" USING btree ("status");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "time_slots_bookable_idx" ON "time_slot" USING btree ("owner_id","date","start_time") WHERE "time_slot"."status" = 'available';--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "time_slots_event_id_idx" ON "time_slot" USING btree ("event_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "time_slots_context_id_idx" ON "time_slot" USING btree ("context_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "time_slots_booking_id_idx" ON "time_slot" USING btree ("booking_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "time_slots_deleted_at_idx" ON "time_slot" USING btree ("deleted_at");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "chat_messages_chat_room_idx" ON "chat_message" USING btree ("chat_room_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "chat_messages_sender_idx" ON "chat_message" USING btree ("sender_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "chat_messages_timestamp_idx" ON "chat_message" USING btree ("timestamp");--> statement-breakpoint

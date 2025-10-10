@@ -159,6 +159,166 @@ export const AuthorizationErrorSchema = z.intersection(ErrorDetailSchema, z.obje
   resource: z.string().optional()
 }));
 
+export const CurrencyAmountSchema = z.number().int().gte(0);
+
+export const BillingConfigSchema = z.object({
+  price: CurrencyAmountSchema,
+  currency: z.string(),
+  cancellationThresholdMinutes: z.number().int().gte(0).lte(10080)
+});
+
+export const BillingConfigUpdateSchema = z.object({
+  price: CurrencyAmountSchema.optional(),
+  currency: z.string().optional(),
+  cancellationThresholdMinutes: z.number().int().gte(0).lte(10080).optional()
+});
+
+export const LocationTypeSchema = z.enum(["video", "phone", "in-person"]);
+
+export const BookingStatusSchema = z.enum(["pending", "confirmed", "rejected", "cancelled", "completed", "no_show_client", "no_show_provider"]);
+
+export const FormResponseMetaDataSchema = z.object({
+  submittedAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  completionTimeSeconds: z.number().int().optional(),
+  ipAddress: z.string().optional()
+});
+
+export const FormResponsesSchema = z.object({
+  data: z.record(z.string(), z.unknown()),
+  metadata: FormResponseMetaDataSchema.optional()
+});
+
+export const BookingSchema = z.intersection(BaseEntitySchema, z.object({
+  client: UUIDSchema,
+  provider: UUIDSchema,
+  slot: UUIDSchema,
+  locationType: LocationTypeSchema,
+  reason: z.string().max(500),
+  status: BookingStatusSchema,
+  bookedAt: z.string().datetime().transform((str) => new Date(str)),
+  confirmationTimestamp: z.string().datetime().transform((str) => new Date(str)).optional(),
+  scheduledAt: z.string().datetime().transform((str) => new Date(str)),
+  durationMinutes: z.number().int().gte(15).lte(480),
+  cancellationReason: z.string().optional(),
+  cancelledBy: z.string().optional(),
+  cancelledAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  noShowMarkedBy: z.string().optional(),
+  noShowMarkedAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  formResponses: FormResponsesSchema.optional(),
+  invoice: UUIDSchema.optional()
+}));
+
+export const BookingActionRequestSchema = z.object({
+  reason: z.string().max(500)
+});
+
+export const FormResponseDataSchema = z.object({
+  data: z.record(z.string(), z.unknown())
+});
+
+export const BookingCreateRequestSchema = z.object({
+  slot: UUIDSchema,
+  locationType: LocationTypeSchema.optional(),
+  reason: z.string().max(500).optional(),
+  formResponses: FormResponseDataSchema.optional()
+});
+
+export const FormFieldTypeSchema = z.enum(["text", "textarea", "email", "phone", "number", "datetime", "select", "multiselect", "checkbox", "display"]);
+
+export const FormFieldOptionSchema = z.object({
+  label: z.string(),
+  value: z.string()
+});
+
+export const FormFieldValidationSchema = z.object({
+  minLength: z.number().int().optional(),
+  maxLength: z.number().int().optional(),
+  min: z.number().optional(),
+  max: z.number().optional(),
+  pattern: z.string().optional()
+});
+
+export const FormFieldConfigSchema = z.object({
+  id: z.string(),
+  type: FormFieldTypeSchema,
+  label: z.string(),
+  required: z.boolean().optional(),
+  options: z.array(FormFieldOptionSchema).optional(),
+  validation: FormFieldValidationSchema.optional(),
+  placeholder: z.string().optional(),
+  helpText: z.string().optional()
+});
+
+export const FormConfigSchema = z.object({
+  fields: z.array(FormFieldConfigSchema).optional()
+});
+
+export const BookingEventStatusSchema = z.enum(["draft", "active", "paused", "archived"]);
+
+export const TimeBlockSchema = z.object({
+  startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+  endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+  slotDuration: z.number().int().gte(15).lte(480).optional(),
+  bufferTime: z.number().int().gte(0).lte(120).optional()
+});
+
+export const DailyConfigSchema = z.object({
+  enabled: z.boolean(),
+  timeBlocks: z.array(TimeBlockSchema)
+});
+
+export const BookingEventSchema = z.intersection(BaseEntitySchema, z.object({
+  owner: UUIDSchema,
+  context: UUIDSchema.optional(),
+  title: z.string(),
+  description: z.string().optional(),
+  timezone: z.string(),
+  locationTypes: z.array(LocationTypeSchema),
+  maxBookingDays: z.number().int().gte(0).lte(365),
+  minBookingMinutes: z.number().int().gte(0).lte(4320),
+  formConfig: FormConfigSchema.optional(),
+  billingConfig: BillingConfigSchema.optional(),
+  status: BookingEventStatusSchema,
+  effectiveFrom: z.string().datetime().transform((str) => new Date(str)),
+  effectiveTo: z.string().datetime().transform((str) => new Date(str)).optional(),
+  dailyConfigs: z.record(z.string(), z.unknown())
+}));
+
+export const BookingEventCreateRequestSchema = z.object({
+  title: z.string(),
+  description: z.string().optional(),
+  context: UUIDSchema.optional(),
+  timezone: z.string().optional(),
+  locationTypes: z.array(LocationTypeSchema).optional(),
+  maxBookingDays: z.number().int().gte(0).lte(365).optional(),
+  minBookingMinutes: z.number().int().gte(0).lte(4320).optional(),
+  formConfig: FormConfigSchema.optional(),
+  billingConfig: BillingConfigSchema.optional(),
+  status: BookingEventStatusSchema.optional(),
+  effectiveFrom: z.string().datetime().transform((str) => new Date(str)).optional(),
+  effectiveTo: z.string().datetime().transform((str) => new Date(str)).optional(),
+  dailyConfigs: z.record(z.string(), z.unknown())
+});
+
+export const DailyConfigUpdateSchema = z.object({
+  enabled: z.boolean().optional(),
+  timeBlocks: z.array(TimeBlockSchema).optional()
+});
+
+export const BookingEventUpdateRequestSchema = z.object({
+  title: z.string().optional(),
+  description: z.union([z.string(), z.null()]).optional(),
+  timezone: z.string().optional(),
+  locationTypes: z.array(LocationTypeSchema).optional(),
+  maxBookingDays: z.number().int().optional(),
+  minBookingMinutes: z.number().int().optional(),
+  formConfig: z.union([FormConfigSchema, z.null()]).optional(),
+  billingConfig: z.union([BillingConfigUpdateSchema, z.null()]).optional(),
+  status: BookingEventStatusSchema.optional(),
+  effectiveTo: z.union([z.string().datetime().transform((str) => new Date(str)), z.null()]).optional(),
+  dailyConfigs: z.record(z.string(), z.unknown()).optional()
+});
+
 export const CallParticipantSchema = z.object({
   user: UUIDSchema,
   displayName: z.string().max(100),
@@ -171,6 +331,8 @@ export const CallParticipantSchema = z.object({
 export const CancelEmailRequestSchema = z.object({
   reason: z.string().max(500)
 });
+
+export const CaptureMethodSchema = z.enum(["automatic", "manual"]);
 
 export const MessageTypeSchema = z.enum(["text", "system", "video_call"]);
 
@@ -232,6 +394,34 @@ export const CreateChatRoomRequestSchema = z.object({
   upsert: z.boolean().optional()
 });
 
+export const CurrencyCodeSchema = z.string().regex(/^[A-Z]{3}$/);
+
+export const CreateLineItemRequestSchema = z.object({
+  description: z.string().max(500),
+  quantity: z.number().int().gte(1).optional(),
+  unitPrice: CurrencyAmountSchema,
+  metadata: z.record(z.string(), z.unknown()).optional()
+});
+
+export const CreateInvoiceRequestSchema = z.object({
+  customer: UUIDSchema,
+  merchant: UUIDSchema,
+  context: z.string().max(255).optional(),
+  currency: CurrencyCodeSchema.optional(),
+  paymentCaptureMethod: CaptureMethodSchema.optional(),
+  paymentDueAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  voidThresholdMinutes: z.number().int().optional(),
+  lineItems: z.array(CreateLineItemRequestSchema),
+  metadata: z.record(z.string(), z.unknown()).optional()
+});
+
+export const CreateMerchantAccountRequestSchema = z.object({
+  person: UUIDSchema.optional(),
+  refreshUrl: z.string().url(),
+  returnUrl: z.string().url(),
+  metadata: z.record(z.string(), z.unknown()).optional()
+});
+
 export const VariableTypeSchema = z.enum(["string", "number", "boolean", "date", "datetime", "url", "email", "array"]);
 
 export const TemplateVariableSchema = z.object({
@@ -263,6 +453,11 @@ export const CreateTemplateRequestSchema = z.object({
   replyToEmail: EmailSchema.optional(),
   replyToName: z.string().optional(),
   status: TemplateStatusSchema.optional()
+});
+
+export const DashboardResponseSchema = z.object({
+  dashboardUrl: z.string().url(),
+  expiresAt: z.string().datetime().transform((str) => new Date(str))
 });
 
 export const EmailProviderSchema = z.enum(["smtp", "postmark"]);
@@ -362,6 +557,43 @@ export const InternalServerErrorSchema = z.intersection(ErrorDetailSchema, z.obj
   reported: z.boolean().optional()
 }));
 
+export const InvoiceStatusSchema = z.enum(["draft", "open", "paid", "void", "uncollectible"]);
+
+export const InvoiceLineItemSchema = z.object({
+  description: z.string().max(500),
+  quantity: z.number().int().gte(1),
+  unitPrice: CurrencyAmountSchema,
+  amount: CurrencyAmountSchema,
+  metadata: z.record(z.string(), z.unknown()).optional()
+});
+
+export const PaymentStatusSchema = z.enum(["pending", "requires_capture", "processing", "succeeded", "failed", "canceled"]);
+
+export const InvoiceSchema = z.intersection(BaseEntitySchema, z.object({
+  invoiceNumber: z.string().max(50),
+  customer: UUIDSchema,
+  merchant: UUIDSchema,
+  merchantAccount: UUIDSchema.optional(),
+  context: z.string().max(255).optional(),
+  status: InvoiceStatusSchema,
+  subtotal: CurrencyAmountSchema,
+  tax: CurrencyAmountSchema.optional(),
+  total: CurrencyAmountSchema,
+  currency: CurrencyCodeSchema,
+  paymentCaptureMethod: CaptureMethodSchema,
+  paymentDueAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  lineItems: z.array(InvoiceLineItemSchema),
+  paymentStatus: PaymentStatusSchema.optional(),
+  paidAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  paidBy: UUIDSchema.optional(),
+  voidedAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  voidedBy: UUIDSchema.optional(),
+  voidThresholdMinutes: z.number().int().optional(),
+  authorizedAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  authorizedBy: UUIDSchema.optional(),
+  metadata: z.record(z.string(), z.unknown()).optional()
+}));
+
 export const JoinVideoCallRequestSchema = z.object({
   displayName: z.string().max(100),
   audioEnabled: z.boolean(),
@@ -386,13 +618,19 @@ export const MaybeStoredFileUpdateSchema = z.object({
   url: z.string().url().optional()
 });
 
+export const MerchantAccountSchema = z.intersection(BaseEntitySchema, z.object({
+  person: UUIDSchema,
+  active: z.boolean(),
+  metadata: z.record(z.string(), z.unknown())
+}));
+
 export const NotFoundErrorSchema = z.intersection(ErrorDetailSchema, z.object({
   resourceType: z.string().optional(),
   resource: z.string().optional(),
   suggestions: z.array(z.string()).optional()
 }));
 
-export const NotificationTypeSchema = z.enum(["booking-reminder", "billing", "security", "system", "comms.video-call-started", "comms.video-call-joined", "comms.video-call-left", "comms.video-call-ended", "comms.chat-message"]);
+export const NotificationTypeSchema = z.enum(["billing", "security", "system", "booking.created", "booking.confirmed", "booking.rejected", "booking.cancelled", "booking.no-show-client", "booking.no-show-provider", "comms.video-call-started", "comms.video-call-joined", "comms.video-call-left", "comms.video-call-ended", "comms.chat-message"]);
 
 export const NotificationChannelSchema = z.enum(["email", "push", "in-app"]);
 
@@ -422,6 +660,26 @@ export const OffsetPaginationMetaSchema = z.object({
   currentPage: z.number().int(),
   hasNextPage: z.boolean(),
   hasPreviousPage: z.boolean()
+});
+
+export const OnboardingRequestSchema = z.object({
+  refreshUrl: z.string().url(),
+  returnUrl: z.string().url()
+});
+
+export const OnboardingResponseSchema = z.object({
+  onboardingUrl: z.string(),
+  metadata: z.record(z.string(), z.unknown()).optional()
+});
+
+export const PaymentRequestSchema = z.object({
+  paymentMethod: z.string().max(255).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional()
+});
+
+export const PaymentResponseSchema = z.object({
+  checkoutUrl: z.string(),
+  metadata: z.record(z.string(), z.unknown()).optional()
 });
 
 export const TimezoneIdSchema = z.string().regex(/^[A-Za-z_]+\/[A-Za-z_]+$/).refine(val => validateTimezone(val), { message: "Invalid IANA timezone identifier" });
@@ -473,10 +731,55 @@ export const RateLimitErrorSchema = z.intersection(ErrorDetailSchema, z.object({
   windowSize: z.number().int()
 }));
 
+export const RecurrenceTypeSchema = z.enum(["daily", "weekly", "monthly"]);
+
+export const RecurrencePatternSchema = z.object({
+  type: RecurrenceTypeSchema,
+  interval: z.number().int().gte(1).optional(),
+  daysOfWeek: z.array(z.number().int()).optional(),
+  dayOfMonth: z.number().int().gte(1).lte(31).optional(),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(val => { const parsed = new Date(val + "T00:00:00Z"); return !isNaN(parsed.getTime()) && parsed.toISOString().split("T")[0] === val; }, { message: "Invalid calendar date" }).optional(),
+  maxOccurrences: z.number().int().gte(1).optional()
+});
+
+export const RefundRequestSchema = z.object({
+  amount: CurrencyAmountSchema.optional(),
+  reason: z.string().max(500).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional()
+});
+
+export const RefundResponseSchema = z.object({
+  refundedAmount: CurrencyAmountSchema,
+  metadata: z.record(z.string(), z.unknown()).optional()
+});
+
+export const ScheduleExceptionSchema = z.intersection(BaseEntitySchema, z.object({
+  event: UUIDSchema,
+  owner: UUIDSchema,
+  context: UUIDSchema.optional(),
+  timezone: z.string(),
+  startDatetime: z.string().datetime().transform((str) => new Date(str)),
+  endDatetime: z.string().datetime().transform((str) => new Date(str)),
+  reason: z.string().max(500),
+  recurring: z.boolean(),
+  recurrencePattern: RecurrencePatternSchema.optional()
+}));
+
+export const ScheduleExceptionCreateRequestSchema = z.object({
+  timezone: z.string().optional(),
+  startDatetime: z.string().datetime().transform((str) => new Date(str)),
+  endDatetime: z.string().datetime().transform((str) => new Date(str)),
+  reason: z.string().max(500),
+  recurring: z.boolean().optional(),
+  recurrencePattern: RecurrencePatternSchema.optional()
+});
+
 export const SendTextMessageRequestSchema = z.object({
   messageType: z.enum(["text"]),
   message: z.string().max(5000)
 });
+
+export const SlotStatusSchema = z.enum(["available", "booked", "blocked"]);
 
 export const StartVideoCallDataSchema = z.object({
   status: z.enum(["starting"]),
@@ -495,7 +798,29 @@ export const TestTemplateRequestSchema = z.object({
 });
 
 export const TestTemplateResultSchema = z.object({
-  queue: UUIDSchema
+  queue: EmailQueueItemSchema
+});
+
+export const TimeSlotSchema = z.intersection(BaseEntitySchema, z.object({
+  id: UUIDSchema,
+  owner: UUIDSchema,
+  event: UUIDSchema,
+  context: UUIDSchema.optional(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(val => { const parsed = new Date(val + "T00:00:00Z"); return !isNaN(parsed.getTime()) && parsed.toISOString().split("T")[0] === val; }, { message: "Invalid calendar date" }),
+  startTime: z.string().datetime().transform((str) => new Date(str)),
+  endTime: z.string().datetime().transform((str) => new Date(str)),
+  locationTypes: z.array(LocationTypeSchema),
+  status: SlotStatusSchema,
+  billingOverride: BillingConfigSchema.optional(),
+  booking: UUIDSchema.optional()
+}));
+
+export const UpdateInvoiceRequestSchema = z.object({
+  paymentCaptureMethod: CaptureMethodSchema.optional(),
+  paymentDueAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  voidThresholdMinutes: z.number().int().optional(),
+  lineItems: z.array(CreateLineItemRequestSchema).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional()
 });
 
 export const UpdateParticipantRequestSchema = z.object({
@@ -554,6 +879,281 @@ export const ListAuditLogsResponse = z.object({
   data: z.array(AuditLogEntrySchema),
   pagination: OffsetPaginationMetaSchema
 });
+
+export const CreateInvoiceBody = CreateInvoiceRequestSchema;
+
+export const CreateInvoiceResponse = InvoiceSchema;
+
+export const ListInvoicesQuery = z.object({
+  customer: UUIDSchema.optional(),
+  merchant: UUIDSchema.optional(),
+  status: InvoiceStatusSchema.optional(),
+  context: z.string().optional(),
+  offset: z.coerce.number().int().gte(0).optional(),
+  limit: z.coerce.number().int().gte(1).lte(100).optional(),
+  page: z.coerce.number().int().gte(1).optional(),
+  pageSize: z.coerce.number().int().gte(1).lte(100).optional(),
+  q: z.string().max(500).optional(),
+  sort: z.string().optional(),
+});
+
+export const ListInvoicesResponse = z.object({
+  data: z.array(InvoiceSchema),
+  pagination: OffsetPaginationMetaSchema
+});
+
+export const GetInvoiceParams = z.object({
+  invoice: UUIDSchema,
+});
+
+export const GetInvoiceResponse = InvoiceSchema;
+
+export const UpdateInvoiceParams = z.object({
+  invoice: UUIDSchema,
+});
+
+export const UpdateInvoiceBody = UpdateInvoiceRequestSchema;
+
+export const UpdateInvoiceResponse = InvoiceSchema;
+
+export const DeleteInvoiceParams = z.object({
+  invoice: UUIDSchema,
+});
+
+export const DeleteInvoiceResponse = z.void();
+
+export const CaptureInvoicePaymentParams = z.object({
+  invoice: UUIDSchema,
+});
+
+export const CaptureInvoicePaymentResponse = InvoiceSchema;
+
+export const FinalizeInvoiceParams = z.object({
+  invoice: UUIDSchema,
+});
+
+export const FinalizeInvoiceResponse = InvoiceSchema;
+
+export const MarkInvoiceUncollectibleParams = z.object({
+  invoice: UUIDSchema,
+});
+
+export const MarkInvoiceUncollectibleResponse = InvoiceSchema;
+
+export const PayInvoiceParams = z.object({
+  invoice: UUIDSchema,
+});
+
+export const PayInvoiceBody = PaymentRequestSchema;
+
+export const PayInvoiceResponse = PaymentResponseSchema;
+
+export const RefundInvoicePaymentParams = z.object({
+  invoice: UUIDSchema,
+});
+
+export const RefundInvoicePaymentBody = RefundRequestSchema;
+
+export const RefundInvoicePaymentResponse = RefundResponseSchema;
+
+export const VoidInvoiceParams = z.object({
+  invoice: UUIDSchema,
+});
+
+export const VoidInvoiceResponse = InvoiceSchema;
+
+export const CreateMerchantAccountBody = CreateMerchantAccountRequestSchema;
+
+export const CreateMerchantAccountResponse = MerchantAccountSchema;
+
+export const GetMerchantAccountParams = z.object({
+  merchantAccount: z.union([UUIDSchema, z.enum(["me"])]),
+});
+
+export const GetMerchantAccountResponse = MerchantAccountSchema;
+
+export const GetMerchantDashboardParams = z.object({
+  merchantAccount: z.union([UUIDSchema, z.enum(["me"])]),
+});
+
+export const GetMerchantDashboardResponse = DashboardResponseSchema;
+
+export const OnboardMerchantAccountParams = z.object({
+  merchantAccount: UUIDSchema,
+});
+
+export const OnboardMerchantAccountBody = OnboardingRequestSchema;
+
+export const OnboardMerchantAccountResponse = OnboardingResponseSchema;
+
+export const HandleStripeWebhookBody = z.unknown();
+
+export const HandleStripeWebhookResponse = z.unknown();
+
+export const CreateBookingBody = BookingCreateRequestSchema;
+
+export const CreateBookingResponse = BookingSchema;
+
+export const ListBookingsQuery = z.object({
+  provider: UUIDSchema.optional(),
+  client: UUIDSchema.optional(),
+  status: BookingStatusSchema.optional(),
+  startDate: z.string().datetime().transform((str) => new Date(str)).optional(),
+  endDate: z.string().datetime().transform((str) => new Date(str)).optional(),
+  expand: z.string().optional(),
+  offset: z.coerce.number().int().gte(0).optional(),
+  limit: z.coerce.number().int().gte(1).lte(100).optional(),
+  page: z.coerce.number().int().gte(1).optional(),
+  pageSize: z.coerce.number().int().gte(1).lte(100).optional(),
+  q: z.string().max(500).optional(),
+  sort: z.string().optional(),
+});
+
+export const ListBookingsResponse = z.object({
+  data: z.array(BookingSchema),
+  pagination: OffsetPaginationMetaSchema
+});
+
+export const GetBookingParams = z.object({
+  booking: UUIDSchema,
+});
+
+export const GetBookingQuery = z.object({
+  expand: z.string().optional(),
+});
+
+export const GetBookingResponse = BookingSchema;
+
+export const CancelBookingParams = z.object({
+  booking: UUIDSchema,
+});
+
+export const CancelBookingBody = BookingActionRequestSchema;
+
+export const CancelBookingResponse = BookingSchema;
+
+export const ConfirmBookingParams = z.object({
+  booking: UUIDSchema,
+});
+
+export const ConfirmBookingBody = BookingActionRequestSchema;
+
+export const ConfirmBookingResponse = BookingSchema;
+
+export const MarkNoShowBookingParams = z.object({
+  booking: UUIDSchema,
+});
+
+export const MarkNoShowBookingBody = BookingActionRequestSchema;
+
+export const MarkNoShowBookingResponse = BookingSchema;
+
+export const RejectBookingParams = z.object({
+  booking: UUIDSchema,
+});
+
+export const RejectBookingBody = BookingActionRequestSchema;
+
+export const RejectBookingResponse = BookingSchema;
+
+export const ListBookingEventsQuery = z.object({
+  owner: UUIDSchema.optional(),
+  context: UUIDSchema.optional(),
+  locationType: LocationTypeSchema.optional(),
+  status: BookingEventStatusSchema.optional(),
+  availableFrom: z.string().datetime().transform((str) => new Date(str)).optional(),
+  availableTo: z.string().datetime().transform((str) => new Date(str)).optional(),
+  expand: z.string().optional(),
+  offset: z.coerce.number().int().gte(0).optional(),
+  limit: z.coerce.number().int().gte(1).lte(100).optional(),
+  page: z.coerce.number().int().gte(1).optional(),
+  pageSize: z.coerce.number().int().gte(1).lte(100).optional(),
+  q: z.string().max(500).optional(),
+  sort: z.string().optional(),
+});
+
+export const ListBookingEventsResponse = z.object({
+  data: z.array(BookingEventSchema),
+  pagination: OffsetPaginationMetaSchema
+});
+
+export const CreateBookingEventBody = BookingEventCreateRequestSchema;
+
+export const CreateBookingEventResponse = BookingEventSchema;
+
+export const GetBookingEventParams = z.object({
+  event: z.union([UUIDSchema, z.enum(["me"])]),
+});
+
+export const GetBookingEventQuery = z.object({
+  expand: z.string().optional(),
+});
+
+export const GetBookingEventResponse = BookingEventSchema;
+
+export const UpdateBookingEventParams = z.object({
+  event: UUIDSchema,
+});
+
+export const UpdateBookingEventBody = BookingEventUpdateRequestSchema;
+
+export const UpdateBookingEventResponse = BookingEventSchema;
+
+export const DeleteBookingEventParams = z.object({
+  event: UUIDSchema,
+});
+
+export const DeleteBookingEventResponse = z.void();
+
+export const CreateScheduleExceptionParams = z.object({
+  event: UUIDSchema,
+});
+
+export const CreateScheduleExceptionBody = ScheduleExceptionCreateRequestSchema;
+
+export const CreateScheduleExceptionResponse = ScheduleExceptionSchema;
+
+export const ListScheduleExceptionsParams = z.object({
+  event: UUIDSchema,
+});
+
+export const ListScheduleExceptionsQuery = z.object({
+  offset: z.coerce.number().int().gte(0).optional(),
+  limit: z.coerce.number().int().gte(1).lte(100).optional(),
+  page: z.coerce.number().int().gte(1).optional(),
+  pageSize: z.coerce.number().int().gte(1).lte(100).optional(),
+  q: z.string().max(500).optional(),
+  sort: z.string().optional(),
+});
+
+export const ListScheduleExceptionsResponse = z.object({
+  data: z.array(ScheduleExceptionSchema),
+  pagination: OffsetPaginationMetaSchema
+});
+
+export const GetScheduleExceptionParams = z.object({
+  event: UUIDSchema,
+  exception: UUIDSchema,
+});
+
+export const GetScheduleExceptionResponse = ScheduleExceptionSchema;
+
+export const DeleteScheduleExceptionParams = z.object({
+  event: UUIDSchema,
+  exception: UUIDSchema,
+});
+
+export const DeleteScheduleExceptionResponse = z.void();
+
+export const GetTimeSlotParams = z.object({
+  slotId: UUIDSchema,
+});
+
+export const GetTimeSlotQuery = z.object({
+  expand: z.string().optional(),
+});
+
+export const GetTimeSlotResponse = TimeSlotSchema;
 
 export const CreateChatRoomBody = CreateChatRoomRequestSchema;
 
@@ -641,7 +1241,7 @@ export const UpdateVideoCallParticipantResponse = CallParticipantSchema;
 export const GetIceServersResponse = IceServersResponseSchema;
 
 export const ListEmailQueueItemsQuery = z.object({
-  status: z.union([EmailQueueStatusSchema, z.array(EmailQueueStatusSchema)]).optional(),
+  status: EmailQueueStatusSchema.optional(),
   recipientEmail: EmailSchema.optional(),
   dateFrom: z.string().datetime().transform((str) => new Date(str)).optional(),
   dateTo: z.string().datetime().transform((str) => new Date(str)).optional(),

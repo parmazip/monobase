@@ -10,18 +10,13 @@ import "./common/security.tsp";
 // Import all module definitions
 // Note: identity/auth is handled by Better-Auth, not TypeSpec
 import "./modules/person.tsp";
-// Healthcare-specific modules (commented out for generic platform)
-// import "./modules/patient.tsp";
-// import "./modules/provider.tsp";
-// import "./modules/emr.tsp";
-// import "./modules/booking.tsp";
-// import "./modules/reviews.tsp";
-// import "./modules/billing.tsp";
+import "./modules/billing.tsp";
 import "./modules/audit.tsp";
 import "./modules/notifs.tsp";
 import "./modules/comms.tsp";
 import "./modules/storage.tsp";
 import "./modules/email.tsp";
+import "./modules/booking.tsp";
 
 using TypeSpec.Http;
 using TypeSpec.Versioning;
@@ -44,6 +39,9 @@ using TypeSpec.OpenAPI;
 @tagMetadata("Person", #{
   description: "Central person management module serving as the foundation for all user types in the platform. Handles core PII (Personally Identifiable Information) with strict data protection, supporting both client and service provider roles. Manages identity verification, profile updates, consent preferences (marketing, data sharing, SMS, email), and serves as the single source of truth for user information across the platform ecosystem."
 })
+@tagMetadata("Billing", #{
+  description: "Invoice-based payment processing with Stripe integration. Manages invoices, merchant accounts, payment processing, and refunds. Supports both automatic and manual payment capture flows with comprehensive authorization controls. Any person can become a merchant and receive payments through Stripe Connect."
+})
 @tagMetadata("Audit", #{
   description: "Enterprise-grade audit logging and compliance tracking system. Records all data access, modifications, and system events with immutable audit trails. Provides detailed activity logs with user attribution, IP tracking, timestamp recording, and data change history. Supports compliance reporting, suspicious activity detection, audit log retention policies, and integration with security information and event management (SIEM) systems."
 })
@@ -62,6 +60,9 @@ using TypeSpec.OpenAPI;
 @tagMetadata("Email", #{
   description: "Runtime-configurable email service with dynamic template management. Enables administrators to create and modify email templates without code deployments, with changes taking effect immediately. Features template tag-based referencing, Handlebars variable substitution, JSON Schema validation, multi-provider support (SMTP/Postmark), asynchronous job-based processing, and comprehensive queue management with retry logic and admin controls."
 })
+@tagMetadata("Booking", #{
+  description: "Professional booking and scheduling system for time-based services. Enables service providers to define booking events with flexible availability patterns, location options (in-person, virtual, or hybrid), and automated time slot generation. Supports booking lifecycle management with confirmation workflows, mutual cancellation, no-show tracking, and schedule exception handling. Features public event discovery for seamless booking experiences."
+})
 namespace MonobaseAPI {
 
   // Note: Identity/Auth endpoints are handled by Better-Auth
@@ -71,6 +72,19 @@ namespace MonobaseAPI {
   @tag("Person")
   @route("/persons")
   interface PersonManagement extends PersonModule.PersonManagement {}
+  
+  // Billing Management
+  @tag("Billing")
+  @route("/billing")
+  interface BillingInvoiceManagement extends BillingModule.InvoiceManagement {}
+  
+  @tag("Billing")
+  @route("/billing")
+  interface BillingPaymentProcessing extends BillingModule.PaymentProcessing {}
+  
+  @tag("Billing")
+  @route("/billing")
+  interface BillingMerchantAccountManagement extends BillingModule.MerchantAccountManagement {}
   
   // Audit Management
   @tag("Audit")
@@ -99,6 +113,23 @@ namespace MonobaseAPI {
   @tag("Email")
   @route("/email")
   interface EmailQueueManagement extends EmailModule.EmailQueueManagement {}
+
+  // Booking Management - events, slots, bookings, and schedule exceptions
+  @tag("Booking")
+  @route("/booking")
+  interface BookingEventManagement extends BookingModule.BookingEventManagement {}
+
+  @tag("Booking")
+  @route("/booking")
+  interface SlotDiscovery extends BookingModule.SlotDiscovery {}
+
+  @tag("Booking")
+  @route("/booking")
+  interface BookingManagement extends BookingModule.BookingManagement {}
+
+  @tag("Booking")
+  @route("/booking")
+  interface ScheduleExceptionManagement extends BookingModule.ScheduleExceptionManagement {}
 
 }
 

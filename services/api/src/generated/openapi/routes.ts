@@ -15,6 +15,313 @@ export function registerRoutes(app: Hono) {
     }
   );
 
+  // createInvoice
+  app.post('/billing/invoices',
+    authMiddleware(),
+    zValidator('json', validators.CreateInvoiceBody, validationErrorHandler),
+    async (ctx) => {
+      return registry.createInvoice(ctx);
+    }
+  );
+
+  // listInvoices
+  app.get('/billing/invoices',
+    authMiddleware(),
+    zValidator('query', validators.ListInvoicesQuery, validationErrorHandler),
+    async (ctx) => {
+      return registry.listInvoices(ctx);
+    }
+  );
+
+  // getInvoice
+  app.get('/billing/invoices/:invoice',
+    authMiddleware(),
+    zValidator('param', validators.GetInvoiceParams, validationErrorHandler),
+    async (ctx) => {
+      return registry.getInvoice(ctx);
+    }
+  );
+
+  // updateInvoice
+  app.patch('/billing/invoices/:invoice',
+    authMiddleware(),
+    zValidator('param', validators.UpdateInvoiceParams, validationErrorHandler),
+    zValidator('json', validators.UpdateInvoiceBody, validationErrorHandler),
+    async (ctx) => {
+      return registry.updateInvoice(ctx);
+    }
+  );
+
+  // deleteInvoice
+  app.delete('/billing/invoices/:invoice',
+    authMiddleware(),
+    zValidator('param', validators.DeleteInvoiceParams, validationErrorHandler),
+    async (ctx) => {
+      return registry.deleteInvoice(ctx);
+    }
+  );
+
+  // captureInvoicePayment
+  app.post('/billing/invoices/:invoice/capture',
+    authMiddleware(),
+    zValidator('param', validators.CaptureInvoicePaymentParams, validationErrorHandler),
+    async (ctx) => {
+      return registry.captureInvoicePayment(ctx);
+    }
+  );
+
+  // finalizeInvoice
+  app.post('/billing/invoices/:invoice/finalize',
+    authMiddleware(),
+    zValidator('param', validators.FinalizeInvoiceParams, validationErrorHandler),
+    async (ctx) => {
+      return registry.finalizeInvoice(ctx);
+    }
+  );
+
+  // markInvoiceUncollectible
+  app.post('/billing/invoices/:invoice/mark-uncollectible',
+    authMiddleware(),
+    zValidator('param', validators.MarkInvoiceUncollectibleParams, validationErrorHandler),
+    async (ctx) => {
+      return registry.markInvoiceUncollectible(ctx);
+    }
+  );
+
+  // payInvoice
+  app.post('/billing/invoices/:invoice/pay',
+    authMiddleware(),
+    zValidator('param', validators.PayInvoiceParams, validationErrorHandler),
+    zValidator('json', validators.PayInvoiceBody, validationErrorHandler),
+    async (ctx) => {
+      return registry.payInvoice(ctx);
+    }
+  );
+
+  // refundInvoicePayment
+  app.post('/billing/invoices/:invoice/refund',
+    authMiddleware(),
+    zValidator('param', validators.RefundInvoicePaymentParams, validationErrorHandler),
+    zValidator('json', validators.RefundInvoicePaymentBody, validationErrorHandler),
+    async (ctx) => {
+      return registry.refundInvoicePayment(ctx);
+    }
+  );
+
+  // voidInvoice
+  app.post('/billing/invoices/:invoice/void',
+    authMiddleware(),
+    zValidator('param', validators.VoidInvoiceParams, validationErrorHandler),
+    async (ctx) => {
+      return registry.voidInvoice(ctx);
+    }
+  );
+
+  // createMerchantAccount
+  app.post('/billing/merchant-accounts',
+    authMiddleware(),
+    zValidator('json', validators.CreateMerchantAccountBody, validationErrorHandler),
+    async (ctx) => {
+      return registry.createMerchantAccount(ctx);
+    }
+  );
+
+  // getMerchantAccount
+  app.get('/billing/merchant-accounts/:merchantAccount',
+    authMiddleware(),
+    zValidator('param', validators.GetMerchantAccountParams, validationErrorHandler),
+    async (ctx) => {
+      return registry.getMerchantAccount(ctx);
+    }
+  );
+
+  // getMerchantDashboard
+  app.post('/billing/merchant-accounts/:merchantAccount/dashboard',
+    authMiddleware(),
+    zValidator('param', validators.GetMerchantDashboardParams, validationErrorHandler),
+    async (ctx) => {
+      return registry.getMerchantDashboard(ctx);
+    }
+  );
+
+  // onboardMerchantAccount
+  app.post('/billing/merchant-accounts/:merchantAccount/onboard',
+    authMiddleware(),
+    zValidator('param', validators.OnboardMerchantAccountParams, validationErrorHandler),
+    zValidator('json', validators.OnboardMerchantAccountBody, validationErrorHandler),
+    async (ctx) => {
+      return registry.onboardMerchantAccount(ctx);
+    }
+  );
+
+  // handleStripeWebhook
+  app.post('/billing/webhooks/stripe',
+    zValidator('json', validators.HandleStripeWebhookBody, validationErrorHandler),
+    async (ctx) => {
+      return registry.handleStripeWebhook(ctx);
+    }
+  );
+
+  // createBooking
+  app.post('/booking/bookings',
+    authMiddleware({ roles: ["user"] }),
+    zValidator('json', validators.CreateBookingBody, validationErrorHandler),
+    async (ctx) => {
+      return registry.createBooking(ctx);
+    }
+  );
+
+  // listBookings
+  app.get('/booking/bookings',
+    authMiddleware({ roles: ["client:owner", "provider:owner", "admin", "support"] }),
+    zValidator('query', validators.ListBookingsQuery, validationErrorHandler),
+    async (ctx) => {
+      return registry.listBookings(ctx);
+    }
+  );
+
+  // getBooking
+  app.get('/booking/bookings/:booking',
+    authMiddleware({ roles: ["client:owner", "provider:owner", "admin", "support"] }),
+    zValidator('param', validators.GetBookingParams, validationErrorHandler),
+    zValidator('query', validators.GetBookingQuery, validationErrorHandler),
+    async (ctx) => {
+      return registry.getBooking(ctx);
+    }
+  );
+
+  // cancelBooking
+  app.post('/booking/bookings/:booking/cancel',
+    authMiddleware({ roles: ["client:owner", "provider:owner", "admin"] }),
+    zValidator('param', validators.CancelBookingParams, validationErrorHandler),
+    zValidator('json', validators.CancelBookingBody, validationErrorHandler),
+    async (ctx) => {
+      return registry.cancelBooking(ctx);
+    }
+  );
+
+  // confirmBooking
+  app.post('/booking/bookings/:booking/confirm',
+    authMiddleware({ roles: ["provider:owner", "admin"] }),
+    zValidator('param', validators.ConfirmBookingParams, validationErrorHandler),
+    zValidator('json', validators.ConfirmBookingBody, validationErrorHandler),
+    async (ctx) => {
+      return registry.confirmBooking(ctx);
+    }
+  );
+
+  // markNoShowBooking
+  app.post('/booking/bookings/:booking/no-show',
+    authMiddleware({ roles: ["client:owner", "provider:owner", "admin"] }),
+    zValidator('param', validators.MarkNoShowBookingParams, validationErrorHandler),
+    zValidator('json', validators.MarkNoShowBookingBody, validationErrorHandler),
+    async (ctx) => {
+      return registry.markNoShowBooking(ctx);
+    }
+  );
+
+  // rejectBooking
+  app.post('/booking/bookings/:booking/reject',
+    authMiddleware({ roles: ["provider:owner", "admin"] }),
+    zValidator('param', validators.RejectBookingParams, validationErrorHandler),
+    zValidator('json', validators.RejectBookingBody, validationErrorHandler),
+    async (ctx) => {
+      return registry.rejectBooking(ctx);
+    }
+  );
+
+  // listBookingEvents
+  app.get('/booking/events',
+    zValidator('query', validators.ListBookingEventsQuery, validationErrorHandler),
+    async (ctx) => {
+      return registry.listBookingEvents(ctx);
+    }
+  );
+
+  // createBookingEvent
+  app.post('/booking/events',
+    authMiddleware({ roles: ["user"] }),
+    zValidator('json', validators.CreateBookingEventBody, validationErrorHandler),
+    async (ctx) => {
+      return registry.createBookingEvent(ctx);
+    }
+  );
+
+  // getBookingEvent
+  app.get('/booking/events/:event',
+    zValidator('param', validators.GetBookingEventParams, validationErrorHandler),
+    zValidator('query', validators.GetBookingEventQuery, validationErrorHandler),
+    async (ctx) => {
+      return registry.getBookingEvent(ctx);
+    }
+  );
+
+  // updateBookingEvent
+  app.patch('/booking/events/:event',
+    authMiddleware({ roles: ["event:owner", "admin"] }),
+    zValidator('param', validators.UpdateBookingEventParams, validationErrorHandler),
+    zValidator('json', validators.UpdateBookingEventBody, validationErrorHandler),
+    async (ctx) => {
+      return registry.updateBookingEvent(ctx);
+    }
+  );
+
+  // deleteBookingEvent
+  app.delete('/booking/events/:event',
+    authMiddleware({ roles: ["event:owner", "admin"] }),
+    zValidator('param', validators.DeleteBookingEventParams, validationErrorHandler),
+    async (ctx) => {
+      return registry.deleteBookingEvent(ctx);
+    }
+  );
+
+  // createScheduleException
+  app.post('/booking/events/:event/exceptions',
+    authMiddleware({ roles: ["event:owner", "admin"] }),
+    zValidator('param', validators.CreateScheduleExceptionParams, validationErrorHandler),
+    zValidator('json', validators.CreateScheduleExceptionBody, validationErrorHandler),
+    async (ctx) => {
+      return registry.createScheduleException(ctx);
+    }
+  );
+
+  // listScheduleExceptions
+  app.get('/booking/events/:event/exceptions',
+    authMiddleware({ roles: ["event:owner", "admin", "support"] }),
+    zValidator('param', validators.ListScheduleExceptionsParams, validationErrorHandler),
+    zValidator('query', validators.ListScheduleExceptionsQuery, validationErrorHandler),
+    async (ctx) => {
+      return registry.listScheduleExceptions(ctx);
+    }
+  );
+
+  // getScheduleException
+  app.get('/booking/events/:event/exceptions/:exception',
+    authMiddleware({ roles: ["event:owner", "admin", "support"] }),
+    zValidator('param', validators.GetScheduleExceptionParams, validationErrorHandler),
+    async (ctx) => {
+      return registry.getScheduleException(ctx);
+    }
+  );
+
+  // deleteScheduleException
+  app.delete('/booking/events/:event/exceptions/:exception',
+    authMiddleware({ roles: ["event:owner", "admin"] }),
+    zValidator('param', validators.DeleteScheduleExceptionParams, validationErrorHandler),
+    async (ctx) => {
+      return registry.deleteScheduleException(ctx);
+    }
+  );
+
+  // getTimeSlot
+  app.get('/booking/slots/:slotId',
+    zValidator('param', validators.GetTimeSlotParams, validationErrorHandler),
+    zValidator('query', validators.GetTimeSlotQuery, validationErrorHandler),
+    async (ctx) => {
+      return registry.getTimeSlot(ctx);
+    }
+  );
+
   // createChatRoom
   app.post('/comms/chat-rooms',
     authMiddleware({ roles: ["user"] }),
