@@ -263,6 +263,9 @@ model VideoCallJoinResponse {
   @doc("Authentication token for WebRTC room")
   token: string;
 
+  @doc("Current status of the video call")
+  callStatus: VideoCallStatus;
+
   @doc("All current participants in the call")
   participants: CallParticipant[];
 }
@@ -272,8 +275,11 @@ model VideoCallJoinResponse {
  */
 @doc("Video call end response")
 model VideoCallEndResponse {
+  @doc("Confirmation message")
+  message: string;
+
   @doc("Total call duration in minutes")
-  durationMinutes?: int32;
+  callDuration?: int32;
 }
 
 /**
@@ -281,8 +287,14 @@ model VideoCallEndResponse {
  */
 @doc("Leave video call response")
 model LeaveVideoCallResponse {
-  @doc("All current participants in the call")
-  participants: CallParticipant[];
+  @doc("Confirmation message")
+  message: string;
+
+  @doc("Whether the call is still active after participant left")
+  callStillActive: boolean;
+
+  @doc("Number of participants remaining in the call")
+  remainingParticipants: int32;
 }
 
 /**
@@ -395,6 +407,8 @@ namespace CommsModule {
     @extension("x-security-required-roles", #["user:participant"])
     getChatMessages(
       @path room: UUID,
+      @doc("Filter by message type (text, system, video_call)")
+      @query messageType?: MessageType,
       ...PaginationQuery
     ): ApiOkResponse<PaginatedResponse<ChatMessage>>
       | ApiNotFoundResponse

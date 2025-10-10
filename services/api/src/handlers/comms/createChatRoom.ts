@@ -4,7 +4,8 @@ import type { User } from '@/types/auth';
 import {
   ValidationError,
   ForbiddenError,
-  BusinessLogicError
+  BusinessLogicError,
+  ConflictError
 } from '@/core/errors';
 import { ChatRoomRepository } from './repos/chatRoom.repo';
 import { type CreateChatRoomRequest } from './repos/comms.schema';
@@ -71,9 +72,8 @@ export async function createChatRoom(ctx: Context) {
 
   if (room && !body.upsert) {
     // Room exists and upsert is false - return conflict
-    throw new BusinessLogicError(
-      'Chat room with these participants already exists',
-      'ROOM_EXISTS'
+    throw new ConflictError(
+      'Chat room with these participants already exists'
     );
   }
 

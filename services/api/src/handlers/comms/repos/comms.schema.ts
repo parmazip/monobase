@@ -57,9 +57,9 @@ export const chatRooms = pgTable('chat_room', {
     .$type<string[]>()
     .notNull(),
 
-  // Generic context linking (appointments, billing sessions, etc.)
+  // Generic context linking (bookings, billing sessions, etc.)
   context: uuid('context_id'),
-    // Note: Generic reference - can link to appointments, billing, etc.
+    // Note: Generic reference - can link to bookings, billing, etc.
   
   // Room status and metadata
   status: chatRoomStatusEnum('status')
@@ -164,7 +164,7 @@ export interface ChatRoomFilters {
   participants?: string[]; // Find rooms containing any of these participants
   admins?: string[]; // Find rooms with any of these admins
   status?: 'active' | 'archived';
-  context?: string; // Generic context ID (appointment, billing, etc.)
+  context?: string; // Generic context ID (booking, billing, etc.)
   withParticipant?: string; // Find rooms containing this specific participant
   hasActiveCall?: boolean;
 }

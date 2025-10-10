@@ -1,11 +1,12 @@
 import { Context } from 'hono';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
-import { 
+import {
   ForbiddenError,
   NotFoundError,
   ValidationError,
-  BusinessLogicError
+  BusinessLogicError,
+  ConflictError
 } from '@/core/errors';
 import { PersonRepository } from './repos/person.repo';
 import { type PersonCreateRequest } from './repos/person.schema';
@@ -35,7 +36,7 @@ export async function createPerson(ctx: Context) {
   // Check if user already has a person profile
   const existingPerson = await repo.findOneById(user.id);
   if (existingPerson) {
-    throw new ValidationError('User already has a person profile');
+    throw new ConflictError('User already has a person profile');
   }
   
   // Create person record with user's ID

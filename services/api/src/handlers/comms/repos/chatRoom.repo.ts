@@ -148,25 +148,25 @@ export class ChatRoomRepository extends DatabaseRepository<ChatRoom, NewChatRoom
   }
 
   /**
-   * Find or create chat room for appointment context
+   * Find or create chat room for booking context
    * Updated to use flexible participant/admin arrays
    */
-  async findOrCreateAppointmentChatRoom(
-    appointmentId: string,
+  async findOrCreateBookingChatRoom(
+    bookingId: string,
     participantIds: string[],
     adminIds?: string[]
   ): Promise<{ room: ChatRoom; created: boolean }> {
     this.logger?.debug({
-      appointmentId,
+      bookingId,
       participantIds,
       adminIds
-    }, 'Finding or creating appointment chat room');
+    }, 'Finding or creating booking chat room');
 
-    // First check if room already exists for this appointment
-    let room = await this.findOne({ context: appointmentId });
+    // First check if room already exists for this booking
+    let room = await this.findOne({ context: bookingId });
 
     if (room) {
-      this.logger?.debug({ appointmentId, roomId: room.id }, 'Found existing appointment room');
+      this.logger?.debug({ bookingId, roomId: room.id }, 'Found existing booking room');
       return { room, created: false };
     }
 
@@ -174,33 +174,33 @@ export class ChatRoomRepository extends DatabaseRepository<ChatRoom, NewChatRoom
     room = await this.findRoomWithParticipants(participantIds);
 
     if (room) {
-      // Link existing room to appointment
+      // Link existing room to booking
       const updatedRoom = await this.updateOneById(room.id, {
-        context: appointmentId
+        context: bookingId
       });
 
       this.logger?.info({
-        appointmentId,
+        bookingId,
         roomId: room.id
-      }, 'Linked existing room to appointment');
+      }, 'Linked existing room to booking');
 
       return { room: updatedRoom, created: false };
     }
 
-    // Create new room for appointment
+    // Create new room for booking
     const newRoom = await this.createOne({
       participants: participantIds,
       admins: adminIds || participantIds, // Default: all participants are admins
-      context: appointmentId,
+      context: bookingId,
       status: 'active',
       messageCount: 0
     });
 
     this.logger?.info({
-      appointmentId,
+      bookingId,
       roomId: newRoom.id,
       participantIds
-    }, 'Created new appointment chat room');
+    }, 'Created new booking chat room');
 
     return { room: newRoom, created: true };
   }

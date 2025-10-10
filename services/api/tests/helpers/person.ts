@@ -50,7 +50,9 @@ export function generateTestPersonData(overrides: Partial<PersonCreateRequest> =
     },
     contactInfo: {
       email: generateUniqueEmail(),
-      phone: '+1' + faker.string.numeric(10)
+      // Generate valid US phone using known valid area codes
+      // Format: +1 NXX NXX XXXX where N=2-9, X=0-9
+      phone: `+1${faker.helpers.arrayElement(['212', '213', '214', '310', '312', '404', '415', '510', '617', '702', '713', '818', '916'])}${faker.number.int({ min: 2, max: 9 })}${faker.string.numeric(6)}`
     },
     languagesSpoken: faker.helpers.arrayElements(['en', 'es', 'fr', 'de', 'zh', 'ar'], { min: 1, max: 3 }),
     timezone: faker.helpers.arrayElement(['America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles', 'America/Phoenix']),
@@ -145,7 +147,6 @@ export async function listPersons(
     page?: number;
     pageSize?: number;
     sort?: string;
-    order?: 'asc' | 'desc';
   } = {}
 ): Promise<{ response: Response; data?: ListPersonsResponse }> {
   // Convert page/pageSize to limit/offset for the API
@@ -159,12 +160,9 @@ export async function listPersons(
     searchParams.offset = (params.page - 1) * params.pageSize;
   }
   
+  // Sort parameter should be in "field:direction" format
   if (params.sort) {
     searchParams.sort = params.sort;
-  }
-  
-  if (params.order) {
-    searchParams.order = params.order;
   }
 
   const response = await apiClient.fetch('/persons', {

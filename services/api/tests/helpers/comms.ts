@@ -117,7 +117,14 @@ export async function createChatRoom(
     method: 'POST',
     body: requestBody
   });
-  const data = response.ok ? await response.json() : null;
+  
+  // Always try to parse JSON response (for both success and error responses)
+  let data = null;
+  try {
+    data = await response.json();
+  } catch (e) {
+    // Response might not be JSON
+  }
 
   return { response, data: data as ChatRoom | null };
 }
@@ -146,13 +153,13 @@ export async function createChatRoomLegacy(
 }
 
 /**
- * Get or create appointment chat room using the general createChatRoom endpoint
- * This replaces the old appointment-specific endpoint
+ * Get or create booking chat room using the general createChatRoom endpoint
+ * This replaces the old booking-specific endpoint
  * Uses upsert behavior: creates new room or returns existing room if one exists between the participants
  */
-export async function getOrCreateAppointmentChatRoom(
+export async function getOrCreateBookingChatRoom(
   client: ApiClient,
-  appointmentId: string,
+  bookingId: string,
   patientId: string,
   providerId: string
 ) {
@@ -162,7 +169,7 @@ export async function getOrCreateAppointmentChatRoom(
     [patientId, providerId],
     [providerId], // Provider is the admin
     {
-      context: appointmentId,
+      context: bookingId,
       upsert: true
     }
   );
@@ -415,7 +422,7 @@ export async function startTestVideoCall(
 export function generateTestMessageContent(): string {
   const messages = [
     'Hello, how are you doing today?',
-    'I have some questions about my appointment.',
+    'I have some questions about my booking.',
     'Thank you for your help!',
     'Can we discuss the treatment plan?',
     'I\'m feeling much better now.',
@@ -490,8 +497,8 @@ export async function cleanupActiveVideoCall(
 /**
  * Validate chat room response structure (new array-based format)
  */
-export function validateChatRoomResponse(room: any): boolean {
-  return !!(
+export function validateChatRoomResponse(room: any, options?: { deep?: boolean }): boolean {
+  const basicValidation = !!(
     room &&
     typeof room.id === 'string' &&
     Array.isArray(room.participants) &&
@@ -503,6 +510,17 @@ export function validateChatRoomResponse(room: any): boolean {
     room.createdAt &&
     room.updatedAt
   );
+
+  if (!basicValidation || !options?.deep) {
+    return basicValidation;
+  }
+
+  // Deep validation for optional fields
+  const contextValid = room.context === undefined || room.context === null || typeof room.context === 'string';
+  const lastMessageAtValid = room.lastMessageAt === undefined || room.lastMessageAt === null || typeof room.lastMessageAt === 'string';
+  const activeVideoCallValid = room.activeVideoCallMessage === undefined || room.activeVideoCallMessage === null || typeof room.activeVideoCallMessage === 'string';
+
+  return contextValid && lastMessageAtValid && activeVideoCallValid;
 }
 
 /**
@@ -588,6 +606,71 @@ export async function getIceServers(client: ApiClient) {
   const data = response.ok ? await response.json() : null;
 
   return { response, data };
+}
+
+/**
+ * Validate CallParticipant structure
+ */
+export function validateCallParticipant(participant: any, options?: { requireJoinTimestamp?: boolean }): boolean {
+  const basicValidation = !!(
+    participant &&
+    typeof participant.user === 'string' &&
+    typeof participant.displayName === 'string' &&
+    typeof participant.audioEnabled === 'boolean' &&
+    typeof participant.videoEnabled === 'boolean'
+  );
+
+  if (!basicValidation) {
+    return false;
+  }
+
+  // Validate optional timestamp fields
+  const joinedAtValid = participant.joinedAt === undefined || participant.joinedAt === null || typeof participant.joinedAt === 'string';
+  const leftAtValid = participant.leftAt === undefined || participant.leftAt === null || typeof participant.leftAt === 'string';
+
+  // If requireJoinTimestamp option is set, joinedAt must be present
+  if (options?.requireJoinTimestamp && !participant.joinedAt) {
+    return false;
+  }
+
+  return joinedAtValid && leftAtValid;
+}
+
+/**
+ * Validate VideoCallData structure
+ */
+export function validateVideoCallData(data: any): boolean {
+  if (!data) {
+    return false;
+  }
+
+  // Required fields
+  const hasRequiredFields = !!(
+    typeof data.status === 'string' &&
+    Array.isArray(data.participants)
+  );
+
+  if (!hasRequiredFields) {
+    return false;
+  }
+
+  // Validate all participants
+  const participantsValid = data.participants.every((p: any) => validateCallParticipant(p));
+  if (!participantsValid) {
+    return false;
+  }
+
+  // Validate optional fields
+  const roomUrlValid = data.roomUrl === undefined || data.roomUrl === null || typeof data.roomUrl === 'string';
+  const tokenValid = data.token === undefined || data.token === null || typeof data.token === 'string';
+  const startedAtValid = data.startedAt === undefined || data.startedAt === null || typeof data.startedAt === 'string';
+  const startedByValid = data.startedBy === undefined || data.startedBy === null || typeof data.startedBy === 'string';
+  const endedAtValid = data.endedAt === undefined || data.endedAt === null || typeof data.endedAt === 'string';
+  const endedByValid = data.endedBy === undefined || data.endedBy === null || typeof data.endedBy === 'string';
+  const durationValid = data.durationMinutes === undefined || data.durationMinutes === null || typeof data.durationMinutes === 'number';
+
+  return roomUrlValid && tokenValid && startedAtValid && startedByValid &&
+         endedAtValid && endedByValid && durationValid;
 }
 
 /**

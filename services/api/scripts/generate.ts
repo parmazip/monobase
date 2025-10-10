@@ -270,6 +270,7 @@ async function generateValidators(spec: any) {
     "import ISO6391 from 'iso-639-1';",
     "import countries from 'i18n-iso-countries';",
     "import { getTimeZones } from '@vvo/tzdb';",
+    "import { isValidPhoneNumber } from 'libphonenumber-js';",
     '',
     '// Generated Zod validators from OpenAPI spec',
     '',
@@ -306,6 +307,15 @@ async function generateValidators(spec: any) {
     '',
     'const validateCountryCode = (code: string): boolean => {',
     '  return countries.isValid(code);',
+    '};',
+    '',
+    'const validatePhoneNumber = (phone: string): boolean => {',
+    '  try {',
+    '    // libphonenumber-js validates E.164 format and country-specific rules',
+    '    return isValidPhoneNumber(phone);',
+    '  } catch {',
+    '    return false;',
+    '  }',
     '};',
     '',
     'const timezoneNames = getTimeZones().map(tz => tz.name);',
@@ -798,7 +808,7 @@ function convertStringSchema(schema: any): string {
         base = 'z.string().regex(/^[A-Z0-9]{6,12}$/).refine(val => val.length >= 6, { message: "MRN must be at least 6 characters" })';
         break;
       case 'phone':
-        base = 'z.string().regex(/^\\+?[1-9]\\d{1,14}$/)';
+        base = 'z.string().regex(/^\\+[1-9]\\d{1,14}$/).refine(val => validatePhoneNumber(val), { message: "Invalid phone number in E.164 format" })';
         break;
       case 'ssn':
         // SSN should be properly masked and validated

@@ -2,6 +2,8 @@
  * Query parameter utilities for API handlers
  */
 
+import { ValidationError } from '@/core/errors';
+
 /**
  * Check if a field should be expanded based on the query object
  * @param query - The query object from the request
@@ -108,4 +110,45 @@ export function parseFilters(query: any, allowedFields: string[]): Record<string
   }
 
   return Object.keys(filters).length > 0 ? filters : {};
+}
+
+/**
+ * Parse and validate sort parameter from query
+ * @param query - The query object from the request
+ * @param allowedFields - Array of allowed sort field names
+ * @param defaultSort - Optional default sort (e.g., "createdAt:desc")
+ * @returns Validated sort object with field and direction, or null if no sort
+ * @throws ValidationError if sort field or direction is invalid
+ */
+export function parseSort(
+  query: any,
+  allowedFields: string[],
+  defaultSort?: string
+): { field: string; direction: 'asc' | 'desc' } | null {
+  const sortParam = query?.sort || defaultSort;
+  
+  if (!sortParam) {
+    return null;
+  }
+  
+  // Parse sort parameter (format: "fieldName:direction")
+  const parts = sortParam.split(':');
+  
+  if (parts.length !== 2) {
+    throw new ValidationError('Sort parameter must be in format "field:direction"');
+  }
+  
+  const [field, direction] = parts;
+  
+  // Validate field is in whitelist
+  if (!allowedFields.includes(field)) {
+    throw new ValidationError(`Invalid sort field "${field}". Allowed fields: ${allowedFields.join(', ')}`);
+  }
+  
+  // Validate direction is 'asc' or 'desc'
+  if (direction !== 'asc' && direction !== 'desc') {
+    throw new ValidationError(`Invalid sort direction "${direction}". Must be "asc" or "desc"`);
+  }
+  
+  return { field, direction };
 }

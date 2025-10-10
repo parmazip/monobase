@@ -2,6 +2,7 @@ import { z } from 'zod';
 import ISO6391 from 'iso-639-1';
 import countries from 'i18n-iso-countries';
 import { getTimeZones } from '@vvo/tzdb';
+import { isValidPhoneNumber } from 'libphonenumber-js';
 
 // Generated Zod validators from OpenAPI spec
 
@@ -38,6 +39,15 @@ const validateLanguageCode = (code: string): boolean => {
 
 const validateCountryCode = (code: string): boolean => {
   return countries.isValid(code);
+};
+
+const validatePhoneNumber = (phone: string): boolean => {
+  try {
+    // libphonenumber-js validates E.164 format and country-specific rules
+    return isValidPhoneNumber(phone);
+  } catch {
+    return false;
+  }
 };
 
 const timezoneNames = getTimeZones().map(tz => tz.name);
@@ -208,7 +218,7 @@ export const ConflictErrorSchema = z.intersection(ErrorDetailSchema, z.object({
 
 export const EmailSchema = z.string().email();
 
-export const PhoneNumberSchema = z.string().regex(/^\+[1-9]\d{1,14}$/);
+export const PhoneNumberSchema = z.string().regex(/^\+[1-9]\d{1,14}$/).refine(val => validatePhoneNumber(val), { message: "Invalid phone number in E.164 format" });
 
 export const ContactInfoSchema = z.object({
   email: EmailSchema.optional(),
@@ -361,7 +371,9 @@ export const JoinVideoCallRequestSchema = z.object({
 export const LanguageCodeSchema = z.string().regex(/^[a-z]{2}$/).refine(val => validateLanguageCode(val), { message: "Invalid ISO 639-1 language code" });
 
 export const LeaveVideoCallResponseSchema = z.object({
-  participants: z.array(CallParticipantSchema)
+  message: z.string(),
+  callStillActive: z.boolean(),
+  remainingParticipants: z.number().int()
 });
 
 export const MaybeStoredFileSchema = z.object({
@@ -512,12 +524,14 @@ export const ValidationErrorSchema = z.intersection(ErrorDetailSchema, z.object(
 }));
 
 export const VideoCallEndResponseSchema = z.object({
-  durationMinutes: z.number().int().optional()
+  message: z.string(),
+  callDuration: z.number().int().optional()
 });
 
 export const VideoCallJoinResponseSchema = z.object({
   roomUrl: z.string(),
   token: z.string(),
+  callStatus: VideoCallStatusSchema,
   participants: z.array(CallParticipantSchema)
 });
 
@@ -574,6 +588,7 @@ export const GetChatMessagesParams = z.object({
 });
 
 export const GetChatMessagesQuery = z.object({
+  messageType: MessageTypeSchema.optional(),
   offset: z.coerce.number().int().gte(0).optional(),
   limit: z.coerce.number().int().gte(1).lte(100).optional(),
   page: z.coerce.number().int().gte(1).optional(),

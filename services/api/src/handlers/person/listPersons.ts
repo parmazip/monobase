@@ -7,7 +7,7 @@ import {
   BusinessLogicError
 } from '@/core/errors';
 import { PersonRepository } from './repos/person.repo';
-import { parsePagination, buildPaginationMeta, parseFilters } from '@/utils/query';
+import { parsePagination, buildPaginationMeta, parseFilters, parseSort } from '@/utils/query';
 
 /**
  * listPersons
@@ -30,6 +30,10 @@ export async function listPersons(ctx: Context) {
   // Parse filters with utilities
   const filters = parseFilters(query, ['q']);
   
+  // Parse and validate sort parameter
+  const allowedSortFields = ['firstName', 'lastName', 'createdAt', 'updatedAt'];
+  const sort = parseSort(query, allowedSortFields, 'createdAt:desc');
+  
   // Get dependencies from context
   const db = ctx.get('database') as DatabaseInstance;
   const logger = ctx.get('logger');
@@ -37,9 +41,10 @@ export async function listPersons(ctx: Context) {
   // Instantiate repository
   const repo = new PersonRepository(db, logger);
   
-  // Retrieve persons with pagination
+  // Retrieve persons with pagination and sorting
   const persons = await repo.findMany(filters, {
-    pagination: { limit, offset }
+    pagination: { limit, offset },
+    sort: sort ? { field: sort.field, direction: sort.direction } : undefined
   });
   
   // Get total count for pagination metadata

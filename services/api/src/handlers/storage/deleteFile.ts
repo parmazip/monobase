@@ -60,7 +60,7 @@ export async function deleteFile(ctx: Context) {
     throw new UnauthorizedError('Access denied: You can only delete your own files');
   }
 
-  // Log deletion attempt for HIPAA compliance
+  // Log deletion attempt for compliance logging
   let auditEventId: string | undefined;
   if (audit) {
     try {
@@ -81,7 +81,7 @@ export async function deleteFile(ctx: Context) {
           fileSize: file.size,
           mimeType: file.mimeType,
           timestamp: new Date().toISOString(),
-          complianceType: 'HIPAA'
+          complianceType: 'compliance'
         },
         ipAddress: ctx.req.header('x-forwarded-for') || ctx.req.header('x-client-ip') || 'unknown',
         userAgent: ctx.req.header('user-agent') || 'API-Server'

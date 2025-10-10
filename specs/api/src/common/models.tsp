@@ -41,6 +41,7 @@ scalar Email extends string;
  * Phone number in E.164 format
  */
 @doc("Phone number in E.164 international format")
+@format("phone")
 @pattern("^\\+[1-9]\\d{1,14}$")
 scalar PhoneNumber extends string;
 

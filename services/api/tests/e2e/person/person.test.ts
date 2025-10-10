@@ -205,6 +205,99 @@ describe('Person Module E2E Tests', () => {
       expect(data?.languagesSpoken).toEqual(['en', 'es', 'fr', 'zh']);
       
     });
+
+    test('should reject empty firstName (minLength validation)', async () => {
+      const testData = {
+        firstName: ''
+      };
+      
+      const response = await apiClient.fetch('/persons', {
+        method: 'POST',
+        body: testData
+      });
+      
+      expect(response.status).toBe(400);
+      const error = await response.json();
+      expect(error.code).toBeDefined();
+      expect(error.statusCode).toBe(400);
+    });
+
+    test('should reject empty lastName when provided (minLength validation)', async () => {
+      const testData = generateTestPersonData({
+        lastName: ''
+      });
+      
+      const { response } = await createPerson(apiClient, testData);
+      
+      expect(response.status).toBe(400);
+      const error = await response.json();
+      expect(error.statusCode).toBe(400);
+      expect(error.code).toBeDefined();
+    });
+
+    test('should reject invalid phone number formats', async () => {
+      const invalidPhoneFormats = [
+        '1234567890',           // Missing + prefix
+        '+123',                 // Too short
+        'not-a-phone',          // Invalid characters
+      ];
+      
+      for (const invalidPhone of invalidPhoneFormats) {
+        const testData = generateTestPersonData({
+          contactInfo: {
+            phone: invalidPhone
+          }
+        });
+        
+        const { response } = await createPerson(apiClient, testData);
+        
+        expect(response.status).toBe(400);
+      }
+    });
+
+    test('should reject invalid timezone formats', async () => {
+      const invalidTimezones = [
+        'EST',                    // Abbreviation not allowed
+        'america/new_york',       // Wrong case
+        'Not/A/Timezone'          // Invalid
+      ];
+      
+      for (const invalidTz of invalidTimezones) {
+        const testData = generateTestPersonData({
+          timezone: invalidTz
+        });
+        
+        const { response } = await createPerson(apiClient, testData);
+        
+        expect(response.status).toBe(400);
+      }
+    });
+
+    test('should reject completely invalid language codes', async () => {
+      const testData = generateTestPersonData({
+        languagesSpoken: ['xyz', '123']  // Invalid codes
+      });
+      
+      const { response } = await createPerson(apiClient, testData);
+      
+      expect(response.status).toBe(400);
+    });
+
+    test('should reject completely invalid country codes', async () => {
+      const testData = generateTestPersonData({
+        primaryAddress: {
+          street1: '123 Main St',
+          city: 'New York',
+          state: 'NY',
+          postalCode: '10001',
+          country: 'ZZZ'  // Invalid code
+        }
+      });
+      
+      const { response } = await createPerson(apiClient, testData);
+      
+      expect(response.status).toBe(400);
+    });
   });
 
   describe('Person Retrieval', () => {
@@ -252,6 +345,155 @@ describe('Person Module E2E Tests', () => {
     });
   });
 
+  describe('Authentication and Authorization', () => {
+    test('should retrieve current user profile with GET /persons/me', async () => {
+      // Create a person for the current user
+      const testData = generateTestPersonData();
+      const { data: createdPerson } = await createPerson(apiClient, testData);
+      
+      // Use "me" parameter to get current user's profile
+      const response = await apiClient.fetch('/persons/me');
+      
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data).toBeDefined();
+      expect(data.id).toBe(createdPerson?.id);
+      expect(data.firstName).toBe(testData.firstName);
+      expect(data.lastName).toBe(testData.lastName);
+      expect(validatePersonResponse(data)).toBe(true);
+    });
+
+    test('should return 401 when creating person without authentication', async () => {
+      // Create unauthenticated client
+      const unauthClient = createApiClient({ app: testApp.app });
+      
+      const testData = generateTestPersonData();
+      const response = await unauthClient.fetch('/persons', {
+        method: 'POST',
+        body: testData
+      });
+      
+      expect(response.status).toBe(401);
+      const error = await response.json();
+      // TypeSpec ErrorDetail format
+      expect(error.code).toBeDefined();
+      expect(error.message).toBeDefined();
+      expect(error.statusCode).toBe(401);
+      expect(error.requestId).toBeDefined();
+      expect(error.timestamp).toBeDefined();
+      expect(error.path).toBe('/persons');
+      expect(error.method).toBe('POST');
+    });
+
+    test('should return 409 conflict when creating duplicate person for same user', async () => {
+      // First, create a person for the current user
+      const testData = generateTestPersonData();
+      const { response: firstResponse } = await createPerson(apiClient, testData);
+      expect(firstResponse.status).toBe(201);
+      
+      // Try to create another person for the same user
+      const duplicateData = generateTestPersonData();
+      const { response: secondResponse } = await createPerson(apiClient, duplicateData);
+      
+      expect(secondResponse.status).toBe(409);
+      const error = await secondResponse.json();
+      // TypeSpec ErrorDetail format
+      expect(error.code).toBeDefined();
+      expect(error.message).toBeDefined();
+      expect(error.statusCode).toBe(409);
+      expect(error.requestId).toBeDefined();
+      expect(error.timestamp).toBeDefined();
+      expect(error.path).toBe('/persons');
+      expect(error.method).toBe('POST');
+    });
+
+    test('should return 401 when listing persons without authentication', async () => {
+      // Create unauthenticated client
+      const unauthClient = createApiClient({ app: testApp.app });
+      
+      const response = await unauthClient.fetch('/persons');
+      
+      expect(response.status).toBe(401);
+      const error = await response.json();
+      // TypeSpec ErrorDetail format
+      expect(error.code).toBeDefined();
+      expect(error.message).toBeDefined();
+      expect(error.statusCode).toBe(401);
+      expect(error.requestId).toBeDefined();
+      expect(error.timestamp).toBeDefined();
+      expect(error.path).toBe('/persons');
+      expect(error.method).toBe('GET');
+    });
+
+    test('should return 403 when non-admin user tries to list persons', async () => {
+      // Regular user client (already authenticated)
+      const response = await apiClient.fetch('/persons');
+      
+      expect(response.status).toBe(403);
+      const error = await response.json();
+      // TypeSpec ErrorDetail format
+      expect(error.code).toBeDefined();
+      expect(error.message).toBeDefined();
+      expect(error.statusCode).toBe(403);
+      expect(error.requestId).toBeDefined();
+      expect(error.timestamp).toBeDefined();
+      expect(error.path).toBe('/persons');
+      expect(error.method).toBe('GET');
+    });
+
+    test('should return 404 when updating non-existent person', async () => {
+      // Generate a valid UUID that doesn't exist
+      const nonExistentId = faker.string.uuid();
+      const updateData: PersonUpdateRequest = {
+        firstName: 'Updated'
+      };
+      
+      const response = await apiClient.fetch(`/persons/${nonExistentId}`, {
+        method: 'PATCH',
+        body: updateData
+      });
+      
+      // Should return 403 (Forbidden) since user doesn't own this person
+      // or 404 if the system returns not found before checking ownership
+      expect([403, 404].includes(response.status)).toBe(true);
+      
+      if (response.status === 404) {
+        const error = await response.json();
+        // TypeSpec ErrorDetail format
+        expect(error.code).toBeDefined();
+        expect(error.message).toBeDefined();
+        expect(error.statusCode).toBe(404);
+        expect(error.requestId).toBeDefined();
+        expect(error.timestamp).toBeDefined();
+        expect(error.path).toBe(`/persons/${nonExistentId}`);
+        expect(error.method).toBe('PATCH');
+      }
+    });
+
+    test('should return 400 for invalid UUID format in PATCH request', async () => {
+      const invalidId = 'not-a-valid-uuid-format';
+      const updateData: PersonUpdateRequest = {
+        firstName: 'Updated'
+      };
+      
+      const response = await apiClient.fetch(`/persons/${invalidId}`, {
+        method: 'PATCH',
+        body: updateData
+      });
+      
+      expect(response.status).toBe(400);
+      const error = await response.json();
+      // TypeSpec ErrorDetail/ValidationError format
+      expect(error.code).toBeDefined();
+      expect(error.message).toBeDefined();
+      expect(error.statusCode).toBe(400);
+      expect(error.requestId).toBeDefined();
+      expect(error.timestamp).toBeDefined();
+      expect(error.path).toBe(`/persons/${invalidId}`);
+      expect(error.method).toBe('PATCH');
+    });
+  });
+
   describe('Person Update', () => {
     let testPersonId: string;
     let originalData: PersonCreateRequest;
@@ -284,7 +526,7 @@ describe('Person Module E2E Tests', () => {
       const updateData: PersonUpdateRequest = {
         contactInfo: {
           email: 'updated@example.com',
-          phone: '+19876543210'
+          phone: '+12125551234' // Valid NYC phone number
         }
       };
       
@@ -292,7 +534,7 @@ describe('Person Module E2E Tests', () => {
       
       expect(response.status).toBe(200);
       expect(data?.contactInfo?.email).toBe('updated@example.com');
-      expect(data?.contactInfo?.phone).toBe('+19876543210');
+      expect(data?.contactInfo?.phone).toBe('+12125551234');
     });
 
     test('should update address', async () => {
@@ -348,6 +590,210 @@ describe('Person Module E2E Tests', () => {
       // Other fields should remain unchanged
       expect(data?.firstName).toBe(originalData.firstName);
       expect(data?.lastName).toBe(originalData.lastName);
+    });
+
+    test('should update avatar field', async () => {
+      // Update with new avatar
+      const updateWithAvatar: PersonUpdateRequest = {
+        avatar: {
+          url: 'https://example.com/updated-avatar.jpg'
+        }
+      };
+      
+      const { response, data } = await updatePerson(apiClient, testPersonId, updateWithAvatar);
+      
+      expect(response.status).toBe(200);
+      expect(data?.avatar).toBeDefined();
+      expect(data?.avatar?.url).toBe('https://example.com/updated-avatar.jpg');
+    });
+
+    test('should update languagesSpoken array', async () => {
+      // Update with new languages
+      const newLanguages: PersonUpdateRequest = {
+        languagesSpoken: ['fr', 'de', 'ja']
+      };
+      
+      const { response, data } = await updatePerson(apiClient, testPersonId, newLanguages);
+      
+      expect(response.status).toBe(200);
+      expect(data?.languagesSpoken).toEqual(['fr', 'de', 'ja']);
+      
+      // Update with empty array
+      const emptyLanguages: PersonUpdateRequest = {
+        languagesSpoken: []
+      };
+      
+      const { response: emptyResponse, data: emptyData } = await updatePerson(apiClient, testPersonId, emptyLanguages);
+      
+      expect(emptyResponse.status).toBe(200);
+      expect(emptyData?.languagesSpoken).toEqual([]);
+    });
+  });
+
+  describe('Person Update - Null Clearing', () => {
+    let testPersonId: string;
+
+    beforeEach(async () => {
+      // Create person with all nullable fields populated
+      const fullData = generateTestPersonData({
+        lastName: 'Smith',
+        middleName: 'James',
+        dateOfBirth: '1990-01-01',
+        gender: 'male',
+        primaryAddress: {
+          street1: '123 Main St',
+          city: 'New York',
+          state: 'NY',
+          postalCode: '10001',
+          country: 'US'
+        },
+        contactInfo: {
+          email: faker.internet.email(),
+          phone: '+12125551234'
+        },
+        avatar: {
+          url: 'https://example.com/avatar.jpg'
+        },
+        languagesSpoken: ['en', 'es'],
+        timezone: 'America/New_York'
+      });
+      const { data } = await createPerson(apiClient, fullData);
+      testPersonId = data!.id;
+    });
+
+    test('should clear lastName when set to null', async () => {
+      const updateData: PersonUpdateRequest = {
+        lastName: null
+      };
+      
+      const { response, data } = await updatePerson(apiClient, testPersonId, updateData);
+      
+      expect(response.status).toBe(200);
+      expect(data?.lastName).toBeNull();
+      
+      // Verify persistence
+      const { data: refreshed } = await getPerson(apiClient, testPersonId);
+      expect(refreshed?.lastName).toBeNull();
+    });
+
+    test('should clear middleName when set to null', async () => {
+      const updateData: PersonUpdateRequest = {
+        middleName: null
+      };
+      
+      const { response, data } = await updatePerson(apiClient, testPersonId, updateData);
+      
+      expect(response.status).toBe(200);
+      expect(data?.middleName).toBeNull();
+      
+      // Verify persistence
+      const { data: refreshed } = await getPerson(apiClient, testPersonId);
+      expect(refreshed?.middleName).toBeNull();
+    });
+
+    test('should clear dateOfBirth when set to null', async () => {
+      const updateData: PersonUpdateRequest = {
+        dateOfBirth: null
+      };
+      
+      const { response, data } = await updatePerson(apiClient, testPersonId, updateData);
+      
+      expect(response.status).toBe(200);
+      expect(data?.dateOfBirth).toBeNull();
+      
+      // Verify persistence
+      const { data: refreshed } = await getPerson(apiClient, testPersonId);
+      expect(refreshed?.dateOfBirth).toBeNull();
+    });
+
+    test('should clear gender when set to null', async () => {
+      const updateData: PersonUpdateRequest = {
+        gender: null
+      };
+      
+      const { response, data } = await updatePerson(apiClient, testPersonId, updateData);
+      
+      expect(response.status).toBe(200);
+      expect(data?.gender).toBeNull();
+      
+      // Verify persistence
+      const { data: refreshed } = await getPerson(apiClient, testPersonId);
+      expect(refreshed?.gender).toBeNull();
+    });
+
+    test('should clear primaryAddress when set to null', async () => {
+      const updateData: PersonUpdateRequest = {
+        primaryAddress: null
+      };
+      
+      const { response, data } = await updatePerson(apiClient, testPersonId, updateData);
+      
+      expect(response.status).toBe(200);
+      expect(data?.primaryAddress).toBeNull();
+      
+      // Verify persistence
+      const { data: refreshed } = await getPerson(apiClient, testPersonId);
+      expect(refreshed?.primaryAddress).toBeNull();
+    });
+
+    test('should clear contactInfo when set to null', async () => {
+      const updateData: PersonUpdateRequest = {
+        contactInfo: null
+      };
+      
+      const { response, data } = await updatePerson(apiClient, testPersonId, updateData);
+      
+      expect(response.status).toBe(200);
+      expect(data?.contactInfo).toBeNull();
+      
+      // Verify persistence
+      const { data: refreshed } = await getPerson(apiClient, testPersonId);
+      expect(refreshed?.contactInfo).toBeNull();
+    });
+
+    test('should clear avatar when set to null', async () => {
+      const updateData: PersonUpdateRequest = {
+        avatar: null
+      };
+      
+      const { response, data } = await updatePerson(apiClient, testPersonId, updateData);
+      
+      expect(response.status).toBe(200);
+      expect(data?.avatar).toBeNull();
+      
+      // Verify persistence
+      const { data: refreshed } = await getPerson(apiClient, testPersonId);
+      expect(refreshed?.avatar).toBeNull();
+    });
+
+    test('should clear languagesSpoken when set to null', async () => {
+      const updateData: PersonUpdateRequest = {
+        languagesSpoken: null
+      };
+      
+      const { response, data } = await updatePerson(apiClient, testPersonId, updateData);
+      
+      expect(response.status).toBe(200);
+      expect(data?.languagesSpoken).toBeNull();
+      
+      // Verify persistence
+      const { data: refreshed } = await getPerson(apiClient, testPersonId);
+      expect(refreshed?.languagesSpoken).toBeNull();
+    });
+
+    test('should clear timezone when set to null', async () => {
+      const updateData: PersonUpdateRequest = {
+        timezone: null
+      };
+      
+      const { response, data } = await updatePerson(apiClient, testPersonId, updateData);
+      
+      expect(response.status).toBe(200);
+      expect(data?.timezone).toBeNull();
+      
+      // Verify persistence
+      const { data: refreshed } = await getPerson(apiClient, testPersonId);
+      expect(refreshed?.timezone).toBeNull();
     });
   });
 
@@ -698,16 +1144,14 @@ describe('Person Module E2E Tests', () => {
 
     test('should sort persons', async () => {
       const { response: ascResponse, data: ascData } = await listPersons(adminClient, {
-        sort: 'firstName',
-        order: 'asc'
+        sort: 'firstName:asc'
       });
       
       expect(ascResponse.status).toBe(200);
       expect(ascData?.data).toBeDefined();
       
       const { response: descResponse, data: descData } = await listPersons(adminClient, {
-        sort: 'firstName',
-        order: 'desc'
+        sort: 'firstName:desc'
       });
       
       expect(descResponse.status).toBe(200);
@@ -729,6 +1173,139 @@ describe('Person Module E2E Tests', () => {
       expect(data?.data.length).toBe(0);
       expect(data?.pagination.currentPage).toBe(9999);
       expect(data?.pagination.hasNextPage).toBe(false);
+    });
+
+    describe('Query Parameter Validation', () => {
+      test('should return 400 for negative page number', async () => {
+        const response = await adminClient.fetch('/persons?page=-1&pageSize=10');
+        
+        expect(response.status).toBe(400);
+        const error = await response.json();
+        expect(error.code).toBeDefined();
+        expect(error.statusCode).toBe(400);
+      });
+
+      test('should return 400 for zero page number', async () => {
+        const response = await adminClient.fetch('/persons?page=0&pageSize=10');
+        
+        expect(response.status).toBe(400);
+        const error = await response.json();
+        expect(error.statusCode).toBe(400);
+      });
+
+      test('should return 400 for negative pageSize', async () => {
+        const response = await adminClient.fetch('/persons?page=1&pageSize=-10');
+        
+        expect(response.status).toBe(400);
+        const error = await response.json();
+        expect(error.statusCode).toBe(400);
+      });
+
+      test('should return 400 for zero pageSize', async () => {
+        const response = await adminClient.fetch('/persons?page=1&pageSize=0');
+        
+        expect(response.status).toBe(400);
+        const error = await response.json();
+        expect(error.statusCode).toBe(400);
+      });
+
+      test('should return 400 for non-numeric page value', async () => {
+        const response = await adminClient.fetch('/persons?page=abc&pageSize=10');
+        
+        expect(response.status).toBe(400);
+        const error = await response.json();
+        expect(error.statusCode).toBe(400);
+      });
+
+      test('should return 400 for non-numeric pageSize value', async () => {
+        const response = await adminClient.fetch('/persons?page=1&pageSize=xyz');
+        
+        expect(response.status).toBe(400);
+        const error = await response.json();
+        expect(error.statusCode).toBe(400);
+      });
+
+      test('should return 400 for invalid sort field name', async () => {
+        const response = await adminClient.fetch('/persons?page=1&pageSize=10&sort=nonExistentField:asc');
+        
+        expect(response.status).toBe(400);
+        const error = await response.json();
+        expect(error.statusCode).toBe(400);
+      });
+
+      test('should return 400 for invalid order value in sort', async () => {
+        const response = await adminClient.fetch('/persons?page=1&pageSize=10&sort=firstName:invalid');
+        
+        expect(response.status).toBe(400);
+        const error = await response.json();
+        expect(error.statusCode).toBe(400);
+      });
+
+      test('should return 400 for excessively large pageSize', async () => {
+        const response = await adminClient.fetch('/persons?page=1&pageSize=10000');
+        
+        expect(response.status).toBe(400);
+        const error = await response.json();
+        expect(error.statusCode).toBe(400);
+      });
+    });
+
+    test('should validate totalPages field in pagination response', async () => {
+      // Create known number of persons for testing
+      const clients: ApiClient[] = [];
+      
+      for (let i = 0; i < 3; i++) {
+        const userClient = createApiClient({ app: testApp.app });
+        await userClient.signup();
+        clients.push(userClient);
+        
+        const testData = generateTestPersonData();
+        await createPerson(userClient, testData);
+      }
+      
+      const { response, data } = await listPersons(adminClient, {
+        page: 1,
+        pageSize: 2
+      });
+      
+      expect(response.status).toBe(200);
+      expect(data?.pagination.totalPages).toBeDefined();
+      
+      // Verify relationship between totalCount and totalPages
+      if (data?.pagination.totalCount && data?.pagination.limit) {
+        const calculatedTotalPages = Math.ceil(data.pagination.totalCount / data.pagination.limit);
+        expect(data.pagination.totalPages).toBe(calculatedTotalPages);
+      }
+    });
+
+    test('should validate totalCount accuracy', async () => {
+      // Get baseline count
+      const { data: initialData } = await listPersons(adminClient, {
+        page: 1,
+        pageSize: 100
+      });
+      const initialCount = initialData?.pagination.totalCount || 0;
+      
+      // Create exactly 3 new persons
+      const personsToCreate = 3;
+      
+      for (let i = 0; i < personsToCreate; i++) {
+        const userClient = createApiClient({ app: testApp.app });
+        await userClient.signup();
+        
+        const testData = generateTestPersonData();
+        await createPerson(userClient, testData);
+      }
+      
+      // Verify count increased
+      const { response, data: updatedData } = await listPersons(adminClient, {
+        page: 1,
+        pageSize: 100
+      });
+      
+      expect(response.status).toBe(200);
+      expect(updatedData?.pagination.totalCount).toBeDefined();
+      expect(updatedData?.pagination.totalCount).toBe(initialCount + personsToCreate);
     });
   });
 

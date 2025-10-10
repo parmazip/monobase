@@ -70,7 +70,7 @@ export async function getFile(ctx: Context) {
     throw new UnauthorizedError('Access denied: You can only access your own files');
   }
 
-  // Log access for HIPAA compliance
+  // Log access for compliance logging
   let auditEventId: string | undefined;
   if (audit) {
     try {
@@ -92,7 +92,7 @@ export async function getFile(ctx: Context) {
           fileSize: file.size,
           mimeType: file.mimeType,
           timestamp: new Date().toISOString(),
-          complianceType: 'HIPAA'
+          complianceType: 'compliance'
         },
         ipAddress: ctx.req.header('x-forwarded-for') || ctx.req.header('x-client-ip') || 'unknown',
         userAgent: ctx.req.header('user-agent') || 'API-Server'

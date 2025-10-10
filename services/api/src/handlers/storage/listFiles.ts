@@ -53,7 +53,7 @@ export async function listFiles(ctx: Context) {
   }
   // Admins and providers can see all files (with audit logging)
 
-  // Log file listing access for HIPAA compliance
+  // Log file listing access for compliance logging
   if (audit) {
     try {
       await audit.logEvent({
@@ -71,7 +71,7 @@ export async function listFiles(ctx: Context) {
           filters,
           pagination: { offset, limit },
           timestamp: new Date().toISOString(),
-          complianceType: 'HIPAA'
+          complianceType: 'compliance'
         },
         ipAddress: ctx.req.header('x-forwarded-for') || ctx.req.header('x-client-ip') || 'unknown',
         userAgent: 'API-Server'
