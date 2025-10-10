@@ -20,6 +20,7 @@ import { createAuditService } from '@/core/audit';
 import { createWebSocketService } from '@/core/ws';
 import { registerEmailJobs } from '@/handlers/email/jobs';
 import { registerNotifsJobs } from '@/handlers/notifs/jobs';
+import { registerAuditJobs } from '@/handlers/audit/jobs';
 
 // Routes
 import { registerRoutes as registerOpenAPIRoutes } from '@/generated/openapi/routes';
@@ -132,6 +133,7 @@ export async function initializeApp(app: App, config: Config): Promise<void> {
   // Initialize and start background job scheduler
   registerEmailJobs(jobs, app.email);
   registerNotifsJobs(jobs, app.notifs);
+  registerAuditJobs(jobs);
   
   logger.debug('Starting background job scheduler...');
   await jobs.start();

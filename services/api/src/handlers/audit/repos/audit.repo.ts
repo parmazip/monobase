@@ -218,12 +218,12 @@ export class AuditRepository extends DatabaseRepository<AuditLogEntry, NewAuditL
 
   /**
    * Archive old audit logs (background job method)
-   * Moves logs from active to archived status after 90 days
+   * Moves logs from active to archived status after specified days (default: 365 days for HIPAA)
    */
-  async archiveOldLogs(archiveAfterDays: number = 90, archivedBy?: string): Promise<number> {
-    this.logger?.debug({ archiveAfterDays, archivedBy }, 'Starting log archival process');
+  async archiveOldLogs(daysOld: number = 365, archivedBy?: string): Promise<number> {
+    this.logger?.debug({ daysOld, archivedBy }, 'Starting log archival process');
 
-    const archiveDate = subDays(new Date(), archiveAfterDays);
+    const archiveDate = subDays(new Date(), daysOld);
 
     const result = await this.db
       .update(auditLogEntries)
@@ -244,6 +244,7 @@ export class AuditRepository extends DatabaseRepository<AuditLogEntry, NewAuditL
     this.logger?.info({
       archivedCount,
       archiveDate: archiveDate.toISOString(),
+      daysOld,
       archivedBy
     }, 'Log archival completed');
 
@@ -251,31 +252,41 @@ export class AuditRepository extends DatabaseRepository<AuditLogEntry, NewAuditL
   }
 
   /**
-   * Mark logs for purging (background job method)
-   * Identifies logs that have exceeded retention period for secure deletion
+   * Purge archived audit logs (background job method)
+   * Permanently deletes logs with 'pending-purge' status older than specified days (default: 2555 days = 7 years for HIPAA)
    */
-  async markForPurging(): Promise<number> {
-    this.logger?.debug({}, 'Marking expired logs for purging');
+  async purgeArchivedLogs(daysOld: number = 2555): Promise<number> {
+    this.logger?.debug({ daysOld }, 'Starting log purge process');
 
-    const now = new Date();
+    const purgeDate = subDays(new Date(), daysOld);
 
-    const result = await this.db
+    // First, mark archived logs for purging if they exceed the retention period
+    await this.db
       .update(auditLogEntries)
       .set({
         retentionStatus: 'pending-purge',
-        updatedAt: now
+        updatedAt: new Date()
       })
       .where(and(
         eq(auditLogEntries.retentionStatus, 'archived'),
-        lte(auditLogEntries.purgeAfter, now)
-      ))
+        lte(auditLogEntries.createdAt, purgeDate)
+      ));
+
+    // Then, permanently delete logs marked as pending-purge
+    const result = await this.db
+      .delete(auditLogEntries)
+      .where(eq(auditLogEntries.retentionStatus, 'pending-purge'))
       .returning({ id: auditLogEntries.id });
 
-    const markedCount = result.length;
+    const purgedCount = result.length;
 
-    this.logger?.info({ markedCount }, 'Logs marked for purging');
+    this.logger?.info({
+      purgedCount,
+      purgeDate: purgeDate.toISOString(),
+      daysOld
+    }, 'Log purge completed');
 
-    return markedCount;
+    return purgedCount;
   }
 
 
