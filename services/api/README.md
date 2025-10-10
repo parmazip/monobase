@@ -215,6 +215,27 @@ bun run test:perf       # Performance tests
 - ✅ No manual setup required
 - ✅ Parallel execution support
 
+## 📖 Documentation
+
+### Specialized Guides
+- **[CONTRIBUTING.md](./CONTRIBUTING.md)** - API development patterns, handler implementation, database operations
+- **[TESTING.md](./TESTING.md)** - Test infrastructure, Docker setup, testing patterns
+- **[docs/AUTHENTICATION.md](./docs/AUTHENTICATION.md)** - Better-Auth integration and usage
+- **[docs/VIDEO_CALL.md](./docs/VIDEO_CALL.md)** - WebRTC video calls and real-time communication
+- **[docs/REALTIME.md](./docs/REALTIME.md)** - WebSocket patterns and architecture
+- **[docs/EMAILS.md](./docs/EMAILS.md)** - Email templates, queue system, and providers
+- **[docs/NOTIFS.md](./docs/NOTIFS.md)** - Multi-channel notification delivery
+- **[docs/DEVELOPMENT.md](./docs/DEVELOPMENT.md)** - API design standards and TypeSpec patterns
+- **[docs/BILLING.md](./docs/BILLING.md)** - Stripe integration (coming soon)
+- **[docs/JOBS.md](./docs/JOBS.md)** - Background job patterns (coming soon)
+
+### External References
+- **[Better-Auth](https://better-auth.com/docs)** - Authentication library documentation
+- **[Drizzle ORM](https://orm.drizzle.team/docs/overview)** - Database ORM documentation
+- **[pg-boss](https://github.com/timgit/pg-boss/blob/master/docs/readme.md)** - Job queue documentation
+- **[Pino](https://getpino.io/)** - Logging library documentation
+- **[Hono](https://hono.dev/)** - Web framework documentation
+
 ## 🔧 Development Commands
 
 ```bash

@@ -177,11 +177,11 @@ graph LR
 
 ## Security Notes
 
-- **Token Expiration**: Tokens expire after 7 days by default
+- **Token Expiration**: Tokens expire after 7 days by default (configurable via `AUTH_SESSION_EXPIRES_IN`)
+- **Session Management**: Better-Auth handles session extension automatically
 - **Signature Validation**: All tokens are cryptographically signed
 - **HTTPS Required**: Always use HTTPS in production
 - **Token Storage**: Store tokens securely (never in plain text or logs)
-- **No Token Refresh**: Sign in again when token expires
 
 ## Additional Resources
 

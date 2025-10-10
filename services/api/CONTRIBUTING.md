@@ -5,13 +5,19 @@ This guide covers Hono API service-specific development patterns. **For shared b
 ## Table of Contents
 
 1. [Service Overview](#service-overview)
-2. [Handler Implementation](#handler-implementation)
-3. [Database Operations](#database-operations)
-4. [File Storage Patterns](#file-storage-patterns)
-5. [Authentication & Authorization](#authentication--authorization)
-6. [Error Handling](#error-handling)
-7. [Middleware Patterns](#middleware-patterns)
-8. [Quick Reference](#quick-reference)
+2. [⚠️ CRITICAL: Code Generation](#critical-code-generation)
+3. [Error Handling Philosophy](#error-handling-philosophy)
+4. [Handler Implementation](#handler-implementation)
+5. [Database Operations](#database-operations)
+6. [Query & Pagination Utilities](#query--pagination-utilities)
+7. [Field Expansion Pattern](#field-expansion-pattern)
+8. [File Storage Patterns](#file-storage-patterns)
+9. [Authentication & Authorization](#authentication--authorization)
+10. [Enhanced Error Handling System](#enhanced-error-handling-system)
+11. [Middleware Patterns](#middleware-patterns)
+12. [Best Practices](#best-practices)
+13. [Migration Guide](#migration-guide)
+14. [Quick Reference](#quick-reference)
 
 ---
 
@@ -22,17 +28,16 @@ This guide covers Hono API service-specific development patterns. **For shared b
 **Key Technologies:**
 - **Hono**: Fast web framework
 - **Drizzle ORM**: Type-safe database queries
-- **Better-Auth**: Authentication
-- **Pino**: Structured logging
+- **Better-Auth**: Authentication ([docs](https://better-auth.com/docs))
+- **Pino**: Structured logging ([docs](https://getpino.io/))
 - **S3/MinIO**: File storage
+- **pg-boss**: Background jobs ([docs](https://github.com/timgit/pg-boss/blob/master/docs/readme.md))
 
 **For complete backend workflow**, see [Root CONTRIBUTING.md](../../CONTRIBUTING.md).
 
 ---
 
-## Handler Implementation
-
-### ⚠️ CRITICAL: Code Generation
+## ⚠️ CRITICAL: Code Generation
 
 **NEVER edit generated files!** See [Root CONTRIBUTING.md > Code Generation](../../CONTRIBUTING.md#code-generation---do-not-edit).
 
@@ -41,108 +46,215 @@ Generated files include:
 - `src/generated/better-auth/` - Auth schema
 - `src/generated/migrations/` - Database migrations
 
-### Handler File Structure
+---
 
-Handlers are organized by module and operation:
+## Error Handling Philosophy
 
-```
-src/handlers/
-├── person/
-│   ├── createPerson.ts
-│   ├── getPerson.ts
-│   ├── updatePerson.ts
-│   └── listPersons.ts
-├── notifs/
-│   ├── getNotification.ts
-│   ├── listNotifications.ts
-│   └── markNotificationAsRead.ts
-├── comms/
-│   ├── createChatRoom.ts
-│   ├── sendChatMessage.ts
-│   └── joinVideoCall.ts
-├── email/
-│   └── ...
-└── storage/
-    └── ...
-```
+**DO NOT use try/catch blocks unless you need to clean up resources on failure.**
 
-### Basic Handler Pattern
+The API has a global error handler that manages all errors. Let errors bubble up naturally.
 
+### ❌ WRONG - Unnecessary try/catch
 ```typescript
-// src/handlers/person/createPerson.ts
-import { Context } from 'hono';
-import { db } from '@/db';
-import { persons } from '@/db/schema';
-import type { CreatePersonRequest, Person } from '@monobase/api-spec';
-
-export async function createPerson(ctx: Context) {
-  // Request is already validated by generated middleware
-  const body = ctx.req.valid('json') as CreatePersonRequest;
-
-  // Business logic
-  const [person] = await db
-    .insert(persons)
-    .values({
-      first_name: body.firstName,
-      last_name: body.lastName,
-      date_of_birth: body.dateOfBirth,
-    })
-    .returning();
-
-  // Return with correct status code
-  return ctx.json(person as Person, 201);
+// DON'T DO THIS - The global handler will manage errors
+try {
+  const user = await repo.findById(id);
+  if (!user) throw new NotFoundError('User not found', { resourceType: 'user', resource: id });
+  return ctx.json(user);
+} catch (error) {
+  return ctx.json({ error: error.message }, 400);
 }
 ```
 
-### Handler with Error Handling
+### ✅ CORRECT - Let errors bubble up
+```typescript
+// DO THIS - Let the global error handler manage it
+const user = await repo.findById(id);
+if (!user) throw new NotFoundError('User not found', { resourceType: 'user', resource: id });
+return ctx.json(user);
+```
+
+### ✅ CORRECT - Try/catch ONLY for cleanup
+```typescript
+// Use try/catch ONLY when you need to clean up on failure
+let resourceCreated = false;
+try {
+  await repo.create(data);
+  resourceCreated = true;
+  
+  await externalService.process(data);
+  return ctx.json({ success: true });
+} catch (error) {
+  // Clean up only if resource was created
+  if (resourceCreated) {
+    await repo.delete(data.id);
+    logger?.error({ error, id: data.id }, 'Cleaned up after failure');
+  }
+  throw error; // ALWAYS re-throw for global handler
+}
+```
+
+---
+
+## Handler Implementation
+
+### Module Structure
+
+Organize handlers using the repository pattern with proper separation of concerns:
+
+```
+src/handlers/[module]/
+├── repos/
+│   ├── [entity].schema.ts    # Drizzle schema definitions & types
+│   └── [entity].repo.ts      # Repository class with data access logic
+├── [operation1].ts           # Individual handler functions
+├── [operation2].ts
+├── [operation3].ts
+└── index.ts                  # Module exports (optional)
+```
+
+### Schema Definition
+
+Define your database schema and TypeScript types using Drizzle ORM with the standardized base entity fields:
 
 ```typescript
-import { HTTPException } from 'hono/http-exception';
+import { pgTable, uuid, varchar, pgEnum } from 'drizzle-orm/pg-core';
+import { baseEntityFields, type BaseEntity } from '@/core/database.schema';
 
-export async function getPerson(ctx: Context) {
-  const { id } = ctx.req.param();
+// Define enums
+export const statusEnum = pgEnum('status', ['active', 'inactive', 'pending']);
 
-  const person = await db.query.persons.findFirst({
-    where: eq(persons.id, id),
-  });
+// Define table schema
+export const entities = pgTable('entity', {
+  // Base entity fields (includes id, timestamps, version, audit fields)
+  ...baseEntityFields,
+  
+  // Entity-specific fields
+  name: varchar('name', { length: 255 }).notNull(),
+  status: statusEnum('status').notNull().default('pending'),
+  
+  // Relationships - Use entity name, not *Id suffix
+  owner: uuid('owner_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+});
 
-  if (!person) {
-    throw new HTTPException(404, {
-      message: `Person ${id} not found`,
-    });
+// Type exports for TypeScript
+export type Entity = typeof entities.$inferSelect;
+export type NewEntity = typeof entities.$inferInsert;
+```
+
+### Repository Pattern
+
+Create a repository class that extends the base `DatabaseRepository`:
+
+```typescript
+import { eq, and, type SQL } from 'drizzle-orm';
+import type { DatabaseInstance } from '@/core/database';
+import { DatabaseRepository } from '@/core/database.repo';
+import { entities, type Entity, type NewEntity } from './entity.schema';
+
+export interface EntityFilters {
+  status?: 'active' | 'inactive' | 'pending';
+  owner?: string;
+}
+
+export class EntityRepository extends DatabaseRepository<Entity, NewEntity, EntityFilters> {
+  constructor(db: DatabaseInstance, logger?: any) {
+    super(db, entities, logger);
   }
 
-  return ctx.json(person);
+  protected buildWhereConditions(filters?: EntityFilters): SQL<unknown> | undefined {
+    if (!filters) return undefined;
+    
+    const conditions = [];
+    if (filters.status) conditions.push(eq(entities.status, filters.status));
+    if (filters.owner) conditions.push(eq(entities.owner, filters.owner));
+
+    return conditions.length > 0 ? and(...conditions) : undefined;
+  }
+
+  async updateStatus(id: string, status: Entity['status']): Promise<Entity> {
+    return this.updateOneById(id, { status });
+  }
 }
 ```
 
-### Handler with Transaction
+### Basic Handler Structure
 
 ```typescript
-export async function createNotificationWithEmail(ctx: Context) {
-  const body = ctx.req.valid('json');
+import { Context } from 'hono';
+import type { DatabaseInstance } from '@/core/database';
+import { NotFoundError, BusinessLogicError } from '@/core/errors';
+import { EntityRepository } from './repos/entity.repo';
 
-  // Use transaction for atomic operations
-  const result = await db.transaction(async (tx) => {
-    // Create notification
-    const [notification] = await tx
-      .insert(notifications)
-      .values(body.notification)
-      .returning();
+export async function handlerName(ctx: Context) {
+  // Get validated parameters
+  const params = ctx.req.valid('param') as { id: string };
+  const body = ctx.req.valid('json') as { name: string };
+  
+  // Get dependencies from context
+  const db = ctx.get('database') as DatabaseInstance;
+  const logger = ctx.get('logger');
+  
+  // Instantiate repository
+  const repo = new EntityRepository(db, logger);
+  
+  // Business logic - NO try/catch needed
+  const entity = await repo.findOneById(params.id);
+  
+  if (!entity) {
+    throw new NotFoundError('Entity not found', { 
+      resourceType: 'entity', 
+      resource: params.id 
+    });
+  }
+  
+  // Validate business rules
+  if (entity.status !== 'active') {
+    throw new BusinessLogicError(
+      `Entity is ${entity.status}, operation not allowed`,
+      'INVALID_STATUS'
+    );
+  }
+  
+  // Update entity
+  const updated = await repo.updateOneById(params.id, { name: body.name });
+  
+  // Log audit trail
+  logger?.info({
+    entityId: params.id,
+    action: 'update',
+    changes: { name: body.name }
+  }, 'Entity updated');
+  
+  return ctx.json(updated, 200);
+}
+```
 
-    // Create email queue item
-    const [emailItem] = await tx
-      .insert(emailQueue)
-      .values({
-        notification_id: notification.id,
-        ...body.email,
-      })
-      .returning();
+### External Service Integration with Cleanup
 
-    return { notification, emailItem };
-  });
-
-  return ctx.json(result, 201);
+```typescript
+export async function uploadHandler(ctx: Context) {
+  const body = ctx.req.valid('json') as { filename: string };
+  const storage = ctx.get('storage');
+  const repo = new FileRepository(db, logger);
+  
+  const fileId = uuidv4();
+  let fileCreated = false;
+  
+  try {
+    await repo.createOne({ id: fileId, filename: body.filename, status: 'uploading' });
+    fileCreated = true;
+    
+    const uploadUrl = await storage.generateUploadUrl(fileId);
+    return ctx.json({ fileId, uploadUrl }, 201);
+  } catch (error) {
+    if (fileCreated) {
+      await repo.deleteOneById(fileId);
+    }
+    throw error; // Re-throw for global handler
+  }
 }
 ```
 
@@ -150,344 +262,349 @@ export async function createNotificationWithEmail(ctx: Context) {
 
 ## Database Operations
 
-### Drizzle ORM Patterns
+### Base Entity Fields Pattern
 
-**For complete database workflow**, see [Root CONTRIBUTING.md > Database Workflow](../../CONTRIBUTING.md#database-workflow).
+All tables use standardized `baseEntityFields` from `@/core/database.schema`:
+
+```typescript
+export const baseEntityFields = {
+  id: uuid('id').primaryKey().defaultRandom(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  deletedAt: timestamp('deleted_at'),  // Soft delete
+  version: integer('version').default(1).notNull(),  // Optimistic locking
+  createdBy: uuid('created_by'),
+  updatedBy: uuid('updated_by'),
+  deletedBy: uuid('deleted_by'),
+};
+```
+
+**Benefits**: Consistency, audit trail, soft deletes, optimistic locking, type safety.
+
+### Modern Foreign Key Pattern
+
+**Use entity names for foreign keys, not `*Id` suffixes.**
+
+✅ **CORRECT**:
+```typescript
+export const patients = pgTable('patient', {
+  ...baseEntityFields,
+  person: uuid('person_id').notNull().references(() => persons.id),
+});
+```
+
+❌ **WRONG**:
+```typescript
+export const patients = pgTable('patient', {
+  ...baseEntityFields,
+  personId: uuid('person_id').notNull().references(() => persons.id),
+});
+```
+
+**Why**: Direct API alignment, no mapping needed, cleaner code.
+
+### Table Naming Convention
+
+Plural constants, singular table names:
+
+```typescript
+// ✅ CORRECT
+export const patients = pgTable('patient', { /* ... */ });
+export const providers = pgTable('provider', { /* ... */ });
+export const storedFiles = pgTable('stored_file', { /* ... */ });
+```
 
 ### Query Patterns
 
-**Select:**
+See [Drizzle ORM docs](https://orm.drizzle.team/docs/overview) for complete reference.
+
+**Select**:
 ```typescript
-// Find first
 const person = await db.query.persons.findFirst({
   where: eq(persons.id, id),
 });
 
-// Find many
 const notifications = await db.query.notifications.findMany({
   where: eq(notifications.recipient, userId),
   orderBy: [desc(notifications.created_at)],
   limit: 20,
-  offset: 0,
-});
-
-// With relations
-const chatRoom = await db.query.chatRooms.findFirst({
-  where: eq(chatRooms.id, id),
-  with: {
-    messages: {
-      orderBy: [desc(chatMessages.created_at)],
-      limit: 50,
-    },
-  },
 });
 ```
 
-**Insert:**
+**Insert**:
 ```typescript
-// Single insert
-const [person] = await db
-  .insert(persons)
-  .values({
-    first_name: 'John',
-    last_name: 'Doe',
-  })
-  .returning();
-
-// Bulk insert
-const newNotifications = await db
-  .insert(notifications)
-  .values([
-    { recipient: 'user1', type: 'info', message: 'Message 1' },
-    { recipient: 'user2', type: 'info', message: 'Message 2' },
-  ])
-  .returning();
+const [person] = await db.insert(persons).values({ firstName: 'John' }).returning();
 ```
 
-**Update:**
+**Update**:
 ```typescript
-// Update with conditions
-const [updated] = await db
-  .update(persons)
-  .set({
-    first_name: newFirstName,
-    updated_at: new Date(),
-  })
-  .where(eq(persons.id, id))
-  .returning();
-
-// Partial update (only provided fields)
-const updates = {
-  ...(firstName && { first_name: firstName }),
-  ...(lastName && { last_name: lastName }),
-  updated_at: new Date(),
-};
-
-const [updated] = await db
-  .update(persons)
-  .set(updates)
+const [updated] = await db.update(persons)
+  .set({ firstName: newName, updatedAt: new Date() })
   .where(eq(persons.id, id))
   .returning();
 ```
 
-**Delete:**
+**Delete** (prefer soft delete):
 ```typescript
-// Soft delete (recommended)
-const [deleted] = await db
-  .update(persons)
-  .set({ deleted_at: new Date() })
+const [deleted] = await db.update(persons)
+  .set({ deletedAt: new Date() })
   .where(eq(persons.id, id))
   .returning();
-
-// Hard delete (use cautiously)
-await db
-  .delete(persons)
-  .where(eq(persons.id, id));
 ```
 
 ### Schema Migrations
 
 ```bash
-# Generate migration from schema changes
-bun run db:generate
-
-# Apply migrations
-bun run db:migrate
-
-# Open Drizzle Studio
-bun run db:studio
+bun run db:generate  # Generate migration
+bun run db:migrate   # Apply migrations
+bun run db:studio    # Open Drizzle Studio
 ```
 
-**Migration files** in `src/generated/migrations/` are auto-generated. **Never edit manually!**
+---
+
+## Query & Pagination Utilities
+
+Use standardized utilities from `@/utils/query` for uniform query handling:
+
+```typescript
+import { parsePagination, buildPaginationMeta, parseFilters, shouldExpand } from '@/utils/query';
+
+export async function listEntities(ctx: Context) {
+  const query = ctx.req.valid('query');
+  
+  // Parse pagination with defaults
+  const { limit, offset } = parsePagination(query, { limit: 25, maxLimit: 100 });
+  
+  // Parse filters (only allowed fields)
+  const filters = parseFilters(query, ['q', 'status', 'category']);
+  
+  // Check expansion
+  const expandRelated = shouldExpand(query, 'related');
+  
+  const repo = new EntityRepository(db, logger);
+  const entities = await repo.findMany(filters, { pagination: { limit, offset } });
+  const totalCount = await repo.count(filters);
+  
+  // Build standard pagination metadata
+  const paginationMeta = buildPaginationMeta(entities, totalCount, limit, offset);
+  
+  return ctx.json({ data: entities, pagination: paginationMeta }, 200);
+}
+```
+
+**Standard response format**:
+```typescript
+{
+  data: Entity[],
+  pagination: {
+    limit: number,
+    offset: number,
+    count: number,
+    totalCount: number,
+    totalPages: number,
+    currentPage: number,
+    hasMore: boolean,
+    hasNextPage: boolean,
+    hasPreviousPage: boolean
+  }
+}
+```
+
+---
+
+## Field Expansion Pattern
+
+Implement expandable fields for optional related data:
+
+```typescript
+import { shouldExpand } from '@/utils/query';
+
+export async function getPatient(ctx: Context) {
+  const patientId = ctx.req.param('patient');
+  const query = ctx.req.valid('query') as { expand?: string[] };
+  
+  const expandPerson = shouldExpand(query, 'person');
+  
+  // Call appropriate repository method
+  const patient = expandPerson 
+    ? await repo.findOneWithPerson(patientId)
+    : await repo.findOneById(patientId);
+  
+  if (!patient) throw new NotFoundError('Patient not found');
+  
+  return ctx.json(patient, 200);
+}
+```
+
+**Repository methods**:
+```typescript
+async findOneById(id: string): Promise<Patient | null> {
+  return super.findOneById(id);  // Returns: { person: "uuid-string" }
+}
+
+async findOneWithPerson(id: string): Promise<PatientWithPerson | null> {
+  const result = await this.db
+    .select({ patient: patients, person: persons })
+    .from(patients)
+    .innerJoin(persons, eq(patients.person, persons.id))
+    .where(eq(patients.id, id))
+    .limit(1);
+    
+  return result.length > 0 ? { ...result[0].patient, person: result[0].person } : null;
+}
+```
+
+**API usage**:
+```bash
+GET /patients/123              # person is UUID
+GET /patients/123?expand=person  # person is full object
+```
 
 ---
 
 ## File Storage Patterns
 
-### S3/MinIO Operations
+See implementation in `src/handlers/storage/` for complete examples.
 
-**Upload File:**
+**Upload with presigned URL**:
 ```typescript
-import { storage } from '@/lib/storage';
-
-export async function uploadDocument(ctx: Context) {
-  const formData = await ctx.req.formData();
-  const file = formData.get('file') as File;
-
-  if (!file) {
-    throw new HTTPException(400, { message: 'No file provided' });
-  }
-
-  // Upload to S3/MinIO
-  const fileKey = `documents/${Date.now()}-${file.name}`;
-  const buffer = await file.arrayBuffer();
-
-  await storage.putObject({
-    Bucket: process.env.STORAGE_BUCKET,
-    Key: fileKey,
-    Body: Buffer.from(buffer),
-    ContentType: file.type,
-  });
-
-  // Save metadata to database
-  const [document] = await db
-    .insert(documents)
-    .values({
-      file_key: fileKey,
-      file_name: file.name,
-      content_type: file.type,
-      size: file.size,
-    })
-    .returning();
-
-  return ctx.json(document, 201);
-}
+const uploadUrl = await storage.generateUploadUrl(fileKey);
+return ctx.json({ fileId, uploadUrl }, 201);
 ```
 
-**Generate Presigned URL:**
+**Download with presigned URL**:
 ```typescript
-export async function getDocumentUrl(ctx: Context) {
-  const { id } = ctx.req.param();
-
-  const document = await db.query.documents.findFirst({
-    where: eq(documents.id, id),
-  });
-
-  if (!document) {
-    throw new HTTPException(404, { message: 'Document not found' });
-  }
-
-  // Generate presigned URL (valid for 1 hour)
-  const url = await storage.getSignedUrl('getObject', {
-    Bucket: process.env.STORAGE_BUCKET,
-    Key: document.file_key,
-    Expires: 3600,
-  });
-
-  return ctx.json({ url });
-}
+const downloadUrl = await storage.generateDownloadUrl(fileKey);
+return ctx.json({ url: downloadUrl });
 ```
 
-**Delete File:**
+**Delete**:
 ```typescript
-export async function deleteDocument(ctx: Context) {
-  const { id } = ctx.req.param();
-
-  const document = await db.query.documents.findFirst({
-    where: eq(documents.id, id),
-  });
-
-  if (!document) {
-    throw new HTTPException(404, { message: 'Document not found' });
-  }
-
-  // Delete from S3/MinIO
-  await storage.deleteObject({
-    Bucket: process.env.STORAGE_BUCKET,
-    Key: document.file_key,
-  });
-
-  // Delete from database
-  await db.delete(documents).where(eq(documents.id, id));
-
-  return ctx.body(null, 204);
-}
+await storage.deleteObject(fileKey);
+await repo.deleteOneById(fileId);
 ```
 
 ---
 
 ## Authentication & Authorization
 
-### Better-Auth Integration
+See [Better-Auth docs](https://better-auth.com/docs) for complete reference.
 
-**Get Current User:**
+**Get current user**:
 ```typescript
-import { auth } from '@/lib/auth';
-
-export async function getCurrentUser(ctx: Context) {
-  const session = await auth.api.getSession({
-    headers: ctx.req.raw.headers,
-  });
-
-  if (!session) {
-    throw new HTTPException(401, { message: 'Not authenticated' });
-  }
-
-  return ctx.json(session.user);
-}
+const session = await auth.api.getSession({ headers: ctx.req.raw.headers });
+if (!session) throw new HTTPException(401, { message: 'Not authenticated' });
+return ctx.json(session.user);
 ```
 
-**Require Authentication:**
+**Require authentication**:
 ```typescript
-export async function protectedHandler(ctx: Context) {
-  const session = await auth.api.getSession({
-    headers: ctx.req.raw.headers,
-  });
-
-  if (!session) {
-    throw new HTTPException(401, { message: 'Authentication required' });
-  }
-
-  // Handler logic with session.user
-  return ctx.json({ message: 'Protected resource' });
-}
+if (!session) throw new HTTPException(401, { message: 'Authentication required' });
 ```
 
-**Role-Based Access:**
+**Role-based access**:
 ```typescript
-export async function adminOnlyHandler(ctx: Context) {
-  const session = await auth.api.getSession({
-    headers: ctx.req.raw.headers,
-  });
-
-  if (!session) {
-    throw new HTTPException(401, { message: 'Authentication required' });
-  }
-
-  if (session.user.role !== 'admin') {
-    throw new HTTPException(403, { message: 'Admin access required' });
-  }
-
-  // Admin-only logic
-  return ctx.json({ message: 'Admin resource' });
+if (session.user.role !== 'admin') {
+  throw new HTTPException(403, { message: 'Admin access required' });
 }
 ```
 
 ---
 
-## Error Handling
+## Enhanced Error Handling System
 
-### Standard Error Responses
+### Core Error Types
 
+**NotFoundError - 404** (with rich context):
 ```typescript
-import { HTTPException } from 'hono/http-exception';
-
-// 400 Bad Request
-throw new HTTPException(400, {
-  message: 'Invalid input',
-  cause: validationErrors,
-});
-
-// 401 Unauthorized
-throw new HTTPException(401, {
-  message: 'Authentication required',
-});
-
-// 403 Forbidden
-throw new HTTPException(403, {
-  message: 'Insufficient permissions',
-});
-
-// 404 Not Found
-throw new HTTPException(404, {
-  message: 'Resource not found',
-});
-
-// 409 Conflict
-throw new HTTPException(409, {
-  message: 'Resource already exists',
-});
-
-// 500 Internal Server Error
-throw new HTTPException(500, {
-  message: 'Internal server error',
+throw new NotFoundError('Patient not found', {
+  resourceType: 'patient',
+  resource: patientId,
+  suggestions: ['Check patient ID format', 'Verify patient exists']
 });
 ```
 
-### Custom Error Handler
-
+**ValidationError - 400**:
 ```typescript
-// src/middleware/error.ts
-import { Context } from 'hono';
-import { HTTPException } from 'hono/http-exception';
-import { logger } from '@/lib/logger';
+throw new ValidationError('Invalid email format');
+```
 
-export async function errorHandler(err: Error, ctx: Context) {
-  if (err instanceof HTTPException) {
-    // HTTP exceptions - return as-is
-    return ctx.json(
-      {
-        error: {
-          message: err.message,
-          status: err.status,
-        },
-      },
-      err.status
-    );
-  }
+**BusinessLogicError - 400**:
+```typescript
+throw new BusinessLogicError(
+  'Cannot schedule appointment: Provider not available',
+  'PROVIDER_UNAVAILABLE'
+);
+```
 
-  // Unknown errors - log and return generic message
-  logger.error({ err }, 'Unhandled error');
+**UnauthorizedError - 401**:
+```typescript
+throw new UnauthorizedError('Authentication required');
+```
 
-  return ctx.json(
-    {
-      error: {
-        message: 'Internal server error',
-        status: 500,
-      },
-    },
-    500
-  );
+**ForbiddenError - 403**:
+```typescript
+throw new ForbiddenError('Insufficient permissions to access patient records');
+```
+
+### Healthcare-Specific Errors
+
+**HipaaComplianceError**:
+```typescript
+throw new HipaaComplianceError(
+  'Access requires patient consent',
+  'patient-consent-rule-1',
+  'privacy',
+  auditLogId,
+  ['Obtain patient consent', 'Verify authorized access']
+);
+```
+
+**AuthorizationError** (with permission context):
+```typescript
+throw new AuthorizationError(
+  'Insufficient permissions to delete records',
+  'patient:delete',
+  ['patient:read', 'patient:update'],
+  `patient-${patientId}`
+);
+```
+
+### Service Integration Errors
+
+**TimeoutError - 408**:
+```typescript
+throw new TimeoutError('Patient lookup timed out', 5000, 'database-query', true);
+```
+
+**ExternalServiceError - 503**:
+```typescript
+throw new ExternalServiceError(
+  'Insurance verification failed',
+  'insurance-api',
+  'verify-coverage',
+  'INVALID_POLICY',
+  'Policy not found',
+  false
+);
+```
+
+**RateLimitError - 429**:
+```typescript
+throw new RateLimitError('API rate limit exceeded', { retryAfter: 60 });
+```
+
+### Error Response Format
+
+All errors return TypeSpec-compliant structure:
+```json
+{
+  "message": "Patient not found",
+  "code": "NOT_FOUND",
+  "statusCode": 404,
+  "resourceType": "patient",
+  "resource": "patient-456",
+  "suggestions": ["Check patient ID format"]
 }
 ```
 
@@ -495,159 +612,101 @@ export async function errorHandler(err: Error, ctx: Context) {
 
 ## Middleware Patterns
 
-### Logging Middleware
-
+### Logging
 ```typescript
-// src/middleware/logger.ts
-import { Context, Next } from 'hono';
-import { logger } from '@/lib/logger';
-
-export async function loggerMiddleware(ctx: Context, next: Next) {
-  const start = Date.now();
-
-  await next();
-
-  const duration = Date.now() - start;
-
-  logger.info({
-    method: ctx.req.method,
-    path: ctx.req.path,
-    status: ctx.res.status,
-    duration,
-  });
-}
+logger.info({ method: ctx.req.method, path: ctx.req.path, status: ctx.res.status });
 ```
 
-### CORS Middleware
+### CORS
+Already configured in `src/index.ts`. See README.md for CORS configuration details.
 
-```typescript
-// Already configured in src/index.ts
-import { cors } from 'hono/cors';
+### Rate Limiting
+See Better-Auth configuration for authentication rate limiting.
 
-app.use('/*', cors({
-  origin: (origin) => {
-    // CORS logic based on environment variables
-    return allowedOrigin;
-  },
-  credentials: true,
-}));
-```
+---
 
-### Rate Limiting Middleware
+## Best Practices
 
-```typescript
-// src/middleware/rate-limit.ts
-import { Context, Next } from 'hono';
-import { HTTPException } from 'hono/http-exception';
+1. **NO try/catch** unless cleanup is needed
+2. Let errors bubble to global handler
+3. Use repository pattern for data access
+4. Use `baseEntityFields` for all entities
+5. Include audit fields (createdBy, updatedBy, deletedBy)
+6. Use modern foreign key pattern (entity names, not *Id)
+7. Implement field expansion with `shouldExpand`
+8. Use query utilities for pagination/filtering
+9. Log important operations for audit
+10. Validate business rules before operations
+11. Use transactions for multi-table operations
+12. Use path aliases (`@/core`, `@/handlers`)
+13. Keep handlers focused on orchestration
+14. Put complex logic in repositories/services
+15. Standard pagination: `{data, pagination}` format
+16. Reference external library docs (Better-Auth, Drizzle, pg-boss, Pino)
 
-const requests = new Map<string, number[]>();
+---
 
-export function rateLimit(maxRequests: number, windowMs: number) {
-  return async (ctx: Context, next: Next) => {
-    const ip = ctx.req.header('x-forwarded-for') || 'unknown';
-    const now = Date.now();
+## Migration Guide
 
-    const userRequests = requests.get(ip) || [];
-    const recentRequests = userRequests.filter(
-      (time) => now - time < windowMs
-    );
+### From Old to New Pattern
 
-    if (recentRequests.length >= maxRequests) {
-      throw new HTTPException(429, {
-        message: 'Too many requests',
-      });
-    }
+1. Remove unnecessary try/catch blocks
+2. Extract data access to repository classes
+3. Convert `*Id` foreign keys to entity names
+4. Add field expansion support
+5. Use query utilities for pagination
+6. Simplify handlers with repository method selection
+7. Add proper error handling with NotFoundError options
+8. Reference library docs instead of duplicating
 
-    recentRequests.push(now);
-    requests.set(ip, recentRequests);
+### Recent Improvements
 
-    await next();
-  };
-}
-
-// Usage
-app.use('/api/*', rateLimit(100, 60000)); // 100 requests per minute
-```
+- Modern foreign key pattern (`.person` not `.personId`)
+- Field expansion with `shouldExpand` utility
+- Repository cleanup (~470 lines removed)
+- Handler simplification (70% complexity reduction)
+- Direct schema-API alignment
 
 ---
 
 ## Quick Reference
 
 ### Development Commands
-
 ```bash
 cd services/api
 
-# Development
 bun run dev          # Start with hot reload
 bun run build        # Build for production
 bun run typecheck    # TypeScript checking
-bun run lint         # Code linting
 
-# Database
 bun run db:generate  # Generate migrations
-bun run db:studio    # Open Drizzle Studio
+bun run db:studio    # Drizzle Studio
 
-# Testing
-bun test            # All tests
-bun run test:unit    # Unit tests
-bun run test:int     # Integration tests
+bun test             # All tests
 bun run test:e2e     # E2E tests
+bun run test:perf    # Performance tests
 ```
 
 ### Before Implementing Features
 
 **⚠️ CRITICAL**: Follow API-First workflow!
 
-1. **Define API** in TypeSpec (`specs/api/src/modules/`)
-2. **Generate** OpenAPI + types (`cd specs/api && bun run build:all`)
-3. **Check generated files** in `src/generated/openapi/`
-4. **Implement handler** in `src/handlers/{module}/{operation}.ts`
-5. **Use generated types** for type safety
-6. **Test** the endpoint
+1. Define API in TypeSpec
+2. Generate OpenAPI + types
+3. Implement handler
+4. Test endpoint
 
-**Never edit generated files!** See [Root CONTRIBUTING.md > Code Generation](../../CONTRIBUTING.md#code-generation---do-not-edit).
-
-### Common Patterns
-
-**Create Resource:**
-```typescript
-const [created] = await db.insert(table).values(data).returning();
-return ctx.json(created, 201);
-```
-
-**Get Resource:**
-```typescript
-const resource = await db.query.table.findFirst({ where: eq(table.id, id) });
-if (!resource) throw new HTTPException(404);
-return ctx.json(resource);
-```
-
-**Update Resource:**
-```typescript
-const [updated] = await db.update(table).set(data).where(eq(table.id, id)).returning();
-return ctx.json(updated);
-```
-
-**Delete Resource:**
-```typescript
-await db.delete(table).where(eq(table.id, id));
-return ctx.body(null, 204);
-```
+**Never edit generated files!** See [Root CONTRIBUTING.md](../../CONTRIBUTING.md#code-generation---do-not-edit).
 
 ---
 
-## Complete Backend Patterns
+## External Documentation
 
-For complete details on:
-- API-First Development workflow
-- Code Generation rules (**CRITICAL!**)
-- Module Structure Patterns
-- Database Workflow
-- Testing Requirements
-- Coding Standards
-
-**See**: [Root CONTRIBUTING.md](../../CONTRIBUTING.md)
+- **Better-Auth**: https://better-auth.com/docs
+- **Drizzle ORM**: https://orm.drizzle.team/docs/overview
+- **pg-boss**: https://github.com/timgit/pg-boss/blob/master/docs/readme.md
+- **Pino**: https://getpino.io/
+- **Hono**: https://hono.dev/
 
 ---
 
