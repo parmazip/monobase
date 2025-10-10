@@ -8,7 +8,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useCreateMyPerson } from '@monobase/sdk/react/hooks/use-person'
 import { queryKeys } from '@monobase/sdk/react/query-keys'
 import { Logo } from '@/components/logo'
-import { composeGuards, requireAuth, requireNoPerson } from '@/utils/guards'
+import { composeGuards, requireAuth, requireEmailVerified, requireNoPerson } from '@/utils/guards'
 import { detectTimezone } from '@monobase/ui/lib/detect-timezone'
 import { detectCountry } from '@monobase/ui/lib/detect-country'
 import { detectLanguage } from '@monobase/ui/lib/detect-language'
@@ -18,7 +18,7 @@ import type { PersonalInfo, OptionalAddress } from '@monobase/ui/person/schemas'
 import type { CreatePersonData } from '@monobase/sdk/services/person'
 
 export const Route = createFileRoute('/onboarding')({
-  beforeLoad: composeGuards(requireAuth, requireNoPerson),
+  beforeLoad: composeGuards(requireAuth, requireEmailVerified, requireNoPerson),
   component: OnboardingPage,
 })
 

@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as DashboardRouteImport } from './routes/_dashboard'
 import { Route as IndexRouteImport } from './routes/index'
@@ -18,6 +19,11 @@ import { Route as DashboardDashboardRouteImport } from './routes/_dashboard/dash
 import { Route as DashboardSettingsSecurityRouteImport } from './routes/_dashboard/settings/security'
 import { Route as DashboardSettingsAccountRouteImport } from './routes/_dashboard/settings/account'
 
+const VerifyEmailRoute = VerifyEmailRouteImport.update({
+  id: '/verify-email',
+  path: '/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
@@ -63,6 +69,7 @@ const DashboardSettingsAccountRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/onboarding': typeof OnboardingRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/dashboard': typeof DashboardDashboardRoute
   '/notifications': typeof DashboardNotificationsRoute
   '/auth/$authView': typeof AuthAuthViewRoute
@@ -72,6 +79,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/onboarding': typeof OnboardingRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/dashboard': typeof DashboardDashboardRoute
   '/notifications': typeof DashboardNotificationsRoute
   '/auth/$authView': typeof AuthAuthViewRoute
@@ -83,6 +91,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_dashboard': typeof DashboardRouteWithChildren
   '/onboarding': typeof OnboardingRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/_dashboard/dashboard': typeof DashboardDashboardRoute
   '/_dashboard/notifications': typeof DashboardNotificationsRoute
   '/auth/$authView': typeof AuthAuthViewRoute
@@ -94,6 +103,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/onboarding'
+    | '/verify-email'
     | '/dashboard'
     | '/notifications'
     | '/auth/$authView'
@@ -103,6 +113,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/onboarding'
+    | '/verify-email'
     | '/dashboard'
     | '/notifications'
     | '/auth/$authView'
@@ -113,6 +124,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_dashboard'
     | '/onboarding'
+    | '/verify-email'
     | '/_dashboard/dashboard'
     | '/_dashboard/notifications'
     | '/auth/$authView'
@@ -124,11 +136,19 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRouteWithChildren
   OnboardingRoute: typeof OnboardingRoute
+  VerifyEmailRoute: typeof VerifyEmailRoute
   AuthAuthViewRoute: typeof AuthAuthViewRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/verify-email': {
+      id: '/verify-email'
+      path: '/verify-email'
+      fullPath: '/verify-email'
+      preLoaderRoute: typeof VerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/onboarding': {
       id: '/onboarding'
       path: '/onboarding'
@@ -210,6 +230,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRouteWithChildren,
   OnboardingRoute: OnboardingRoute,
+  VerifyEmailRoute: VerifyEmailRoute,
   AuthAuthViewRoute: AuthAuthViewRoute,
 }
 export const routeTree = rootRouteImport

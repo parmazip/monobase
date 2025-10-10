@@ -51,7 +51,6 @@ function RouteComponent() {
         <div className="w-full overflow-hidden [&_.flex.items-center.gap-2]:justify-center">
           <AuthView
             pathname={authView}
-            redirectTo="/onboarding"
           />
         </div>
       </div>

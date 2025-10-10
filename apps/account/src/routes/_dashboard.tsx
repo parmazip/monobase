@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet } from '@tanstack/react-router'
-import { requireAuth, requirePerson, composeGuards } from '@/utils/guards'
+import { requireAuth, requireEmailVerified, requirePerson, composeGuards } from '@/utils/guards'
 import { AppSidebar, type NavGroup } from '@/components/app-sidebar'
 import {
   SidebarProvider,
@@ -16,7 +16,7 @@ import { UserButton } from '@daveyplate/better-auth-ui'
 import { useUnreadNotifications } from '@monobase/sdk/react/hooks/use-notifications'
 
 export const Route = createFileRoute('/_dashboard')({
-  beforeLoad: composeGuards(requireAuth, requirePerson),
+  beforeLoad: composeGuards(requireAuth, requireEmailVerified, requirePerson),
   component: DashboardLayout,
 })
 
@@ -25,7 +25,7 @@ function DashboardLayout() {
   const { data: unreadData } = useUnreadNotifications()
   const unreadCount = unreadData?.pagination?.totalCount || 0
 
-  // Define navigation structure for the admin dashboard (simplified)
+  // Define navigation structure for the account dashboard
   const navGroups: NavGroup[] = [
     {
       label: "Navigation",
@@ -66,7 +66,7 @@ function DashboardLayout() {
       <AppSidebar
         navGroups={navGroups}
         headerTitle="MONOBASE"
-        headerSubtitle="Admin Portal"
+        headerSubtitle="Account Portal"
       />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">

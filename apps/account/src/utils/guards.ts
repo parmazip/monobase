@@ -75,6 +75,32 @@ export async function requireNoPerson({ context }: { context: RouterContext }) {
   }
 }
 
+/**
+ * Guard that requires user to have a verified email
+ * Reads auth state from router context - no querying!
+ * Redirects to verify-email blocker page if email is not verified
+ */
+export async function requireEmailVerified({ context }: { context: RouterContext }) {
+  if (!context.auth.user?.emailVerified) {
+    throw redirect({
+      to: '/verify-email',
+    })
+  }
+}
+
+/**
+ * Guard that requires user to NOT have a verified email
+ * Reads auth state from router context - no querying!
+ * Used for verify-email blocker page - redirects to dashboard if email is already verified
+ */
+export async function requireNotEmailVerified({ context }: { context: RouterContext }) {
+  if (context.auth.user?.emailVerified) {
+    throw redirect({
+      to: '/dashboard',
+    })
+  }
+}
+
 // ============================================================================
 // Guard Composition Utility
 // ============================================================================

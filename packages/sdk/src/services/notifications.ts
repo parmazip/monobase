@@ -94,7 +94,7 @@ export function mapApiNotificationToFrontend(api: ApiNotification): Notification
  */
 export async function listNotifications(params?: ListNotificationsParams): Promise<NotificationsList> {
   const response = await apiGet<PaginatedResponse<ApiNotification>>(
-    '/notifs/notifications',
+    '/notifs',
     params as Record<string, any>
   )
   return mapPaginatedResponse(response, mapApiNotificationToFrontend)
@@ -104,7 +104,7 @@ export async function listNotifications(params?: ListNotificationsParams): Promi
  * Mark a notification as read
  */
 export async function markNotificationAsRead(notificationId: string): Promise<Notification> {
-  const apiNotification = await apiPost<ApiNotification>(`/notifs/notifications/${notificationId}/read`, {})
+  const apiNotification = await apiPost<ApiNotification>(`/notifs/${notificationId}/read`, {})
   return mapApiNotificationToFrontend(apiNotification)
 }
 
@@ -112,6 +112,6 @@ export async function markNotificationAsRead(notificationId: string): Promise<No
  * Mark all notifications as read
  */
 export async function markAllNotificationsAsRead(): Promise<{ markedCount: number }> {
-  const response = await apiPost<{ markedCount: number }>('/notifs/notifications/read-all', {})
+  const response = await apiPost<{ markedCount: number }>('/notifs/read-all', {})
   return response
 }
