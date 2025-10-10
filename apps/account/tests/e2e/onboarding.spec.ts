@@ -118,7 +118,7 @@ test.describe('Onboarding Flow', () => {
   // Issue: After completing onboarding and navigating to dashboard, a subsequent
   // page.goto('/onboarding') causes session to appear lost, even though cookies exist
   // Likely related to timing of React Query refetch and Router context updates
-  test.skip('redirects to dashboard if user already completed onboarding', async ({ page }) => {
+  test('redirects to dashboard if user already completed onboarding', async ({ page }) => {
     const user = await signUpNewUser(page)
     await expect(page).toHaveURL('/onboarding')
 

@@ -5,10 +5,12 @@ import {
   Link,
   Outlet,
 } from '@tanstack/react-router'
+import { useQueryClient } from '@tanstack/react-query'
 import type { RouterContext } from '@/router'
 import { AuthUIProviderTanstack } from '@daveyplate/better-auth-ui/tanstack'
 import { Toaster } from 'sonner'
 import { useAuthClient } from '@monobase/sdk/react/auth-client'
+import { queryKeys } from '@monobase/sdk/react/query-keys'
 import '@/styles/globals.css'
 
 export const Route = createRootRouteWithContext<RouterContext>()({
@@ -18,6 +20,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 function RootComponent() {
   const router = useRouter()
   const authClient = useAuthClient()
+  const queryClient = useQueryClient()
 
   return (
     <AuthUIProviderTanstack
@@ -25,6 +28,14 @@ function RootComponent() {
       persistClient={false}
       navigate={(href) => router.navigate({ to: href, replace: true })}
       replace={(href) => router.navigate({ to: href, replace: true })}
+      onSessionChange={async () => {
+        // Invalidate session and person queries to trigger refetch after auth state changes
+        await queryClient.invalidateQueries({ queryKey: ['session'] })
+        await queryClient.invalidateQueries({ queryKey: queryKeys.personProfile('me') })
+        
+        // Force router to re-evaluate guards after auth state changes
+        router.invalidate()
+      }}
       Link={({ href, ...props }) => <Link to={href} {...props} />}
       emailVerification
       emailOTP

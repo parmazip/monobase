@@ -36,6 +36,13 @@ function InnerApp() {
     return <Loading />
   }
 
+  // Handle post-signup redirect
+  // If user just signed up (has session but no person), redirect to onboarding
+  if (session?.user && !person && window.location.pathname.includes('/auth/')) {
+    window.location.href = '/onboarding'
+    return <Loading />
+  }
+
   // build context
   const context = {
     auth: {
