@@ -9,6 +9,7 @@ import type { DatabaseConfig } from './database';
 import type { StorageConfig } from './storage';
 import type { EmailConfig } from './email';
 import type { NotificationConfig } from './notifs';
+import type { BillingConfig } from './billing';
 
 export interface Config {
   // Server configuration
@@ -53,6 +54,9 @@ export interface Config {
 
   // Notification configuration
   notifs: NotificationConfig;
+
+  // Billing configuration
+  billing: BillingConfig;
 
   // WebRTC configuration
   webrtc: {
@@ -200,6 +204,16 @@ export function parseConfig(): Config {
         appId: process.env['ONESIGNAL_APP_ID'],
         apiKey: process.env['ONESIGNAL_API_KEY']
       } : undefined
+    },
+
+    // Billing configuration
+    billing: {
+      provider: 'stripe',
+      stripe: {
+        secretKey: process.env['STRIPE_SECRET_KEY'],
+        webhookSecret: process.env['STRIPE_WEBHOOK_SECRET'],
+        url: process.env['STRIPE_URL'], // For testing with mock Stripe service
+      }
     },
 
     // WebRTC configuration

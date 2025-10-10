@@ -18,9 +18,11 @@ import { createNotificationService } from '@/core/notifs';
 import { createEmailService } from '@/core/email';
 import { createAuditService } from '@/core/audit';
 import { createWebSocketService } from '@/core/ws';
+import { createBillingService } from '@/core/billing';
 import { registerEmailJobs } from '@/handlers/email/jobs';
 import { registerNotifsJobs } from '@/handlers/notifs/jobs';
 import { registerAuditJobs } from '@/handlers/audit/jobs';
+import { registerBookingJobs } from '@/handlers/booking/jobs';
 
 // Routes
 import { registerRoutes as registerOpenAPIRoutes } from '@/generated/openapi/routes';
@@ -59,9 +61,10 @@ export function createApp(config: Config): App {
 
   const notifs = createNotificationService(database, logger, config.notifs, ws);
   const audit = createAuditService(database, logger);
+  const billing = createBillingService(config.billing, database, logger);
 
   // Attach dependencies to the app instance early for access throughout
-  Object.assign(app, { database, logger, auth, storage, jobs, notifs, email, audit, ws });
+  Object.assign(app, { database, logger, auth, storage, jobs, notifs, email, audit, ws, billing });
 
   // Global middleware - order matters!
 
@@ -134,6 +137,7 @@ export async function initializeApp(app: App, config: Config): Promise<void> {
   registerEmailJobs(jobs, app.email);
   registerNotifsJobs(jobs, app.notifs);
   registerAuditJobs(jobs);
+  registerBookingJobs(jobs, database);
   
   logger.debug('Starting background job scheduler...');
   await jobs.start();

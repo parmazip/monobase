@@ -12,7 +12,7 @@ import type { Config } from '@/core/config';
  * Injects logger, database, storage, auth instances, job scheduler, notification service, audit service, and config into request context for handler access
  */
 export function createDependencyInjection(app: App, config: Config) {
-  const { logger, database, storage, auth, jobs, notifs, audit, email, ws } = app;
+  const { logger, database, storage, auth, jobs, notifs, audit, email, ws, billing } = app;
 
   return async function dependencyInjection(ctx: AppContext, next: Next) {
     // Inject dependencies into request context
@@ -25,6 +25,7 @@ export function createDependencyInjection(app: App, config: Config) {
     ctx.set('audit', audit);
     ctx.set('email', email);
     ctx.set('ws', ws);
+    ctx.set('billing', billing);
     ctx.set('config', config);
 
     await next();

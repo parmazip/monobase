@@ -14,6 +14,7 @@ import type { NotificationService } from '@/core/notifs';
 import type { AuditService } from '@/core/audit';
 import type { EmailService } from '@/core/email';
 import type { WebSocketService } from '@/core/ws';
+import type { BillingService } from '@/core/billing';
 import type { Config } from '@/core/config';
 
 /**
@@ -33,6 +34,7 @@ export type Variables = {
   audit: AuditService;
   email: EmailService;
   ws: WebSocketService;
+  billing: BillingService;
   config: Config;
 
   // Auth context
@@ -60,4 +62,5 @@ export type App = Hono<{ Variables: Variables }> & {
   audit: AuditService;
   email: EmailService;
   ws: WebSocketService;
+  billing: BillingService;
 };

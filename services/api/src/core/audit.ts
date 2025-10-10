@@ -74,7 +74,8 @@ class AuditServiceImpl implements AuditService {
     this.logEvent = this.repo.logEvent.bind(this.repo);
     this.verifyIntegrity = this.repo.verifyIntegrity.bind(this.repo);
     this.archiveOldLogs = this.repo.archiveOldLogs.bind(this.repo);
-    this.markForPurging = this.repo.markForPurging.bind(this.repo);
+    // TODO: markForPurging method not implemented in repository yet
+    // this.markForPurging = this.repo.markForPurging.bind(this.repo);
     this.getAuditStatistics = this.repo.getAuditStatistics.bind(this.repo);
   }
   
