@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet } from '@tanstack/react-router'
-import { requireAuth, requirePerson, composeGuards } from '@/utils/guards'
+import { requireAuth, requireEmailVerified, requirePerson, composeGuards } from '@/utils/guards'
 import { AppSidebar, type NavGroup } from '@/components/app-sidebar'
 import {
   SidebarProvider,
@@ -16,7 +16,7 @@ import { UserButton } from '@daveyplate/better-auth-ui'
 import { useUnreadNotifications } from '@monobase/sdk/react/hooks/use-notifications'
 
 export const Route = createFileRoute('/_dashboard')({
-  beforeLoad: composeGuards(requireAuth, requirePerson),
+  beforeLoad: composeGuards(requireAuth, requireEmailVerified, requirePerson),
   component: DashboardLayout,
 })
 

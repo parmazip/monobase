@@ -175,7 +175,7 @@ export function parseConfig(): Config {
         email: process.env['EMAIL_FROM_EMAIL'] || 'noreply@monobase.com'
       },
       smtp: {
-        host: process.env['SMTP_HOST'] || 'localhost',
+        host: process.env['SMTP_HOST'] || '127.0.0.1',
         port: parseInt(process.env['SMTP_PORT'] || '1025'),
         secure: parseBoolean(process.env['SMTP_SECURE'], false),
         auth: {
