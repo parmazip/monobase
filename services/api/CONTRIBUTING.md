@@ -17,7 +17,7 @@ This guide covers Hono API service-specific development patterns. **For shared b
 
 ## Service Overview
 
-**Purpose**: Main Hono API service for Monobase Healthcare Platform
+**Purpose**: Main Hono API service for Monobase Application Platform
 
 **Key Technologies:**
 - **Hono**: Fast web framework
@@ -47,42 +47,50 @@ Handlers are organized by module and operation:
 
 ```
 src/handlers/
-├── patient/
-│   ├── createPatient.ts
-│   ├── getPatient.ts
-│   ├── updatePatient.ts
-│   └── deletePatient.ts
-├── provider/
+├── person/
+│   ├── createPerson.ts
+│   ├── getPerson.ts
+│   ├── updatePerson.ts
+│   └── listPersons.ts
+├── notifs/
+│   ├── getNotification.ts
+│   ├── listNotifications.ts
+│   └── markNotificationAsRead.ts
+├── comms/
+│   ├── createChatRoom.ts
+│   ├── sendChatMessage.ts
+│   └── joinVideoCall.ts
+├── email/
 │   └── ...
-└── booking/
+└── storage/
     └── ...
 ```
 
 ### Basic Handler Pattern
 
 ```typescript
-// src/handlers/patient/createPatient.ts
+// src/handlers/person/createPerson.ts
 import { Context } from 'hono';
 import { db } from '@/db';
-import { patients } from '@/db/schema';
-import type { CreatePatientRequest, Patient } from '@monobase/api-spec';
+import { persons } from '@/db/schema';
+import type { CreatePersonRequest, Person } from '@monobase/api-spec';
 
-export async function createPatient(ctx: Context) {
+export async function createPerson(ctx: Context) {
   // Request is already validated by generated middleware
-  const body = ctx.req.valid('json') as CreatePatientRequest;
+  const body = ctx.req.valid('json') as CreatePersonRequest;
 
   // Business logic
-  const [patient] = await db
-    .insert(patients)
+  const [person] = await db
+    .insert(persons)
     .values({
-      person_id: body.person_id,
-      medical_history: body.medical_history,
-      primary_provider_id: body.primary_provider_id,
+      first_name: body.firstName,
+      last_name: body.lastName,
+      date_of_birth: body.dateOfBirth,
     })
     .returning();
 
   // Return with correct status code
-  return ctx.json(patient as Patient, 201);
+  return ctx.json(person as Person, 201);
 }
 ```
 
@@ -91,47 +99,47 @@ export async function createPatient(ctx: Context) {
 ```typescript
 import { HTTPException } from 'hono/http-exception';
 
-export async function getPatient(ctx: Context) {
+export async function getPerson(ctx: Context) {
   const { id } = ctx.req.param();
 
-  const patient = await db.query.patients.findFirst({
-    where: eq(patients.id, id),
+  const person = await db.query.persons.findFirst({
+    where: eq(persons.id, id),
   });
 
-  if (!patient) {
+  if (!person) {
     throw new HTTPException(404, {
-      message: `Patient ${id} not found`,
+      message: `Person ${id} not found`,
     });
   }
 
-  return ctx.json(patient);
+  return ctx.json(person);
 }
 ```
 
 ### Handler with Transaction
 
 ```typescript
-export async function createPatientWithPerson(ctx: Context) {
+export async function createNotificationWithEmail(ctx: Context) {
   const body = ctx.req.valid('json');
 
   // Use transaction for atomic operations
   const result = await db.transaction(async (tx) => {
-    // Create person
-    const [person] = await tx
-      .insert(persons)
-      .values(body.person)
+    // Create notification
+    const [notification] = await tx
+      .insert(notifications)
+      .values(body.notification)
       .returning();
 
-    // Create patient linked to person
-    const [patient] = await tx
-      .insert(patients)
+    // Create email queue item
+    const [emailItem] = await tx
+      .insert(emailQueue)
       .values({
-        person_id: person.id,
-        ...body.patient,
+        notification_id: notification.id,
+        ...body.email,
       })
       .returning();
 
-    return { person, patient };
+    return { notification, emailItem };
   });
 
   return ctx.json(result, 201);
@@ -151,25 +159,25 @@ export async function createPatientWithPerson(ctx: Context) {
 **Select:**
 ```typescript
 // Find first
-const patient = await db.query.patients.findFirst({
-  where: eq(patients.id, id),
+const person = await db.query.persons.findFirst({
+  where: eq(persons.id, id),
 });
 
 // Find many
-const patients = await db.query.patients.findMany({
-  where: eq(patients.person_id, personId),
-  orderBy: [desc(patients.created_at)],
+const notifications = await db.query.notifications.findMany({
+  where: eq(notifications.recipient, userId),
+  orderBy: [desc(notifications.created_at)],
   limit: 20,
   offset: 0,
 });
 
 // With relations
-const patient = await db.query.patients.findFirst({
-  where: eq(patients.id, id),
+const chatRoom = await db.query.chatRooms.findFirst({
+  where: eq(chatRooms.id, id),
   with: {
-    person: true,
-    appointments: {
-      orderBy: [desc(appointments.scheduled_at)],
+    messages: {
+      orderBy: [desc(chatMessages.created_at)],
+      limit: 50,
     },
   },
 });
@@ -178,20 +186,20 @@ const patient = await db.query.patients.findFirst({
 **Insert:**
 ```typescript
 // Single insert
-const [patient] = await db
-  .insert(patients)
+const [person] = await db
+  .insert(persons)
   .values({
-    person_id,
-    medical_history,
+    first_name: 'John',
+    last_name: 'Doe',
   })
   .returning();
 
 // Bulk insert
-const newPatients = await db
-  .insert(patients)
+const newNotifications = await db
+  .insert(notifications)
   .values([
-    { person_id: 'p1', medical_history: 'history 1' },
-    { person_id: 'p2', medical_history: 'history 2' },
+    { recipient: 'user1', type: 'info', message: 'Message 1' },
+    { recipient: 'user2', type: 'info', message: 'Message 2' },
   ])
   .returning();
 ```
@@ -200,25 +208,25 @@ const newPatients = await db
 ```typescript
 // Update with conditions
 const [updated] = await db
-  .update(patients)
+  .update(persons)
   .set({
-    medical_history: newHistory,
+    first_name: newFirstName,
     updated_at: new Date(),
   })
-  .where(eq(patients.id, id))
+  .where(eq(persons.id, id))
   .returning();
 
 // Partial update (only provided fields)
 const updates = {
-  ...(medical_history && { medical_history }),
-  ...(primary_provider_id && { primary_provider_id }),
+  ...(firstName && { first_name: firstName }),
+  ...(lastName && { last_name: lastName }),
   updated_at: new Date(),
 };
 
 const [updated] = await db
-  .update(patients)
+  .update(persons)
   .set(updates)
-  .where(eq(patients.id, id))
+  .where(eq(persons.id, id))
   .returning();
 ```
 
@@ -226,15 +234,15 @@ const [updated] = await db
 ```typescript
 // Soft delete (recommended)
 const [deleted] = await db
-  .update(patients)
+  .update(persons)
   .set({ deleted_at: new Date() })
-  .where(eq(patients.id, id))
+  .where(eq(persons.id, id))
   .returning();
 
 // Hard delete (use cautiously)
 await db
-  .delete(patients)
-  .where(eq(patients.id, id));
+  .delete(persons)
+  .where(eq(persons.id, id));
 ```
 
 ### Schema Migrations
@@ -644,5 +652,3 @@ For complete details on:
 ---
 
 **For TypeSpec patterns**, see [specs/api/CONTRIBUTING.md](../../specs/api/CONTRIBUTING.md)
-
-**Last Updated**: 2025-10-02

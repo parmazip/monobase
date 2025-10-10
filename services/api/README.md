@@ -1,6 +1,6 @@
-# Monobase Healthcare API Service
+# Monobase API Service
 
-High-performance healthcare API service built with **Bun** runtime and **Hono** web framework. Provides comprehensive healthcare functionality including patient management, appointment booking, electronic medical records (EMR), billing, and secure communications.
+High-performance API service built with **Bun** runtime and **Hono** web framework. Provides comprehensive platform functionality including user management, video sessions, notifications, communications, file storage, and email services.
 
 ## 🚀 Technology Stack
 
@@ -36,29 +36,9 @@ STORAGE_SECRET_ACCESS_KEY="minioadmin"
 
 ## 🛠️ Development Setup
 
-### Option A: Docker Compose (Recommended)
+### Recommended: Local Development with Docker Dependencies
 
-#### Complete Environment
-Run the full API stack with all dependencies in containers:
-
-```bash
-# From services/api directory
-docker compose up --build
-
-# API available at http://localhost:7213
-# Health check: curl http://localhost:7213/readyz
-# Stop: docker compose down
-```
-
-Includes:
-- ✅ PostgreSQL database (port 5433)
-- ✅ MinIO storage (ports 9000-9001)
-- ✅ Mailpit email testing (ports 1025, 8025)
-- ✅ API service (port 7213)
-- ✅ No host dependencies required
-
-#### Development Mode (Dependencies Only)
-Run PostgreSQL + MinIO + Mailpit while developing the API locally with hot reload:
+Run PostgreSQL + MinIO + Mailpit in containers while developing the API locally with hot reload:
 
 ```bash
 # Start dependencies
@@ -71,7 +51,7 @@ bun run dev
 bun run dev:deps:down
 ```
 
-### Option B: Individual Docker Commands
+### Alternative: Individual Docker Commands
 
 **PostgreSQL:**
 ```bash
@@ -119,16 +99,6 @@ docker volume rm monobase-postgres-data monobase-minio-data
 ```
 
 ## ⚡ Quick Start
-
-### Fastest Start (Docker Compose)
-```bash
-# From services/api directory
-docker compose up --build
-
-# API ready at http://localhost:7213
-```
-
-### Development Start
 
 1. **Install dependencies:**
    ```bash
@@ -235,7 +205,6 @@ CLAUDECODE=1 bun test
 
 # Specific test types
 bun run test:unit       # Unit tests
-bun run test:int        # Integration tests (auto-setup)
 bun run test:e2e        # E2E tests (auto-setup)
 bun run test:perf       # Performance tests
 ```

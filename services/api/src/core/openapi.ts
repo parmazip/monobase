@@ -5,7 +5,6 @@
 
 import { Hono } from 'hono';
 import { Scalar } from '@scalar/hono-api-reference';
-import { createMarkdownFromOpenApi } from '@scalar/openapi-to-markdown';
 import type { Logger } from '@/types/logger';
 
 /**
@@ -326,28 +325,6 @@ export function registerRoutes(app: any, specs: any[], config?: any): void {
 
   // Serve merged OpenAPI spec
   app.get('/docs/openapi.json', c => c.json(mergedSpec));
-
-  // Module-level cache for markdown documentation
-  let cachedMarkdown: string | null = null;
-
-  // LLM-friendly documentation (llmstxt.org proposal)
-  app.get('/docs/llms.txt', async c => {
-    // Return cached version if available
-    if (cachedMarkdown !== null) {
-      return c.text(cachedMarkdown, 200, { 'Content-Type': 'text/plain; charset=utf-8' });
-    }
-
-    try {
-      // Generate and cache on first request
-      cachedMarkdown = await createMarkdownFromOpenApi(mergedSpec);
-      return c.text(cachedMarkdown, 200, { 'Content-Type': 'text/plain; charset=utf-8' });
-    } catch (error) {
-      if (logger) {
-        logger.error({ error }, 'Failed to generate markdown documentation');
-      }
-      return c.text('Failed to generate documentation', 500);
-    }
-  });
 
   if (logger) {
     logger.debug('Registered OpenAPI documentation routes at /docs');
