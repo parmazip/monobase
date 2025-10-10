@@ -48,11 +48,9 @@ function RouteComponent() {
             <p className="subtitle text-muted-foreground mt-2">{headerContent.subtitle}</p>
           </div>
         )}
-        <div className="w-full overflow-hidden [&_.flex.items-center.gap-2]:justify-center">
-          <AuthView
-            pathname={authView}
-          />
-        </div>
+        <AuthView
+          pathname={authView}
+        />
       </div>
     </main>
   )

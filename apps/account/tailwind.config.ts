@@ -6,6 +6,7 @@ const config: Config = {
   content: [
     "./src/**/*.{ts,tsx}",
     "../../packages/ui/src/**/*.{ts,tsx}",
+    "./node_modules/@daveyplate/better-auth-ui/dist/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: uiConfig.theme,
   plugins: uiConfig.plugins,
