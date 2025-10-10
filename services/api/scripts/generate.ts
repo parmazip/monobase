@@ -696,6 +696,16 @@ function convertOpenAPIToZod(schema: any): string {
   // Handle schemas with both allOf and properties/type
   // This is common for models that extend BaseEntity
   if (schema.allOf && (schema.properties || schema.type)) {
+    // Special case: If allOf contains only a single $ref and type is "object" without properties,
+    // TypeSpec is just wrapping a ref unnecessarily - return the ref directly
+    if (schema.allOf.length === 1 && 
+        schema.allOf[0].$ref && 
+        schema.type === 'object' && 
+        !schema.properties) {
+      // Just use the reference directly, no need for intersection with empty object
+      return convertOpenAPIToZod(schema.allOf[0]);
+    }
+    
     // Process allOf to get base schemas
     const allOfSchemas = schema.allOf.map(s => convertOpenAPIToZod(s));
     const baseSchema = allOfSchemas.length === 1 
@@ -706,6 +716,11 @@ function convertOpenAPIToZod(schema: any): string {
     const schemaWithoutAllOf = { ...schema };
     delete schemaWithoutAllOf.allOf;
     const directSchema = convertOpenAPIToZod(schemaWithoutAllOf);
+    
+    // If directSchema is just an empty object or record, use baseSchema only
+    if (directSchema === 'z.object({})' || directSchema === 'z.record(z.string(), z.unknown())') {
+      return baseSchema;
+    }
     
     // Combine base schema from allOf with direct schema
     return `z.intersection(${baseSchema}, ${directSchema})`;
@@ -878,7 +893,8 @@ function convertArraySchema(schema: any): string {
 function convertObjectSchema(schema: any): string {
   if (!schema.properties) {
     // If no properties defined, it's a generic object
-    return schema.additionalProperties === false ? 'z.object({})' : 'z.record(z.unknown())';
+    // Zod v4 requires z.record to have both key and value types
+    return schema.additionalProperties === false ? 'z.object({})' : 'z.record(z.string(), z.unknown())';
   }
   
   const properties: string[] = [];
@@ -900,6 +916,10 @@ function convertObjectSchema(schema: any): string {
   // Handle additional properties
   if (schema.additionalProperties === false) {
     result += '.strict()';
+  } else if (schema.additionalProperties === true || schema.additionalProperties) {
+    // Use .passthrough() instead of z.intersection() to avoid Zod v4 bug
+    // This allows additional properties while maintaining type safety for defined properties
+    result += '.passthrough()';
   }
   
   return result;

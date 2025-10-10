@@ -76,7 +76,7 @@ export const AddressUpdateSchema = z.object({
   state: z.string().min(1).max(50).optional(),
   postalCode: z.string().min(1).max(20).optional(),
   country: CountryCodeSchema.optional(),
-  coordinates: z.union([z.intersection(GeoCoordinatesUpdateSchema, z.record(z.unknown())), z.null()]).optional()
+  coordinates: z.union([GeoCoordinatesUpdateSchema, z.null()]).optional()
 });
 
 export const AuditActionSchema = z.enum(["create", "read", "update", "delete", "login", "logout"]);
@@ -112,7 +112,7 @@ export const AuditLogEntrySchema = z.intersection(BaseEntitySchema, z.object({
   action: AuditActionSchema,
   outcome: AuditOutcomeSchema,
   description: z.string(),
-  details: z.record(z.unknown()).optional(),
+  details: z.record(z.string(), z.unknown()).optional(),
   ipAddress: z.string().optional(),
   userAgent: z.string().optional(),
   session: z.string().optional(),
@@ -129,7 +129,7 @@ export const UrlSchema = z.string().url();
 export const ErrorDetailSchema = z.object({
   code: z.string(),
   message: z.string(),
-  details: z.record(z.unknown()).optional(),
+  details: z.record(z.string(), z.unknown()).optional(),
   requestId: z.string(),
   timestamp: z.string().datetime().transform((str) => new Date(str)),
   path: z.string(),
@@ -202,7 +202,7 @@ export const ChatRoomSchema = z.intersection(BaseEntitySchema, z.object({
 export const ConflictErrorSchema = z.intersection(ErrorDetailSchema, z.object({
   conflictingResource: z.string().optional(),
   reason: z.enum(["duplicate", "version-mismatch", "state-conflict", "dependency"]).optional(),
-  currentState: z.record(z.unknown()).optional(),
+  currentState: z.record(z.string(), z.unknown()).optional(),
   resolution: z.array(z.string()).optional()
 }));
 
@@ -264,8 +264,8 @@ export const EmailQueueItemSchema = z.intersection(BaseEntitySchema, z.object({
   templateTags: z.array(z.string()).optional(),
   recipientEmail: EmailSchema,
   recipientName: z.string().max(255).optional(),
-  variables: z.record(z.unknown()).optional(),
-  metadata: z.record(z.unknown()).optional(),
+  variables: z.record(z.string(), z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   status: EmailQueueStatusSchema,
   priority: z.number().int().gte(1).lte(10),
   scheduledAt: z.string().datetime().transform((str) => new Date(str)).optional(),
@@ -302,7 +302,7 @@ export const FieldErrorSchema = z.object({
   value: z.unknown().optional(),
   code: z.string(),
   message: z.string(),
-  context: z.record(z.unknown()).optional()
+  context: z.record(z.string(), z.unknown()).optional()
 });
 
 export const FileStatusSchema = z.enum(["uploading", "processing", "available", "failed"]);
@@ -446,9 +446,9 @@ export const PersonUpdateRequestSchema = z.object({
   middleName: z.union([z.string().max(50), z.null()]).optional(),
   dateOfBirth: z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(val => { const parsed = new Date(val + "T00:00:00Z"); return !isNaN(parsed.getTime()) && parsed.toISOString().split("T")[0] === val; }, { message: "Invalid calendar date" }), z.null()]).optional(),
   gender: z.union([GenderSchema, z.null()]).optional(),
-  primaryAddress: z.union([z.intersection(AddressUpdateSchema, z.record(z.unknown())), z.null()]).optional(),
-  contactInfo: z.union([z.intersection(ContactInfoSchema, z.record(z.unknown())), z.null()]).optional(),
-  avatar: z.union([z.intersection(MaybeStoredFileUpdateSchema, z.record(z.unknown())), z.null()]).optional(),
+  primaryAddress: z.union([AddressUpdateSchema, z.null()]).optional(),
+  contactInfo: z.union([ContactInfoSchema, z.null()]).optional(),
+  avatar: z.union([MaybeStoredFileUpdateSchema, z.null()]).optional(),
   languagesSpoken: z.union([z.array(LanguageCodeSchema), z.null()]).optional(),
   timezone: z.union([z.intersection(TimezoneIdSchema, z.string()), z.null()]).optional()
 });
@@ -479,7 +479,7 @@ export const StartVideoCallRequestSchema = z.object({
 export const TestTemplateRequestSchema = z.object({
   recipientEmail: EmailSchema,
   recipientName: z.string().max(255).optional(),
-  variables: z.record(z.unknown()).optional()
+  variables: z.record(z.string(), z.unknown()).optional()
 });
 
 export const TestTemplateResultSchema = z.object({
