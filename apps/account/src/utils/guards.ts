@@ -25,7 +25,7 @@ export async function requireAuth({ context, location }: { context: RouterContex
     throw redirect({
       to: '/auth/sign-in',
       search: {
-        redirect: location ? location.pathname + location.search : window.location.pathname + window.location.search,
+        redirect: location?.href || `${window.location.pathname}${window.location.search}`,
       },
     })
   }

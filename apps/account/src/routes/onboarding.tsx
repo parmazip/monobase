@@ -147,7 +147,7 @@ function OnboardingPage() {
     const personData: CreatePersonData = {
       firstName: formData.personal.firstName,
       lastName: formData.personal.lastName,
-      middleName: formData.personal.middleName,
+      middleName: formData.personal.middleName || undefined,
       dateOfBirth: formData.personal.dateOfBirth,
       gender: formData.personal.gender || undefined,
       contactInfo: {
