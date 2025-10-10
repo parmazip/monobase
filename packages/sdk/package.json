@@ -10,13 +10,19 @@
     "./services/person": "./src/services/person.ts",
     "./services/notifications": "./src/services/notifications.ts",
     "./services/storage": "./src/services/storage.ts",
+    "./services/comms": "./src/services/comms.ts",
+    "./comms": "./src/comms/index.ts",
     "./react/auth-client": "./src/react/auth-client.ts",
     "./react/provider": "./src/react/provider.tsx",
     "./react/query-keys": "./src/react/query-keys.ts",
     "./react/hooks/use-auth": "./src/react/hooks/use-auth.ts",
     "./react/hooks/use-person": "./src/react/hooks/use-person.ts",
     "./react/hooks/use-notifications": "./src/react/hooks/use-notifications.ts",
-    "./react/hooks/use-storage": "./src/react/hooks/use-storage.ts"
+    "./react/hooks/use-storage": "./src/react/hooks/use-storage.ts",
+    "./react/hooks/use-chat-rooms": "./src/react/hooks/use-chat-rooms.ts",
+    "./react/hooks/use-chat-messages": "./src/react/hooks/use-chat-messages.ts",
+    "./lib/signaling-client": "./src/lib/signaling-client.ts",
+    "./lib/peer-connection": "./src/lib/peer-connection.ts"
   },
   "files": ["src"],
   "scripts": {
@@ -27,7 +33,6 @@
   "dependencies": {
     "@daveyplate/better-auth-tanstack": "^1.3.6",
     "@monobase/api-spec": "workspace:*",
-    "@monobase/ui": "workspace:*",
     "better-auth": "^1.3.7",
     "zod": "^4.1.12"
   },

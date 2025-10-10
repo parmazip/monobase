@@ -14,4 +14,15 @@ export const queryKeys = {
     [...queryKeys.notifications(), 'list', params] as const,
   notification: (id: string) => [...queryKeys.notifications(), id] as const,
 
+  // Communications
+  chatRooms: () => [...queryKeys.all, 'chatRooms'] as const,
+  chatRoomsList: (params?: any) => [...queryKeys.chatRooms(), 'list', params] as const,
+  chatRoom: (id: string) => [...queryKeys.chatRooms(), id] as const,
+  
+  chatMessages: (roomId: string) => [...queryKeys.all, 'chatMessages', roomId] as const,
+  chatMessagesList: (roomId: string, params?: any) => 
+    [...queryKeys.chatMessages(roomId), 'list', params] as const,
+  chatMessage: (roomId: string, messageId: string) => 
+    [...queryKeys.chatMessages(roomId), messageId] as const,
+
 } as const

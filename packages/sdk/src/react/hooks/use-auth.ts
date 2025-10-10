@@ -11,7 +11,7 @@
  */
 import { createAuthHooks } from '@daveyplate/better-auth-tanstack'
 import { useAuthClient } from '../auth-client'
-import type { AuthClient } from '../auth'
+import type { AuthClient } from '../../auth'
 
 export { useAuthClient }
 

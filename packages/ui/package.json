@@ -8,7 +8,12 @@
     "./constants/*": "./src/constants/*.ts",
     "./hooks/*": "./src/hooks/*",
     "./components/*": "./src/components/*",
-    "./person/*": "./src/person/*"
+    "./person/*": "./src/person/*",
+    "./comms": "./src/comms/index.ts",
+    "./comms/*": "./src/comms/*",
+    "./comms/lib/*": "./src/comms/lib/*",
+    "./comms/hooks/*": "./src/comms/hooks/*",
+    "./comms/components/*": "./src/comms/components/*"
   },
   "files": ["src"],
   "sideEffects": ["**/*.css"],

@@ -12,7 +12,7 @@ import {
 } from '../../services/person'
 import { queryKeys } from '../query-keys'
 import { ApiError } from '../../api'
-import type { PersonalInfo, OptionalAddress, ContactInfo, Preferences } from '@monobase/ui/person/schemas'
+import type { PersonalInfo, OptionalAddress, ContactInfo, Preferences } from '../../types'
 
 // ============================================================================
 // Hooks

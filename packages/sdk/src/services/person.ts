@@ -1,7 +1,7 @@
 import { apiGet, apiPost, apiPatch, ApiError } from '../api'
 import { sanitizeObject } from '../utils/api'
-import type { PersonalInfo, OptionalAddress, ContactInfo, Preferences } from '@monobase/ui/person/schemas'
-import { formatDate } from '@monobase/ui/lib/format-date'
+import type { PersonalInfo, OptionalAddress, ContactInfo, Preferences } from '../types'
+import { formatDate } from '../utils/format'
 import type { components } from '@monobase/api-spec/types'
 
 // ============================================================================
