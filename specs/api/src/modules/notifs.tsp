@@ -180,7 +180,7 @@ namespace Notifs {
     @extension("x-security-required-roles", #["user"])
     markNotificationAsRead(
       @path notif: UUID
-    ): ApiNoContentResponse
+    ): ApiOkResponse<Notification>
       | ApiNotFoundResponse
       | ApiUnauthorizedResponse
       | ApiForbiddenResponse;

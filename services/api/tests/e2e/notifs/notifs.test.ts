@@ -122,6 +122,106 @@ describe('Notification Module E2E Tests', () => {
       expect(Array.isArray(data.data)).toBe(true);
     });
 
+    test('should default to in-app channel when channel not specified', async () => {
+      // Create video call to generate notifications
+      await createTestVideoCall();
+
+      // List notifications without specifying channel (should default to in-app)
+      const response = await apiClient.fetch('/notifs');
+      
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      const currentUserNotifs = data.data.filter((n: any) => n.recipient === user1PersonId);
+
+      // All returned notifications should be in-app channel (the default)
+      if (currentUserNotifs.length > 0) {
+        currentUserNotifs.forEach((n: any) => {
+          expect(n.channel).toBe('in-app');
+        });
+      }
+    });
+
+    test('should filter notifications by date range', async () => {
+      // Create video call to generate notifications
+      await createTestVideoCall();
+
+      const now = new Date();
+      const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+      // Filter for notifications from yesterday to tomorrow (should include today's)
+      const response = await apiClient.fetch('/notifs', {
+        searchParams: {
+          startDate: yesterday.toISOString(),
+          endDate: tomorrow.toISOString()
+        }
+      });
+
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      const currentUserNotifs = data.data.filter((n: any) => n.recipient === user1PersonId);
+
+      // Should have notifications created today
+      expect(currentUserNotifs.length).toBeGreaterThan(0);
+
+      // All notifications should be within the date range
+      currentUserNotifs.forEach((n: any) => {
+        const createdAt = new Date(n.createdAt);
+        expect(createdAt.getTime()).toBeGreaterThanOrEqual(yesterday.getTime());
+        expect(createdAt.getTime()).toBeLessThanOrEqual(tomorrow.getTime());
+      });
+    });
+
+    test('should filter notifications with startDate only', async () => {
+      await createTestVideoCall();
+
+      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+      const response = await apiClient.fetch('/notifs', {
+        searchParams: {
+          startDate: yesterday.toISOString()
+        }
+      });
+
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      const currentUserNotifs = data.data.filter((n: any) => n.recipient === user1PersonId);
+
+      // Should include today's notifications
+      expect(currentUserNotifs.length).toBeGreaterThan(0);
+
+      // All should be after yesterday
+      currentUserNotifs.forEach((n: any) => {
+        const createdAt = new Date(n.createdAt);
+        expect(createdAt.getTime()).toBeGreaterThanOrEqual(yesterday.getTime());
+      });
+    });
+
+    test('should filter notifications with endDate only', async () => {
+      await createTestVideoCall();
+
+      const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+      const response = await apiClient.fetch('/notifs', {
+        searchParams: {
+          endDate: tomorrow.toISOString()
+        }
+      });
+
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      const currentUserNotifs = data.data.filter((n: any) => n.recipient === user1PersonId);
+
+      // Should include today's notifications
+      expect(currentUserNotifs.length).toBeGreaterThan(0);
+
+      // All should be before tomorrow
+      currentUserNotifs.forEach((n: any) => {
+        const createdAt = new Date(n.createdAt);
+        expect(createdAt.getTime()).toBeLessThanOrEqual(tomorrow.getTime());
+      });
+    });
+
     test('should filter unread notifications only', async () => {
       // Create appointment to generate notifications
       await createTestVideoCall();
@@ -207,6 +307,36 @@ describe('Notification Module E2E Tests', () => {
   });
   
   describe('Get Single Notification', () => {
+    test('should successfully retrieve notification by ID', async () => {
+      // Create video call to generate notification
+      await createTestVideoCall();
+
+      // Get list of notifications to find a valid ID
+      const listResponse = await apiClient.fetch('/notifs');
+      const listData = await listResponse.json();
+      const notification = listData.data.find((n: any) => n.recipient === user1PersonId);
+
+      expect(notification).toBeDefined();
+
+      // Get single notification by ID
+      const response = await apiClient.fetch(`/notifs/${notification.id}`);
+      
+      expect(response.status).toBe(200);
+      const data = await response.json();
+
+      // Validate complete Notification structure
+      expect(data.id).toBe(notification.id);
+      expect(data.recipient).toBe(user1PersonId);
+      expect(data.type).toBeDefined();
+      expect(data.channel).toBeDefined();
+      expect(data.title).toBeDefined();
+      expect(data.message).toBeDefined();
+      expect(data.status).toBeDefined();
+      expect(data.consentValidated).toBeDefined();
+      expect(data.createdAt).toBeDefined();
+      expect(data.updatedAt).toBeDefined();
+    });
+
     test('should return 404 for non-existent notification', async () => {
       const fakeId = faker.string.uuid();
       const response = await apiClient.fetch(`/notifs/${fakeId}`);

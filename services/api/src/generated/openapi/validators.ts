@@ -759,7 +759,7 @@ export const MarkNotificationAsReadParams = z.object({
   notif: UUIDSchema,
 });
 
-export const MarkNotificationAsReadResponse = z.void();
+export const MarkNotificationAsReadResponse = NotificationSchema;
 
 export const CreatePersonBody = PersonCreateRequestSchema;
 
