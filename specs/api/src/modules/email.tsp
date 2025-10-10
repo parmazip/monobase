@@ -382,8 +382,8 @@ model TestTemplateRequest {
  */
 @doc("Result of template test")
 model TestTemplateResult {
-  @doc("Reference to the created email queue item")
-  queue: UUID;
+  @doc("The created email queue item with full details")
+  queue: EmailQueueItem;
 }
 
 /**
@@ -496,8 +496,8 @@ namespace EmailModule {
     @useAuth(bearerAuth)
     @extension("x-security-required-roles", #["admin"])
     listEmailQueueItems(
-      @doc("Filter by queue status (pending, processing, sent, failed, cancelled)")
-      @query status?: EmailQueueStatus | EmailQueueStatus[],
+      @doc("Filter by queue status (pending, processing, sent, failed, cancelled). Supports comma-separated values (e.g., 'pending,processing')")
+      @query status?: EmailQueueStatus,
       @doc("Filter by recipient email address")
       @query recipientEmail?: Email,
       @doc("Start date for filtering queue items (inclusive)")

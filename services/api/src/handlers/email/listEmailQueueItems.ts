@@ -48,6 +48,9 @@ export async function listEmailQueueItems(ctx: Context) {
   if (query.status) {
     if (Array.isArray(query.status)) {
       filters.status = query.status as any[];
+    } else if (query.status.includes(',')) {
+      // Parse CSV format: "pending,processing,sent"
+      filters.status = query.status.split(',').map(s => s.trim()) as any[];
     } else {
       filters.status = query.status as any;
     }

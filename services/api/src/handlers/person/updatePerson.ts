@@ -76,8 +76,34 @@ export async function updatePerson(ctx: Context) {
   
   // Update person record
   const updatedPerson = await repo.updateOneById(personId, updateData);
-  
-  // Log audit trail
+
+  // Log audit trail for compliance
+  const audit = ctx.get('audit');
+  if (audit) {
+    try {
+      await audit.logEvent({
+        eventType: 'data-modification',
+        category: 'privacy',
+        action: 'update',
+        outcome: 'success',
+        user: user.id,
+        userType: 'client',
+        resourceType: 'person',
+        resource: personId,
+        description: 'Person profile updated',
+        details: {
+          updatedFields: Object.keys(updateData).filter(key => key !== 'updatedBy'),
+          isOwner: true
+        },
+        ipAddress: ctx.req.header('x-forwarded-for') || ctx.req.header('x-real-ip'),
+        userAgent: ctx.req.header('user-agent')
+      });
+    } catch (error) {
+      logger?.error({ error, personId }, 'Failed to log audit event for person update');
+    }
+  }
+
+  // Log basic info
   logger?.info({
     personId: updatedPerson.id,
     action: 'update',
@@ -85,6 +111,6 @@ export async function updatePerson(ctx: Context) {
     updatedBy: user.id,
     ipAddress: ctx.req.header('x-forwarded-for') || ctx.req.header('x-real-ip')
   }, 'Person updated');
-  
+
   return ctx.json(updatedPerson, 200);
 }

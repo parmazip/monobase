@@ -53,8 +53,35 @@ export async function createPerson(ctx: Context) {
     timezone: body.timezone || null,
     createdBy: user.id // Audit trail
   });
-  
-  // Log audit trail
+
+  // Log audit trail for compliance
+  const audit = ctx.get('audit');
+  if (audit) {
+    try {
+      await audit.logEvent({
+        eventType: 'data-modification',
+        category: 'privacy',
+        action: 'create',
+        outcome: 'success',
+        user: user.id,
+        userType: 'client',
+        resourceType: 'person',
+        resource: person.id,
+        description: 'Person profile created',
+        details: {
+          hasEmail: !!body.contactInfo?.email,
+          hasPhone: !!body.contactInfo?.phone,
+          isOwner: true
+        },
+        ipAddress: ctx.req.header('x-forwarded-for') || ctx.req.header('x-real-ip'),
+        userAgent: ctx.req.header('user-agent')
+      });
+    } catch (error) {
+      logger?.error({ error, personId: person.id }, 'Failed to log audit event for person creation');
+    }
+  }
+
+  // Log basic info
   logger?.info({
     personId: person.id,
     userId: user.id,
@@ -63,6 +90,6 @@ export async function createPerson(ctx: Context) {
     ipAddress: ctx.req.header('x-forwarded-for') || ctx.req.header('x-real-ip'),
     isOwner: true
   }, 'Person created for authenticated user');
-  
+
   return ctx.json(person, 201);
 }

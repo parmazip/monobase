@@ -14,9 +14,6 @@ using TypeSpec.OpenAPI;
  */
 @doc("Type of notification")
 enum NotificationType {
-  @doc("Booking reminder")
-  bookingReminder: "booking-reminder",
-
   @doc("Billing notification")
   billing: "billing",
 
@@ -25,6 +22,25 @@ enum NotificationType {
 
   @doc("System notification")
   system: "system",
+
+  // Booking module notifications
+  @doc("Booking created")
+  bookingCreated: "booking.created",
+
+  @doc("Booking confirmed by provider")
+  bookingConfirmed: "booking.confirmed",
+
+  @doc("Booking rejected by provider")
+  bookingRejected: "booking.rejected",
+
+  @doc("Booking cancelled")
+  bookingCancelled: "booking.cancelled",
+
+  @doc("Client marked as no-show")
+  bookingNoShowClient: "booking.no-show-client",
+
+  @doc("Provider marked as no-show")
+  bookingNoShowProvider: "booking.no-show-provider",
 
   // Comms module notifications
   @doc("Video call started")
