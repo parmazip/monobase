@@ -1,0 +1,471 @@
+/**
+ * Database schema for booking module - matches TypeSpec API definition
+ * Uses Drizzle ORM with PostgreSQL
+ */
+
+import { 
+  pgTable, 
+  uuid, 
+  integer, 
+  text, 
+  time, 
+  date, 
+  timestamp, 
+  boolean, 
+  decimal, 
+  jsonb, 
+  index, 
+  unique,
+  pgEnum,
+  check,
+  varchar
+} from 'drizzle-orm/pg-core';
+import { eq, and, gte, isNull, sql } from 'drizzle-orm';
+import { baseEntityFields } from '@/core/database.schema';
+import { persons } from '../../person/repos/person.schema';
+
+// Enums for booking status lifecycle
+export const bookingStatusEnum = pgEnum('booking_status', [
+  'pending',
+  'confirmed', 
+  'rejected',
+  'cancelled',
+  'completed',
+  'no_show_client',
+  'no_show_provider'
+]);
+
+export const slotStatusEnum = pgEnum('slot_status', [
+  'available',
+  'booked',
+  'blocked'
+]);export const consultationModeEnum = pgEnum('consultation_mode', [
+  'video',
+  'phone',
+  'in-person'
+]);
+
+// New enums for BookingEvent system
+export const bookingEventStatusEnum = pgEnum('booking_event_status', [
+  'draft',
+  'active',
+  'paused',
+  'archived'
+]);
+
+export const locationTypeEnum = pgEnum('location_type', [
+  'video',
+  'phone',
+  'in-person'
+]);
+
+// Recurrence type enum - matches TypeSpec
+export const recurrenceTypeEnum = pgEnum('recurrence_type', [
+  'daily',
+  'weekly',
+  'monthly'
+]);// Booking Events - Flexible event scheduling system
+export const bookingEvents = pgTable('booking_event', {
+  // Base entity fields (includes id, timestamps, version, audit fields)
+  ...baseEntityFields,
+
+  // Core event fields
+  owner: uuid('owner_id')
+    .notNull()
+    .references(() => persons.id, { onDelete: 'cascade' }), // Person who owns the event
+
+  context: uuid('context_id'), // Optional domain associations
+
+  // Event metadata
+  title: text('title').notNull(), // Event title
+  description: text('description'), // Event description
+
+  // Event configuration
+  timezone: text('timezone')
+    .notNull()
+    .default('America/New_York'),
+
+  locationTypes: jsonb('location_types')
+    .$type<('video' | 'phone' | 'in-person')[]>()
+    .notNull()
+    .default(['video', 'phone', 'in-person']), // Available location types
+
+  // Booking policies
+  maxBookingDays: integer('max_booking_days')
+    .notNull()
+    .default(30), // Maximum days in advance clients can book
+
+  minBookingMinutes: integer('min_booking_minutes')
+    .notNull()
+    .default(1440), // Minimum advance notice required (24 hours default)  // Optional configurations
+  formConfig: jsonb('form_config').$type<FormConfig>(),
+  billingConfig: jsonb('billing_config').$type<BillingConfig>(),
+
+  // Event status and validity
+  status: bookingEventStatusEnum('status')
+    .notNull()
+    .default('active'),
+
+  effectiveFrom: timestamp('effective_from')
+    .notNull()
+    .defaultNow(), // Event start date and time
+
+  effectiveTo: timestamp('effective_to'), // Optional end date and time
+
+  // Daily configurations - keyed by day names ('sun', 'mon', 'tue', etc.')
+  dailyConfigs: jsonb('daily_configs')
+    .$type<Record<DayOfWeek, DailyConfig>>()
+    .notNull(),
+}, (table) => ({
+  // Indexes for performance
+  ownerIdx: index('booking_events_owner_id_idx').on(table.owner),
+  contextIdx: index('booking_events_context_id_idx').on(table.context),
+  statusIdx: index('booking_events_status_idx').on(table.status),
+  activeEventsIdx: index('booking_events_active_idx')
+    .on(table.owner, table.status)
+    .where(sql`"booking_event"."status" = 'active'`),
+  deletedAtIdx: index('booking_events_deleted_at_idx').on(table.deletedAt),
+  effectiveDatesIdx: index('booking_events_effective_dates_idx')
+    .on(table.effectiveFrom, table.effectiveTo),
+
+  // Check constraints
+  maxBookingDaysCheck: check('booking_events_max_booking_days_check', sql`${table.maxBookingDays} >= 0 AND ${table.maxBookingDays} <= 365`),
+  minBookingMinutesCheck: check('booking_events_min_booking_minutes_check', sql`${table.minBookingMinutes} >= 0 AND ${table.minBookingMinutes} <= 4320`), // 72 hours max
+}));// Time Slots - Individual bookable slots generated from booking events
+export const timeSlots = pgTable('time_slot', {
+  // Base entity fields
+  ...baseEntityFields,
+
+  // References (updated to use BookingEvent system)
+  owner: uuid('owner_id')
+    .notNull()
+    .references(() => persons.id, { onDelete: 'cascade' }), // Slot owner (person)
+
+  event: uuid('event_id')
+    .notNull()
+    .references(() => bookingEvents.id, { onDelete: 'cascade' }),
+
+  context: uuid('context_id'), // Optional context (inherited from event)
+
+  // Slot timing
+  // IMPORTANT: Denormalized date/timestamp design
+  // - date: Provider-local calendar day (e.g., "2025-10-07" for Monday in PST)
+  // - startTime/endTime: UTC timestamps (e.g., "2025-10-08T07:00:00Z" = Tuesday 7am UTC = Monday 11pm PST)
+  date: date('date').notNull(),
+  startTime: timestamp('start_time').notNull(),
+  endTime: timestamp('end_time').notNull(),
+
+  // Location configuration
+  locationTypes: jsonb('location_types')
+    .$type<('video' | 'phone' | 'in-person')[]>()
+    .notNull(),
+  
+  // Slot status and pricing
+  status: slotStatusEnum('status')
+    .notNull()
+    .default('available'),
+
+  // Optional billing override for this specific slot
+  billingOverride: jsonb('billing_override').$type<BillingConfig>(),
+
+  // Linked booking (if booked)
+  booking: uuid('booking_id')
+    .references(() => bookings.id, { onDelete: 'set null' }),
+}, (table) => ({
+  // Performance indexes (updated for BookingEvent system)
+  ownerDateIdx: index('time_slots_owner_date_idx')
+    .on(table.owner, table.date),
+
+  statusIdx: index('time_slots_status_idx').on(table.status),
+
+  // Partial index for bookable slots (only available status)
+  bookableSlotsIdx: index('time_slots_bookable_idx')
+    .on(table.owner, table.date, table.startTime)
+    .where(sql`"time_slot"."status" = 'available'`),
+
+  eventIdx: index('time_slots_event_id_idx').on(table.event),
+  contextIdx: index('time_slots_context_id_idx').on(table.context),
+  bookingIdx: index('time_slots_booking_id_idx').on(table.booking),
+  deletedAtIdx: index('time_slots_deleted_at_idx').on(table.deletedAt),
+
+  // Ensure no slot overlap for same owner
+  uniqueOwnerTime: unique('time_slots_owner_time_unique')
+    .on(table.owner, table.startTime),
+}));// Bookings - Booked consultations between client and provider
+export const bookings = pgTable('booking', {
+  // Base entity fields
+  ...baseEntityFields,
+
+  // Core relationships (both use person IDs)
+  client: uuid('client_id')
+    .notNull()
+    .references(() => persons.id, { onDelete: 'cascade' }),
+
+  provider: uuid('provider_id')
+    .notNull()
+    .references(() => persons.id, { onDelete: 'cascade' }),
+  
+  slot: uuid('slot_id')
+    .notNull()
+    .references(() => timeSlots.id, { onDelete: 'cascade' }),
+  
+  // Location type (matches TypeSpec)
+  locationType: locationTypeEnum('location_type').notNull(),
+  
+  // Booking details
+  reason: text('reason'), // Optional visit reason (max 500 chars)
+  status: bookingStatusEnum('status')
+    .notNull()
+    .default('pending'),
+  
+  // Timestamps
+  bookedAt: timestamp('booked_at')
+    .notNull()
+    .defaultNow(),  
+  confirmationTimestamp: timestamp('confirmation_timestamp'),
+  scheduledAt: timestamp('scheduled_at').notNull(),
+  durationMinutes: integer('duration_minutes').notNull(),
+  
+  // Cancellation fields
+  cancellationReason: text('cancellation_reason'),
+  cancelledBy: text('cancelled_by'), // 'client' or 'provider'
+  cancelledAt: timestamp('cancelled_at'),
+  
+  // No-show fields
+  noShowMarkedBy: text('no_show_marked_by'), // 'client' or 'provider'
+  noShowMarkedAt: timestamp('no_show_marked_at'),
+  
+  // Form responses (data only during creation)
+  formResponses: jsonb('form_responses').$type<FormResponses>(),
+  
+  // Billing reference (matches TypeSpec)
+  invoice: uuid('invoice') // Reference to billing invoice if payment required
+}, (table) => ({
+  // Performance indexes
+  clientIdx: index('bookings_client_id_idx').on(table.client),
+  providerIdx: index('bookings_provider_id_idx').on(table.provider),
+  statusIdx: index('bookings_status_idx').on(table.status),
+  scheduledAtIdx: index('bookings_scheduled_at_idx').on(table.scheduledAt),
+  slotIdx: index('bookings_slot_id_idx').on(table.slot),
+  
+  // Compound indexes for common queries
+  clientStatusIdx: index('bookings_client_status_idx')
+    .on(table.client, table.status),  providerStatusIdx: index('bookings_provider_status_idx')
+    .on(table.provider, table.status),
+  providerDateIdx: index('bookings_provider_date_idx')
+    .on(table.provider, table.scheduledAt),
+  
+  deletedAtIdx: index('bookings_deleted_at_idx').on(table.deletedAt),
+  
+  // Partial indexes for pending bookings
+  pendingBookingsIdx: index('bookings_pending_idx')
+    .on(table.status, table.bookedAt)
+    .where(sql`"booking"."status" = 'pending'`),
+  
+  // Check constraints
+  reasonLengthCheck: check('bookings_reason_check', sql`LENGTH(${table.reason}) <= 500`),
+  durationMinutesCheck: check('bookings_duration_minutes_check', sql`${table.durationMinutes} >= 15 AND ${table.durationMinutes} <= 480`),
+}));// Schedule Exceptions - Event-specific blocked times
+export const scheduleExceptions = pgTable('schedule_exception', {
+  // Base entity fields
+  ...baseEntityFields,
+
+  // Core fields (updated for BookingEvent system)
+  event: uuid('event_id')
+    .notNull()
+    .references(() => bookingEvents.id, { onDelete: 'cascade' }),
+
+  owner: uuid('owner_id')
+    .notNull()
+    .references(() => persons.id, { onDelete: 'cascade' }), // Exception owner (person)
+
+  context: uuid('context_id'), // Optional context (inherited from event)
+
+  timezone: text('timezone')
+    .notNull()
+    .default('America/New_York'), // Exception timezone (can differ from event timezone)
+
+  startDatetime: timestamp('start_datetime').notNull(),
+  endDatetime: timestamp('end_datetime').notNull(),
+  reason: text('reason').notNull(),
+
+  // Recurrence configuration
+  recurring: boolean('recurring')
+    .notNull()
+    .default(false),
+
+  recurrencePattern: jsonb('recurrence_pattern').$type<RecurrencePattern>(), // JSON pattern instead of text
+}, (table) => ({  // Performance indexes (updated for BookingEvent system)
+  eventIdx: index('schedule_exceptions_event_id_idx').on(table.event),
+  ownerIdx: index('schedule_exceptions_owner_id_idx').on(table.owner),
+  contextIdx: index('schedule_exceptions_context_id_idx').on(table.context),
+  dateRangeIdx: index('schedule_exceptions_date_range_idx')
+    .on(table.startDatetime, table.endDatetime),
+  ownerDateRangeIdx: index('schedule_exceptions_owner_date_range_idx')
+    .on(table.owner, table.startDatetime, table.endDatetime),
+  deletedAtIdx: index('schedule_exceptions_deleted_at_idx').on(table.deletedAt),
+
+  // Check constraints
+  reasonLengthCheck: check('schedule_exceptions_reason_check', sql`LENGTH(${table.reason}) <= 500`),
+  dateRangeCheck: check('schedule_exceptions_date_range_check', sql`${table.endDatetime} > ${table.startDatetime}`),
+}));// Type exports for TypeScript
+export type TimeSlot = typeof timeSlots.$inferSelect;
+export type NewTimeSlot = typeof timeSlots.$inferInsert;
+
+export type Booking = typeof bookings.$inferSelect;
+export type NewBooking = typeof bookings.$inferInsert;
+
+export type ScheduleException = typeof scheduleExceptions.$inferSelect;
+export type NewScheduleException = typeof scheduleExceptions.$inferInsert;
+
+export type BookingEvent = typeof bookingEvents.$inferSelect;
+export type NewBookingEvent = typeof bookingEvents.$inferInsert;
+
+// Day of week enum for type safety
+export enum DayOfWeek {
+  sun = 'sun',
+  mon = 'mon', 
+  tue = 'tue',
+  wed = 'wed',
+  thu = 'thu',
+  fri = 'fri',
+  sat = 'sat'
+}
+
+// Time block configuration within a daily schedule
+export interface TimeBlock {
+  startTime: string; // HH:MM format
+  endTime: string; // HH:MM format
+  slotDuration?: number; // Minutes (default: 30)
+  bufferTime?: number; // Minutes (default: 0)
+}// Daily configuration for a specific day of the week
+export interface DailyConfig {
+  enabled: boolean; // Whether provider works this day
+  timeBlocks: TimeBlock[]; // Time blocks for this day
+}
+
+// Form field type enum - matches TypeSpec
+export type FormFieldType = 'text' | 'textarea' | 'email' | 'phone' | 'number' | 'datetime' | 'select' | 'multiselect' | 'checkbox' | 'display';
+
+// Form field option for select/multiselect - matches TypeSpec
+export interface FormFieldOption {
+  label: string;
+  value: string;
+}
+
+// Form field validation rules - matches TypeSpec
+export interface FormFieldValidation {
+  minLength?: number;
+  maxLength?: number;
+  min?: number;
+  max?: number;
+  pattern?: string;
+}
+
+// BookingEvent-specific configuration interfaces
+export interface FormConfig {
+  fields?: FormFieldConfig[];
+}
+
+export interface FormFieldConfig {
+  id: string;  type: FormFieldType;
+  label: string;
+  required?: boolean;
+  options?: FormFieldOption[];
+  validation?: FormFieldValidation;
+  placeholder?: string;
+  helpText?: string;
+}
+
+// CurrencyAmount type - matches TypeSpec (integer in cents)
+export type CurrencyAmount = number; // Integer representing cents
+
+export interface BillingConfig {
+  price: CurrencyAmount; // Price in cents (integer)
+  currency: string; // Currency code (e.g., 'CAD', 'USD')
+  cancellationThresholdMinutes: number; // Free cancellation threshold in minutes
+}
+
+// RecurrenceType type matching the enum
+export type RecurrenceType = 'daily' | 'weekly' | 'monthly';
+
+export interface RecurrencePattern {
+  type: RecurrenceType;
+  interval?: number; // Default: 1
+  daysOfWeek?: number[]; // For weekly (0=Sunday, 6=Saturday)
+  dayOfMonth?: number; // For monthly (1-31)
+  endDate?: string; // End date for recurrence (plainDate format)
+  maxOccurrences?: number; // Maximum number of occurrences
+}// Form response data for booking creation - matches TypeSpec
+export interface FormResponseData {
+  data: Record<string, any>; // Form field responses
+}
+
+// Complete form responses with metadata - matches TypeSpec
+export interface FormResponses {
+  data: Record<string, any>; // Form field responses
+  metadata?: {
+    submittedAt?: string; // When the form was submitted (utcDateTime)
+    completionTimeSeconds?: number; // Time taken to complete the form in seconds
+    ipAddress?: string; // Client IP address
+  };
+}
+
+// BookingEvent request types (new system)
+export interface BookingEventCreateRequest {
+  title: string; // Event title
+  description?: string; // Event description
+  context?: string; // Optional context for domain associations
+  timezone?: string; // Default: 'America/New_York'
+  locationTypes?: ('video' | 'phone' | 'in-person')[]; // Default: all types
+  maxBookingDays?: number; // Default: 30
+  minBookingMinutes?: number; // Default: 1440 (24 hours)
+  formConfig?: FormConfig;
+  billingConfig?: BillingConfig;
+  status?: 'draft' | 'active' | 'paused' | 'archived'; // Default: 'active'
+  effectiveFrom?: string; // Default: today
+  effectiveTo?: string;
+  dailyConfigs: Record<DayOfWeek, DailyConfig>; // Required: weekly schedule configuration
+}export interface BookingEventUpdateRequest {
+  title?: string;
+  description?: string;
+  timezone?: string;
+  locationTypes?: ('video' | 'phone' | 'in-person')[];
+  maxBookingDays?: number;
+  minBookingMinutes?: number;
+  formConfig?: FormConfig | null; // Can be null to clear - matches TypeSpec
+  billingConfig?: BillingConfig | null; // Can be null to clear - matches TypeSpec
+  status?: 'draft' | 'active' | 'paused' | 'archived';
+  effectiveTo?: string | null; // Can be null to clear - matches TypeSpec
+  dailyConfigs?: Record<DayOfWeek, DailyConfig>; // Optional: partial update supported
+}
+
+export interface BookingCreateRequest {
+  slot: string; // Time slot (required) - UUID
+  locationType?: 'video' | 'phone' | 'in-person'; // Selected location type (optional)
+  reason?: string; // Visit reason (optional) - max 500 chars
+  formResponses?: FormResponseData; // Form responses (optional)
+}
+
+export interface ScheduleExceptionCreateRequest {
+  timezone?: string; // Exception timezone (defaults to event timezone if not specified)
+  startDatetime: string; // Block start date/time (utcDateTime)
+  endDatetime: string; // Block end date/time (utcDateTime)
+  reason: string; // Reason for blocking (max 500 chars)
+  recurring?: boolean; // Whether this exception repeats (default: false)
+  recurrencePattern?: RecurrencePattern; // Recurrence pattern
+}// Booking action request - matches TypeSpec
+export interface BookingActionRequest {
+  reason: string; // Action reason - required for audit trail (max 500 chars)
+}
+
+// Helper types for queries with joined data
+export interface BookingWithDetails extends Booking {
+  client?: any; // Client details
+  provider?: any; // Provider details
+  slot?: TimeSlot; // Time slot details
+}
+
+export interface BookingEventWithSlots extends BookingEvent {
+  slots?: TimeSlot[]; // Available time slots
+}

@@ -1,0 +1,81 @@
+import { Context } from 'hono';
+import type { DatabaseInstance } from '@/core/database';
+import {
+  NotFoundError
+} from '@/core/errors';
+import { BookingEventRepository } from './repos/bookingEvent.repo';
+import { TimeSlotRepository } from './repos/timeSlot.repo';
+
+/**
+ * getBookingEvent
+ * 
+ * Path: GET /booking/events/{event}
+ * OperationId: getBookingEvent
+ * Security: Public endpoint (no authentication required)
+ */
+export async function getBookingEvent(ctx: Context) {
+  // Get validated parameters
+  const params = ctx.req.valid('param') as { event: string };
+  const query = ctx.req.valid('query') as { expand?: string };
+  
+  // Get dependencies from context
+  const db = ctx.get('database') as DatabaseInstance;
+  const logger = ctx.get('logger');
+  
+  // Instantiate repository
+  const repo = new BookingEventRepository(db, logger);
+  
+  // Find booking event (public access - no ownership check)
+  const event = await repo.findOneById(params.event);
+  
+  if (!event) {
+    throw new NotFoundError('Booking event not found', {
+      resourceType: 'booking_event',
+      resource: params.event,
+      suggestions: ['Check event ID', 'Verify event exists']
+    });
+  }
+
+  // Handle expand parameter for slots
+  let response: any = event;
+  
+  if (query.expand) {
+    const expandFields = query.expand.split(',').map(f => f.trim());
+    
+    for (const field of expandFields) {
+      // Support slots expansion with time range (e.g., "slots:7d")
+      if (field.startsWith('slots')) {
+        const slotRepo = new TimeSlotRepository(db, logger);
+        const match = field.match(/slots:(\d+)([dhw])/);
+        
+        if (match) {
+          const [, amount, unit] = match;
+          const days = unit === 'd' ? parseInt(amount) : 
+                       unit === 'w' ? parseInt(amount) * 7 : 
+                       parseInt(amount) / 24;
+          
+          const startDate = new Date();
+          const endDate = new Date();
+          endDate.setDate(endDate.getDate() + days);
+          
+          const slots = await slotRepo.findAvailableSlots(
+            event.id,
+            startDate.toISOString(),
+            endDate.toISOString()
+          );
+          
+          response = { ...event, slots };
+        }
+      }
+    }
+  }
+
+  // Log access (public endpoint - no user ID)
+  logger?.info({
+    eventId: event.id,
+    action: 'view_booking_event_public',
+    expand: query.expand
+  }, 'Booking event retrieved (public)');
+
+  return ctx.json(response, 200);
+}
