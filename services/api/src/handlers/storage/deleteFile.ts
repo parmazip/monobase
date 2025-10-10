@@ -57,7 +57,7 @@ export async function deleteFile(ctx: Context) {
   const isOwner = file.owner === user.id;
 
   if (!isOwner && !isAdmin) {
-    throw new UnauthorizedError('Access denied: You can only delete your own files');
+    throw new ForbiddenError('Access denied: You can only delete your own files');
   }
 
   // Log deletion attempt for compliance logging

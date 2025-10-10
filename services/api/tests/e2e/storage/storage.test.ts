@@ -738,4 +738,449 @@ describe('Storage E2E Tests', () => {
       await Promise.all(availablePromises);
     });
   });
+
+  describe('Multi-Tenant Security & Authorization', () => {
+    test('should isolate files between users - User B cannot see User A files', async () => {
+      // Create User A and upload files
+      const userAClient = createApiClient({ app: testApp.app });
+      await userAClient.signup();
+      
+      const userAFiles = [
+        createTestFile({ filename: 'userA-file1.txt', size: 100 }),
+        createTestFile({ filename: 'userA-file2.txt', size: 200 }),
+        createTestFile({ filename: 'userA-file3.txt', size: 300 }),
+      ];
+      
+      const userAFileIds: string[] = [];
+      for (const file of userAFiles) {
+        const result = await uploadFileToStorage(userAClient, file);
+        await waitForFileStatus(userAClient, result.fileId, 'available');
+        userAFileIds.push(result.fileId);
+      }
+      
+      // Create User B and upload files
+      const userBClient = createApiClient({ app: testApp.app });
+      await userBClient.signup();
+      
+      const userBFiles = [
+        createTestFile({ filename: 'userB-file1.txt', size: 150 }),
+        createTestFile({ filename: 'userB-file2.txt', size: 250 }),
+      ];
+      
+      const userBFileIds: string[] = [];
+      for (const file of userBFiles) {
+        const result = await uploadFileToStorage(userBClient, file);
+        await waitForFileStatus(userBClient, result.fileId, 'available');
+        userBFileIds.push(result.fileId);
+      }
+      
+      // User B lists files - should ONLY see their own 2 files
+      const userBListResponse = await listFiles(userBClient);
+      
+      expect(userBListResponse.data).toBeInstanceOf(Array);
+      
+      // Collect all file IDs that User B can see across all pages
+      const userBVisibleFileIds = new Set<string>();
+      let currentOffset = 0;
+      const pageSize = 50;
+      
+      while (true) {
+        const pageResponse = await listFiles(userBClient, { offset: currentOffset, limit: pageSize });
+        pageResponse.data.forEach(file => userBVisibleFileIds.add(file.id));
+        
+        if (!pageResponse.pagination.hasNextPage) break;
+        currentOffset += pageSize;
+        if (currentOffset > pageResponse.pagination.totalCount) break;
+      }
+      
+      // User B should see ONLY their own files
+      userBFileIds.forEach(fileId => {
+        expect(userBVisibleFileIds.has(fileId)).toBe(true);
+      });
+      
+      // User B should NOT see any of User A's files
+      userAFileIds.forEach(fileId => {
+        expect(userBVisibleFileIds.has(fileId)).toBe(false);
+      });
+    });
+
+    test('should prevent non-admin from filtering other users files via owner parameter', async () => {
+      // Create User A with files
+      const userAClient = createApiClient({ app: testApp.app });
+      const userA = await userAClient.signup();
+      
+      const testFile = createTestFile({ filename: 'userA-secret.txt', size: 100 });
+      await uploadFileToStorage(userAClient, testFile);
+      
+      // Create User B
+      const userBClient = createApiClient({ app: testApp.app });
+      await userBClient.signup();
+      
+      // User B tries to filter by User A's ID
+      const response = await userBClient.fetch('/storage/files', {
+        searchParams: { owner: userA.id }
+      });
+      
+      // Should either return 403 or empty results (depending on implementation)
+      if (response.status === 403) {
+        expect(response.status).toBe(403);
+      } else if (response.ok) {
+        const data: FileListResponse = await response.json();
+        // If not 403, should return empty results or only User B's files
+        expect(data.data.every(file => file.owner !== userA.id)).toBe(true);
+      }
+    });
+
+    test('should return 403 when accessing other users file download', async () => {
+      // Create User A with a file
+      const userAClient = createApiClient({ app: testApp.app });
+      await userAClient.signup();
+      
+      const testFile = createTestFile({ filename: 'userA-private.txt', size: 100 });
+      const uploadResult = await uploadFileToStorage(userAClient, testFile);
+      await waitForFileStatus(userAClient, uploadResult.fileId, 'available');
+      
+      // Create User B
+      const userBClient = createApiClient({ app: testApp.app });
+      await userBClient.signup();
+      
+      // User B tries to download User A's file
+      const response = await userBClient.fetch(`/storage/files/${uploadResult.fileId}/download`);
+      
+      // Should return 403 (or 404 if implementation hides existence)
+      expect(response.status).toBeOneOf([403, 404]);
+    });
+
+    test('should return 403 when accessing other users file metadata', async () => {
+      // Create User A with a file
+      const userAClient = createApiClient({ app: testApp.app });
+      await userAClient.signup();
+      
+      const testFile = createTestFile({ filename: 'userA-private-meta.txt', size: 100 });
+      const uploadResult = await uploadFileToStorage(userAClient, testFile);
+      await waitForFileStatus(userAClient, uploadResult.fileId, 'available');
+      
+      // Create User B
+      const userBClient = createApiClient({ app: testApp.app });
+      await userBClient.signup();
+      
+      // User B tries to get User A's file metadata
+      const response = await userBClient.fetch(`/storage/files/${uploadResult.fileId}`);
+      
+      // Should return 403 (or 404 if implementation hides existence)
+      expect(response.status).toBeOneOf([403, 404]);
+    });
+
+    test('should return 403 when deleting other users file', async () => {
+      // Create User A with a file
+      const userAClient = createApiClient({ app: testApp.app });
+      await userAClient.signup();
+      
+      const testFile = createTestFile({ filename: 'userA-protected.txt', size: 100 });
+      const uploadResult = await uploadFileToStorage(userAClient, testFile);
+      await waitForFileStatus(userAClient, uploadResult.fileId, 'available');
+      
+      // Create User B
+      const userBClient = createApiClient({ app: testApp.app });
+      await userBClient.signup();
+      
+      // User B tries to delete User A's file
+      const response = await userBClient.fetch(`/storage/files/${uploadResult.fileId}`, {
+        method: 'DELETE'
+      });
+      
+      // Should return 403 (or 404 if implementation hides existence)
+      expect(response.status).toBeOneOf([403, 404]);
+      
+      // Verify file still exists for User A
+      const verifyResponse = await userAClient.fetch(`/storage/files/${uploadResult.fileId}`);
+      expect(verifyResponse.status).toBe(200);
+    });
+
+    test('should return 401 for all endpoints without authentication', async () => {
+      // Create unauthenticated client
+      const unauthClient = createApiClient({ app: testApp.app });
+      
+      const testFileId = generateTestFileId();
+      
+      // Test all endpoints return 401
+      const uploadResponse = await unauthClient.fetch('/storage/files/upload', {
+        method: 'POST',
+        body: {
+          filename: 'test.txt',
+          size: 100,
+          mimeType: 'text/plain'
+        }
+      });
+      expect(uploadResponse.status).toBe(401);
+      
+      const completeResponse = await unauthClient.fetch(`/storage/files/${testFileId}/complete`, {
+        method: 'POST'
+      });
+      expect(completeResponse.status).toBe(401);
+      
+      const downloadResponse = await unauthClient.fetch(`/storage/files/${testFileId}/download`);
+      expect(downloadResponse.status).toBe(401);
+      
+      const getFileResponse = await unauthClient.fetch(`/storage/files/${testFileId}`);
+      expect(getFileResponse.status).toBe(401);
+      
+      const listResponse = await unauthClient.fetch('/storage/files');
+      expect(listResponse.status).toBe(401);
+      
+      const deleteResponse = await unauthClient.fetch(`/storage/files/${testFileId}`, {
+        method: 'DELETE'
+      });
+      expect(deleteResponse.status).toBe(401);
+    });
+  });
+
+  describe('Admin Role Authorization', () => {
+    test('should allow admin to view all users files', async () => {
+      // Create User A with files
+      const userAClient = createApiClient({ app: testApp.app });
+      await userAClient.signup();
+      const userAFile = createTestFile({ filename: 'userA-doc.txt', size: 100 });
+      const userAResult = await uploadFileToStorage(userAClient, userAFile);
+      await waitForFileStatus(userAClient, userAResult.fileId, 'available');
+      
+      // Create User B with files
+      const userBClient = createApiClient({ app: testApp.app });
+      await userBClient.signup();
+      const userBFile = createTestFile({ filename: 'userB-doc.txt', size: 200 });
+      const userBResult = await uploadFileToStorage(userBClient, userBFile);
+      await waitForFileStatus(userBClient, userBResult.fileId, 'available');
+      
+      // Create admin and list all files
+      const adminClient = createApiClient({ app: testApp.app });
+      await adminClient.signinAsAdmin();
+      
+      // Collect all files across pages
+      const allAdminVisibleFiles: any[] = [];
+      let currentOffset = 0;
+      const pageSize = 50;
+      
+      while (true) {
+        const response = await listFiles(adminClient, { offset: currentOffset, limit: pageSize });
+        allAdminVisibleFiles.push(...response.data);
+        
+        if (!response.pagination.hasNextPage) break;
+        currentOffset += pageSize;
+        if (currentOffset > response.pagination.totalCount) break;
+      }
+      
+      const allFileIds = allAdminVisibleFiles.map(f => f.id);
+      
+      // Admin should see both users' files
+      expect(allFileIds).toContain(userAResult.fileId);
+      expect(allFileIds).toContain(userBResult.fileId);
+    });
+
+    test('should allow admin to filter by specific owner', async () => {
+      // Create User A with files
+      const userAClient = createApiClient({ app: testApp.app });
+      const userA = await userAClient.signup();
+      const userAFile = createTestFile({ filename: 'userA-filtered.txt', size: 100 });
+      const userAResult = await uploadFileToStorage(userAClient, userAFile);
+      await waitForFileStatus(userAClient, userAResult.fileId, 'available');
+      
+      // Create User B with files
+      const userBClient = createApiClient({ app: testApp.app });
+      const userB = await userBClient.signup();
+      const userBFile = createTestFile({ filename: 'userB-filtered.txt', size: 200 });
+      const userBResult = await uploadFileToStorage(userBClient, userBFile);
+      await waitForFileStatus(userBClient, userBResult.fileId, 'available');
+      
+      // Create admin
+      const adminClient = createApiClient({ app: testApp.app });
+      await adminClient.signinAsAdmin();
+      
+      // Admin filters by User A's ID
+      const userAFilterResponse = await listFiles(adminClient, { owner: userA.id });
+      const userAFileIds = userAFilterResponse.data.map(f => f.id);
+      
+      expect(userAFileIds).toContain(userAResult.fileId);
+      expect(userAFileIds).not.toContain(userBResult.fileId);
+      
+      // Admin filters by User B's ID
+      const userBFilterResponse = await listFiles(adminClient, { owner: userB.id });
+      const userBFileIds = userBFilterResponse.data.map(f => f.id);
+      
+      expect(userBFileIds).toContain(userBResult.fileId);
+      expect(userBFileIds).not.toContain(userAResult.fileId);
+    });
+  });
+
+  describe('File Status State Machine', () => {
+    test('should track file status transitions from uploading to available', async () => {
+      const testFile = createTestFile({ size: 500 });
+      
+      // Initiate upload
+      const uploadResponse = await apiClient.fetch('/storage/files/upload', {
+        method: 'POST',
+        body: {
+          filename: testFile.filename,
+          size: testFile.size,
+          mimeType: testFile.mimeType,
+        },
+      });
+      
+      const uploadData: FileUploadResponse = await uploadResponse.json();
+      const fileId = uploadData.file;
+      
+      // Check initial status should be 'uploading'
+      const initialMetadata = await apiClient.fetch(`/storage/files/${fileId}`);
+      const initialData = await initialMetadata.json();
+      expect(initialData.status).toBe('uploading');
+      
+      // Upload to storage
+      await fetch(uploadData.uploadUrl, {
+        method: uploadData.uploadMethod,
+        body: testFile.content,
+        headers: { 'Content-Type': testFile.mimeType },
+      });
+      
+      // Complete upload
+      await apiClient.fetch(`/storage/files/${fileId}/complete`, {
+        method: 'POST',
+      });
+      
+      // Wait for final status (might go through processing or directly to available)
+      const finalMetadata = await waitForFileStatus(apiClient, fileId, 'available', 15000);
+      expect(finalMetadata.status).toBe('available');
+    });
+
+    test('should not allow download of files in uploading status', async () => {
+      const testFile = createTestFile({ size: 100 });
+      
+      // Initiate upload but don't complete
+      const uploadResponse = await apiClient.fetch('/storage/files/upload', {
+        method: 'POST',
+        body: {
+          filename: testFile.filename,
+          size: testFile.size,
+          mimeType: testFile.mimeType,
+        },
+      });
+      
+      const uploadData: FileUploadResponse = await uploadResponse.json();
+      
+      // Try to download while in uploading status
+      const downloadResponse = await apiClient.fetch(`/storage/files/${uploadData.file}/download`);
+      expect(downloadResponse.ok).toBe(false);
+    });
+  });
+
+  describe('Additional Edge Cases', () => {
+    test('should return 404 when completing upload for non-existent file', async () => {
+      const fakeFileId = generateTestFileId();
+      
+      const response = await apiClient.fetch(`/storage/files/${fakeFileId}/complete`, {
+        method: 'POST'
+      });
+      
+      expect(response.status).toBe(404);
+    });
+
+    test('should return 404 when getting metadata for non-existent file', async () => {
+      const fakeFileId = generateTestFileId();
+      
+      const response = await apiClient.fetch(`/storage/files/${fakeFileId}`);
+      
+      expect(response.status).toBe(404);
+    });
+
+    test('should allow non-admin to filter their own files with owner parameter', async () => {
+      const currentUser = apiClient.getUser();
+      
+      // Upload some files
+      const testFiles = [
+        createTestFile({ filename: 'my-file-1.txt', size: 100 }),
+        createTestFile({ filename: 'my-file-2.txt', size: 200 }),
+      ];
+      
+      const fileIds: string[] = [];
+      for (const file of testFiles) {
+        const result = await uploadFileToStorage(apiClient, file);
+        await waitForFileStatus(apiClient, result.fileId, 'available');
+        fileIds.push(result.fileId);
+      }
+      
+      // Filter by own owner ID - collect across all pages
+      const allFilteredFiles: any[] = [];
+      let currentOffset = 0;
+      const pageSize = 50;
+      
+      while (true) {
+        const response = await listFiles(apiClient, { owner: currentUser.id, offset: currentOffset, limit: pageSize });
+        allFilteredFiles.push(...response.data);
+        
+        if (!response.pagination.hasNextPage) break;
+        currentOffset += pageSize;
+        if (currentOffset > response.pagination.totalCount) break;
+      }
+      
+      const resultFileIds = allFilteredFiles.map(f => f.id);
+      
+      // Should see own files
+      fileIds.forEach(fileId => {
+        expect(resultFileIds).toContain(fileId);
+      });
+      
+      // All returned files should belong to current user
+      allFilteredFiles.forEach(file => {
+        expect(file.owner).toBe(currentUser.id);
+      });
+    });
+
+    test('should validate UUID format in file responses', async () => {
+      const testFile = createTestFile({ size: 100 });
+      const result = await uploadFileToStorage(apiClient, testFile);
+      await waitForFileStatus(apiClient, result.fileId, 'available');
+      
+      const response = await apiClient.fetch(`/storage/files/${result.fileId}`);
+      const fileData = await response.json();
+      
+      // UUID v4 regex pattern
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      
+      expect(uuidRegex.test(fileData.id)).toBe(true);
+      expect(uuidRegex.test(fileData.owner)).toBe(true);
+    });
+
+    test('should validate ISO 8601 timestamp format in responses', async () => {
+      const testFile = createTestFile({ size: 100 });
+      const result = await uploadFileToStorage(apiClient, testFile);
+      await waitForFileStatus(apiClient, result.fileId, 'available');
+      
+      const response = await apiClient.fetch(`/storage/files/${result.fileId}`);
+      const fileData = await response.json();
+      
+      // ISO 8601 timestamp validation
+      const isValidDate = (dateString: string) => {
+        const date = new Date(dateString);
+        return !isNaN(date.getTime());
+      };
+      
+      expect(isValidDate(fileData.createdAt)).toBe(true);
+      expect(isValidDate(fileData.updatedAt)).toBe(true);
+      expect(isValidDate(fileData.uploadedAt)).toBe(true);
+    });
+
+    test('should handle pagination when offset exceeds total count', async () => {
+      const response = await listFiles(apiClient, { offset: 999999, limit: 10 });
+      
+      expect(response.data).toBeInstanceOf(Array);
+      expect(response.data.length).toBe(0);
+      expect(response.pagination.hasNextPage).toBe(false);
+    });
+
+    test('should handle maximum page size limit (100)', async () => {
+      const response = await listFiles(apiClient, { limit: 100 });
+      
+      expect(response.data).toBeInstanceOf(Array);
+      expect(response.data.length).toBeLessThanOrEqual(100);
+      expect(response.pagination.limit).toBe(100);
+    });
+  });
 });

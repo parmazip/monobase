@@ -43,15 +43,14 @@ export async function listFiles(ctx: Context) {
   const audit = ctx.get('audit');
   const repo = new StorageFileRepository(db, logger);
 
-  // Role-based filtering: patients can only see their own files
+  // Role-based filtering: users can only see their own files
   const isAdmin = await userHasRole(auth, user, 'admin');
-  const isProvider = await userHasRole(auth, user, 'provider');
 
-  if (!isAdmin && !isProvider) {
-    // Patients can only see their own files
+  if (!isAdmin) {
+    // Regular users can only see their own files
     filters['owner'] = user.id;
   }
-  // Admins and providers can see all files (with audit logging)
+  // Admins can see all files (with audit logging)
 
   // Log file listing access for compliance logging
   if (audit) {

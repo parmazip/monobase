@@ -61,13 +61,12 @@ export async function getFile(ctx: Context) {
     });
   }
 
-  // Check access: user must be owner or have admin/provider role
+  // Check access: user must be owner or admin
   const isAdmin = await userHasRole(auth, user, 'admin');
-  const isProvider = await userHasRole(auth, user, 'provider');
   const isOwner = file.owner === user.id;
 
-  if (!isOwner && !isAdmin && !isProvider) {
-    throw new UnauthorizedError('Access denied: You can only access your own files');
+  if (!isOwner && !isAdmin) {
+    throw new ForbiddenError('Access denied: You can only access your own files');
   }
 
   // Log access for compliance logging
@@ -87,7 +86,6 @@ export async function getFile(ctx: Context) {
         details: {
           isOwner,
           isAdmin,
-          isProvider,
           filename: file.filename,
           fileSize: file.size,
           mimeType: file.mimeType,
