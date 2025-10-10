@@ -11,7 +11,8 @@
     "./services/notifications": "./src/services/notifications.ts",
     "./services/storage": "./src/services/storage.ts",
     "./services/comms": "./src/services/comms.ts",
-    "./comms": "./src/comms/index.ts",
+    "./lib/signaling-client": "./src/lib/signaling-client.ts",
+    "./lib/peer-connection": "./src/lib/peer-connection.ts",
     "./react/auth-client": "./src/react/auth-client.ts",
     "./react/provider": "./src/react/provider.tsx",
     "./react/query-keys": "./src/react/query-keys.ts",
@@ -19,10 +20,7 @@
     "./react/hooks/use-person": "./src/react/hooks/use-person.ts",
     "./react/hooks/use-notifications": "./src/react/hooks/use-notifications.ts",
     "./react/hooks/use-storage": "./src/react/hooks/use-storage.ts",
-    "./react/hooks/use-chat-rooms": "./src/react/hooks/use-chat-rooms.ts",
-    "./react/hooks/use-chat-messages": "./src/react/hooks/use-chat-messages.ts",
-    "./lib/signaling-client": "./src/lib/signaling-client.ts",
-    "./lib/peer-connection": "./src/lib/peer-connection.ts"
+    "./react/hooks/use-comms": "./src/react/hooks/use-comms.ts"
   },
   "files": ["src"],
   "scripts": {
