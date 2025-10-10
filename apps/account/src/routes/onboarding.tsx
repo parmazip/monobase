@@ -1,10 +1,12 @@
 import { createFileRoute, useNavigate, useRouter } from '@tanstack/react-router'
 import { useState, useEffect } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@monobase/ui/components/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@monobase/ui/components/card'
 import { Progress } from '@monobase/ui/components/progress'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { useCreateMyPerson } from '@monobase/sdk/react/hooks/use-person'
+import { queryKeys } from '@monobase/sdk/react/query-keys'
 import { Logo } from '@/components/logo'
 import { composeGuards, requireAuth, requireNoPerson } from '@/utils/guards'
 import { detectTimezone } from '@monobase/ui/lib/detect-timezone'
@@ -23,6 +25,7 @@ export const Route = createFileRoute('/onboarding')({
 function OnboardingPage() {
   const navigate = useNavigate()
   const router = useRouter()
+  const queryClient = useQueryClient()
 
   // Get user from route context - guaranteed to exist because of requireAuth guard
   const { user } = Route.useRouteContext()
@@ -117,8 +120,14 @@ function OnboardingPage() {
 
     createPersonMutation.mutate(personData, {
       onSuccess: async () => {
-        // Invalidate router to recompute context with fresh person data
-        await router.invalidate()
+        // Wait for person query to refetch
+        await queryClient.refetchQueries({
+          queryKey: queryKeys.personProfile('me')
+        })
+
+        // Small delay to ensure React re-renders with new context
+        await new Promise(resolve => setTimeout(resolve, 100))
+
         navigate({ to: '/dashboard' })
       }
     })
@@ -150,8 +159,14 @@ function OnboardingPage() {
 
     createPersonMutation.mutate(personData, {
       onSuccess: async () => {
-        // Invalidate router to recompute context with fresh person data
-        await router.invalidate()
+        // Wait for person query to refetch
+        await queryClient.refetchQueries({
+          queryKey: queryKeys.personProfile('me')
+        })
+
+        // Small delay to ensure React re-renders with new context
+        await new Promise(resolve => setTimeout(resolve, 100))
+
         navigate({ to: '/dashboard' })
       }
     })
