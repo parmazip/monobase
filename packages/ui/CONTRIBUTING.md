@@ -246,17 +246,19 @@ Components use these via Tailwind utilities:
 <div className="bg-background text-foreground" />
 ```
 
-### Custom Fonts
+### Typography
 
-Fonts are defined in `tailwind.config.ts`:
-- **Headline**: Montserrat
-- **Subtitle**: Merriweather
-- **Body**: Open Sans
+Typography is managed in `src/styles/globals.css` with imported fonts:
+- **Headlines** (h1-h6): Montserrat Bold
+- **Subtitles** (`.subtitle`): Merriweather Regular  
+- **Body** (body, p, `.body-text`): Open Sans Semi-Bold
+
+Fonts are automatically applied to semantic HTML elements. For custom elements:
 
 ```typescript
-<h1 className="font-headline">Heading</h1>
-<h2 className="font-subtitle">Subtitle</h2>
-<p className="font-body">Body text</p>
+<h1>Heading</h1>              {/* Auto: Montserrat */}
+<div className="subtitle">Subtitle</div>  {/* Merriweather */}
+<p>Body text</p>              {/* Auto: Open Sans */}
 ```
 
 ## Form Components with Zod
@@ -346,4 +348,4 @@ function Display() {
 
 For general contribution questions, see [main CONTRIBUTING.md](../../CONTRIBUTING.md).
 
-For UI-specific questions, check existing patterns in `src/` or ask the team.
+For UI-specific questions, reference existing implementations in `src/` or open a discussion in the repository.

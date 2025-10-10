@@ -46,7 +46,7 @@ import { Button } from "@monobase/ui/components/button"
 import { Input } from "@monobase/ui/components/input"
 import { Card } from "@monobase/ui/components/card"
 import { Dialog } from "@monobase/ui/components/dialog"
-// ... and more
+// ... 40+ components available - see src/components/ for complete list
 ```
 
 ### Common Hooks
