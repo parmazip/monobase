@@ -26,8 +26,10 @@ export function useMyPerson() {
     queryKey: queryKeys.personProfile('me'),
     queryFn: getMyProfile,
     retry: (failureCount, error) => {
-      // Don't retry if the person doesn't have a profile (404)
-      if (error instanceof ApiError && error.status === 404) {
+      // Don't retry if:
+      // - User is not authenticated (401) - retrying won't help
+      // - Person profile doesn't exist (404) - expected for onboarding flow
+      if (error instanceof ApiError && (error.status === 401 || error.status === 404)) {
         return false
       }
       return failureCount < 3

@@ -36,42 +36,65 @@ async function api<T = any>(
   url: string,
   options?: RequestInit
 ): Promise<T> {
-  // Make request with explicit credentials handling
-  const response = await fetch(`${globalApiBaseUrl}${url}`, {
-    ...options,
-    credentials: 'include',  // This sends cookies which is managed by better-auth/client
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-  })
+  // Create AbortController for timeout handling
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 30000) // 30s timeout
 
-  // Handle response
-  if (!response.ok) {
-    let errorData
-    try {
-      errorData = await response.json()
-    } catch {
-      errorData = { message: response.statusText }
+  try {
+    // Make request with explicit credentials handling
+    const response = await fetch(`${globalApiBaseUrl}${url}`, {
+      ...options,
+      credentials: 'include',  // This sends cookies which is managed by better-auth/client
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers,
+      },
+    })
+
+    clearTimeout(timeoutId)
+
+    // Handle response
+    if (!response.ok) {
+      let errorData
+      try {
+        errorData = await response.json()
+      } catch {
+        errorData = { message: response.statusText }
+      }
+
+      throw new ApiError(
+        response.status,
+        errorData.message || `API Error: ${response.status}`,
+        errorData
+      )
     }
 
-    throw new ApiError(
-      response.status,
-      errorData.message || `API Error: ${response.status}`,
-      errorData
-    )
-  }
+    // Handle no content responses
+    if (response.status === 204) {
+      return {} as T
+    }
 
-  // Handle no content responses
-  if (response.status === 204) {
-    return {} as T
-  }
-
-  // Parse JSON response
-  try {
-    return await response.json()
-  } catch {
-    return {} as T
+    // Parse JSON response
+    try {
+      return await response.json()
+    } catch {
+      return {} as T
+    }
+  } catch (error) {
+    clearTimeout(timeoutId)
+    
+    // Handle timeout/abort errors
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new ApiError(
+        408,
+        'Request timeout - the server took too long to respond. Please check your connection and try again.',
+        { timeout: true }
+      )
+    }
+    
+    // Re-throw other errors
+    throw error
   }
 }
 

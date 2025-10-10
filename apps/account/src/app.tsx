@@ -7,6 +7,7 @@ import { useSession } from '@monobase/sdk/react/hooks/use-auth'
 import { useMyPerson } from '@monobase/sdk/react/hooks/use-person'
 import { useOneSignal } from '@/hooks/use-onesignal'
 import { apiBaseUrl } from '@/utils/config'
+import { Loading } from '@/components/loading'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
@@ -24,9 +25,16 @@ function InnerApp() {
   // sync OneSignal user ID with auth state
   useOneSignal()
 
-  // auth context
-  const { data: session } = useSession()
-  const { data: person } = useMyPerson()
+  // Wait for session to load before rendering router
+  // This ensures router guards have correct auth context from the start
+  // Use isPending (not isLoading) to avoid blocking during retries/refetches
+  const { data: session, isPending: sessionPending } = useSession()
+  const { data: person, isPending: personPending } = useMyPerson()
+
+  // Show loading only on very first fetch before any data/error is received
+  if (sessionPending || personPending) {
+    return <Loading />
+  }
 
   // build context
   const context = {
