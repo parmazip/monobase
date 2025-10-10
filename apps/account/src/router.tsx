@@ -3,6 +3,7 @@ import { createRouter as createTanStackRouter } from '@tanstack/react-router'
 import { routeTree } from './routeTree.gen.ts'
 import { NotFound } from '@/components/not-found'
 import type { Person } from '@/utils/guards'
+import type { User, Session } from '@monobase/sdk/auth'
 
 // ============================================================================
 // Router Context Type
@@ -10,26 +11,8 @@ import type { Person } from '@/utils/guards'
 
 export interface RouterContext {
   auth: {
-    user: {
-      id: string
-      email: string
-      emailVerified: boolean
-      name: string
-      image?: string | null
-      createdAt: Date
-      updatedAt: Date
-      twoFactorEnabled?: boolean | null
-    } | null
-    session: {
-      id: string
-      userId: string
-      expiresAt: Date
-      token: string
-      ipAddress?: string | null
-      userAgent?: string | null
-      createdAt: Date
-      updatedAt: Date
-    } | null
+    user: User | null
+    session: Session | null
     person: Person | null
   }
 }
