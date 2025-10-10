@@ -209,7 +209,7 @@ export function AddressForm({
                           <CommandEmpty>No country found.</CommandEmpty>
                           <ScrollArea className="h-72">
                             <CommandGroup>
-                              {countries.map((country) => {
+                              {countries.map((country: string) => {
                                 const code = getCountryCode(country)
                                 return (
                                   <CommandItem

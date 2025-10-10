@@ -24,7 +24,7 @@ export interface Country {
 
 const countryNames = getNames()
 
-export const COUNTRIES: Country[] = countryNames.map(name => ({
+export const COUNTRIES: Country[] = countryNames.map((name: string) => ({
   code: getCode(name) || '',
   name
 }))
