@@ -6,6 +6,11 @@ export const queryKeys = {
   person: () => [...queryKeys.all, 'person'] as const,
   personProfile: (id?: string) => [...queryKeys.person(), id] as const,
 
+  // Providers
+  providers: () => [...queryKeys.all, 'providers'] as const,
+  providersList: (params?: any) => [...queryKeys.providers(), 'list', params] as const,
+  provider: (id: string) => [...queryKeys.providers(), id] as const,
+
   // Notifications
   notifications: () => [...queryKeys.all, 'notifications'] as const,
   notificationsList: (params?: any) =>
