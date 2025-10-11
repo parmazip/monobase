@@ -134,6 +134,22 @@ import type {
 } from "@monobase/ui/booking/types"
 ```
 
+### Domain: Billing
+```typescript
+// Billing UI components
+import { MerchantAccountSetup } from "@monobase/ui/billing/components/merchant-account-setup"
+
+// Billing types
+import type {
+  MerchantAccountSetupStatus,
+  MerchantAccountFormProps,
+  InvoiceStatusVariant,
+  PaymentMethodDisplay,
+  InvoiceListItem,
+  InvoiceStatusBadgeProps,
+} from "@monobase/ui/billing/types"
+```
+
 ## Usage Examples
 
 ### Person Forms
@@ -258,6 +274,43 @@ export function BookingStatusPage({ booking, user }) {
       onProfileClick={() => router.push('/profile')}
       onBrowseProviders={() => router.push('/providers')}
       onViewAppointments={() => router.push('/appointments')}
+    />
+  )
+}
+```
+
+### Merchant Account Setup
+
+```tsx
+import { MerchantAccountSetup } from "@monobase/ui/billing/components/merchant-account-setup"
+import {
+  useMyMerchantAccount,
+  useMyMerchantAccountStatus,
+  useCreateMyMerchantAccount,
+} from "@monobase/sdk/react/hooks/use-billing"
+
+export function OnboardingPage() {
+  const { data: account, isLoading } = useMyMerchantAccount()
+  const status = useMyMerchantAccountStatus()
+  const createAccount = useCreateMyMerchantAccount()
+
+  const handleSetup = async () => {
+    const refreshUrl = window.location.href
+    const returnUrl = '/dashboard'
+
+    // Creates account and automatically redirects to Stripe onboarding
+    await createAccount.mutateAsync({ refreshUrl, returnUrl })
+  }
+
+  return (
+    <MerchantAccountSetup
+      account={account}
+      status={status}
+      isLoading={isLoading}
+      onSetupAccount={handleSetup}
+      onSubmit={() => router.navigate('/dashboard')}
+      onSkip={() => router.navigate('/dashboard')}
+      showButtons={true}
     />
   )
 }

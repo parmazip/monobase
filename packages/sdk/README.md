@@ -201,6 +201,73 @@ const providerData = await getProviderWithSlots(providerId)
 console.log(providerData.provider, providerData.slots, providerData.event)
 ```
 
+#### Billing Service
+
+```typescript
+import {
+  getMyMerchantAccount,
+  createMyMerchantAccount,
+  getMyOnboardingUrl,
+  getMyDashboardLink,
+  listMyInvoices,
+  getInvoice,
+  initiateInvoicePayment,
+  isOnboardingComplete,
+  canAccessDashboard,
+  getAccountSetupStatus,
+  type MerchantAccount,
+  type Invoice,
+  type InvoiceListParams,
+} from "@monobase/sdk/services/billing"
+
+// Merchant account management
+const account = await getMyMerchantAccount()
+const status = getAccountSetupStatus(account)
+
+if (status === 'none') {
+  // Create merchant account and get onboarding URL
+  const newAccount = await createMyMerchantAccount({
+    refreshUrl: 'https://app.example.com/onboarding',
+    returnUrl: 'https://app.example.com/dashboard',
+  })
+  // Redirect to newAccount.onboardingUrl
+}
+
+if (status === 'incomplete' && account) {
+  // Continue onboarding
+  const { onboardingUrl } = await getMyOnboardingUrl(
+    account.id,
+    'https://app.example.com/onboarding',
+    'https://app.example.com/dashboard'
+  )
+  // Redirect to onboardingUrl
+}
+
+if (canAccessDashboard(account)) {
+  // Access Stripe dashboard
+  const { dashboardUrl } = await getMyDashboardLink(account.id)
+  // Open dashboardUrl in new tab
+}
+
+// Invoice management
+const invoices = await listMyInvoices({
+  status: 'sent',
+  limit: 20,
+  offset: 0,
+})
+
+const invoice = await getInvoice(invoiceId)
+
+// Initiate payment
+if (invoice.status === 'sent') {
+  const payment = await initiateInvoicePayment(invoiceId, {
+    successUrl: 'https://app.example.com/payment/success',
+    cancelUrl: 'https://app.example.com/payment/cancel',
+  })
+  // Redirect to payment.checkoutUrl
+}
+```
+
 ### React Hooks
 
 #### Authentication Hooks
@@ -343,6 +410,98 @@ function BookingPage({ providerId }: { providerId: string }) {
           {slot.startTime.toLocaleString()} - ${slot.price}
         </div>
       ))}
+    </div>
+  )
+}
+```
+
+#### Billing Hooks
+
+```typescript
+import {
+  useMyMerchantAccount,
+  useMyMerchantAccountStatus,
+  useCreateMyMerchantAccount,
+  useGetMyOnboardingUrl,
+  useGetMyDashboardLink,
+  useMyInvoices,
+  useInvoice,
+  useInitiatePayment,
+} from "@monobase/sdk/react/hooks/use-billing"
+
+// Merchant account management
+function MerchantSetup() {
+  const { data: account, isLoading } = useMyMerchantAccount()
+  const status = useMyMerchantAccountStatus()
+  const createAccount = useCreateMyMerchantAccount()
+
+  const handleSetup = async () => {
+    await createAccount.mutateAsync({
+      refreshUrl: window.location.href,
+      returnUrl: '/dashboard',
+    })
+    // Automatically redirects to Stripe Connect onboarding
+  }
+
+  if (isLoading) return <div>Loading...</div>
+
+  return (
+    <div>
+      <p>Account Status: {status}</p>
+      {status === 'none' && (
+        <button onClick={handleSetup}>Set Up Payment Account</button>
+      )}
+      {status === 'incomplete' && (
+        <button onClick={handleSetup}>Continue Setup</button>
+      )}
+      {status === 'complete' && (
+        <p>Payment account is active!</p>
+      )}
+    </div>
+  )
+}
+
+// Invoice management
+function InvoicesList() {
+  const { data, isLoading } = useMyInvoices({
+    status: 'sent',
+    limit: 20,
+  })
+
+  if (isLoading) return <div>Loading...</div>
+
+  return (
+    <div>
+      {data?.data.map(invoice => (
+        <div key={invoice.id}>
+          {invoice.invoiceNumber} - ${invoice.total} - {invoice.status}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// Payment initiation
+function InvoicePayment({ invoiceId }: { invoiceId: string }) {
+  const { data: invoice } = useInvoice(invoiceId)
+  const initiatePayment = useInitiatePayment()
+
+  const handlePay = async () => {
+    await initiatePayment.mutateAsync({
+      invoiceId,
+      successUrl: '/payment/success',
+      cancelUrl: '/payment/cancel',
+    })
+    // Automatically redirects to Stripe Checkout
+  }
+
+  return (
+    <div>
+      <h2>Invoice {invoice?.invoiceNumber}</h2>
+      <p>Total: ${invoice?.total}</p>
+      <button onClick={handlePay} disabled={invoice?.status !== 'sent'}>
+        Pay Now
+      </button>
     </div>
   )
 }

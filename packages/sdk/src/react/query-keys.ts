@@ -31,4 +31,11 @@ export const queryKeys = {
     filters ? [...queryKeys.booking(), 'providers', filters] as const : [...queryKeys.booking(), 'providers'] as const,
   bookingProviderSlots: (providerId: string) => [...queryKeys.booking(), 'providers', providerId, 'slots'] as const,
 
+  // Billing
+  billing: () => [...queryKeys.all, 'billing'] as const,
+  billingMerchantAccount: () => [...queryKeys.billing(), 'merchantAccount', 'me'] as const,
+  billingInvoices: (params?: Record<string, unknown>) =>
+    params ? [...queryKeys.billing(), 'invoices', params] as const : [...queryKeys.billing(), 'invoices'] as const,
+  billingInvoice: (id: string) => [...queryKeys.billing(), 'invoices', id] as const,
+
 } as const
