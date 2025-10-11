@@ -15,6 +15,13 @@
       "when": 1760191251592,
       "tag": "0001_silly_joseph",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1760194358658,
+      "tag": "0002_youthful_karen_page",
+      "breakpoints": true
     }
   ]
 }

@@ -784,6 +784,33 @@ export const PersonUpdateRequestSchema = z.object({
   timezone: z.union([z.intersection(TimezoneIdSchema, z.string()), z.null()]).optional()
 });
 
+export const ProviderTypeSchema = z.enum(["pharmacist", "other"]);
+
+export const ProviderSchema = z.intersection(BaseEntitySchema, z.object({
+  person: z.union([UUIDSchema, PersonSchema]),
+  providerType: ProviderTypeSchema,
+  yearsOfExperience: z.number().int().gte(0).lte(70).optional(),
+  biography: z.string().max(2000).optional(),
+  minorAilmentsSpecialties: z.array(z.string()).optional(),
+  minorAilmentsPracticeLocations: z.array(z.string()).optional()
+}));
+
+export const ProviderCreateRequestSchema = z.object({
+  person: PersonCreateRequestSchema.optional(),
+  providerType: ProviderTypeSchema,
+  yearsOfExperience: z.number().int().gte(0).lte(70).optional(),
+  biography: z.string().max(2000).optional(),
+  minorAilmentsSpecialties: z.array(z.string()).optional(),
+  minorAilmentsPracticeLocations: z.array(z.string()).optional()
+});
+
+export const ProviderUpdateRequestSchema = z.object({
+  yearsOfExperience: z.union([z.number().int().gte(0).lte(70), z.null()]).optional(),
+  biography: z.union([z.string().max(2000), z.null()]).optional(),
+  minorAilmentsSpecialties: z.union([z.array(z.string()), z.null()]).optional(),
+  minorAilmentsPracticeLocations: z.union([z.array(z.string()), z.null()]).optional()
+});
+
 export const RateLimitErrorSchema = z.intersection(ErrorDetailSchema, z.object({
   limitType: z.enum(["requests", "bandwidth", "concurrent"]),
   limit: z.number().int(),

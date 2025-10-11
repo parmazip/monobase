@@ -1,18 +1,17 @@
-import type { Hono, Handler } from 'hono';
+import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
-import type { Variables } from '@/types/app';
 import * as validators from './validators';
 import { registry } from './registry';
 import { authMiddleware } from '@/middleware/auth';
 import { validationErrorHandler } from '@/middleware/validation';
 import { createExpandMiddleware } from '@/middleware/expand';
 
-export function registerRoutes(app: Hono<{ Variables: Variables }>) {
+export function registerRoutes(app: Hono) {
   // listAuditLogs
   app.get('/audit/logs',
     authMiddleware({ roles: ["admin", "support"] }),
     zValidator('query', validators.ListAuditLogsQuery, validationErrorHandler),
-    registry.listAuditLogs as unknown as Handler
+    registry.listAuditLogs
   );
 
   // createInvoice
@@ -20,14 +19,14 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     authMiddleware(),
     zValidator('json', validators.CreateInvoiceBody, validationErrorHandler),
     createExpandMiddleware("Invoice"),
-    registry.createInvoice as unknown as Handler
+    registry.createInvoice
   );
 
   // listInvoices
   app.get('/billing/invoices',
     authMiddleware(),
     zValidator('query', validators.ListInvoicesQuery, validationErrorHandler),
-    registry.listInvoices as unknown as Handler
+    registry.listInvoices
   );
 
   // getInvoice
@@ -36,7 +35,7 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     zValidator('param', validators.GetInvoiceParams, validationErrorHandler),
     zValidator('query', validators.GetInvoiceQuery, validationErrorHandler),
     createExpandMiddleware("Invoice"),
-    registry.getInvoice as unknown as Handler
+    registry.getInvoice
   );
 
   // updateInvoice
@@ -45,14 +44,14 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     zValidator('param', validators.UpdateInvoiceParams, validationErrorHandler),
     zValidator('json', validators.UpdateInvoiceBody, validationErrorHandler),
     createExpandMiddleware("Invoice"),
-    registry.updateInvoice as unknown as Handler
+    registry.updateInvoice
   );
 
   // deleteInvoice
   app.delete('/billing/invoices/:invoice',
     authMiddleware(),
     zValidator('param', validators.DeleteInvoiceParams, validationErrorHandler),
-    registry.deleteInvoice as unknown as Handler
+    registry.deleteInvoice
   );
 
   // captureInvoicePayment
@@ -60,7 +59,7 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     authMiddleware(),
     zValidator('param', validators.CaptureInvoicePaymentParams, validationErrorHandler),
     createExpandMiddleware("Invoice"),
-    registry.captureInvoicePayment as unknown as Handler
+    registry.captureInvoicePayment
   );
 
   // finalizeInvoice
@@ -68,7 +67,7 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     authMiddleware(),
     zValidator('param', validators.FinalizeInvoiceParams, validationErrorHandler),
     createExpandMiddleware("Invoice"),
-    registry.finalizeInvoice as unknown as Handler
+    registry.finalizeInvoice
   );
 
   // markInvoiceUncollectible
@@ -76,7 +75,7 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     authMiddleware(),
     zValidator('param', validators.MarkInvoiceUncollectibleParams, validationErrorHandler),
     createExpandMiddleware("Invoice"),
-    registry.markInvoiceUncollectible as unknown as Handler
+    registry.markInvoiceUncollectible
   );
 
   // payInvoice
@@ -84,7 +83,7 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     authMiddleware(),
     zValidator('param', validators.PayInvoiceParams, validationErrorHandler),
     zValidator('json', validators.PayInvoiceBody, validationErrorHandler),
-    registry.payInvoice as unknown as Handler
+    registry.payInvoice
   );
 
   // refundInvoicePayment
@@ -92,7 +91,7 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     authMiddleware(),
     zValidator('param', validators.RefundInvoicePaymentParams, validationErrorHandler),
     zValidator('json', validators.RefundInvoicePaymentBody, validationErrorHandler),
-    registry.refundInvoicePayment as unknown as Handler
+    registry.refundInvoicePayment
   );
 
   // voidInvoice
@@ -100,7 +99,7 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     authMiddleware(),
     zValidator('param', validators.VoidInvoiceParams, validationErrorHandler),
     createExpandMiddleware("Invoice"),
-    registry.voidInvoice as unknown as Handler
+    registry.voidInvoice
   );
 
   // createMerchantAccount
@@ -108,7 +107,7 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     authMiddleware(),
     zValidator('json', validators.CreateMerchantAccountBody, validationErrorHandler),
     createExpandMiddleware("MerchantAccount"),
-    registry.createMerchantAccount as unknown as Handler
+    registry.createMerchantAccount
   );
 
   // getMerchantAccount
@@ -117,14 +116,14 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     zValidator('param', validators.GetMerchantAccountParams, validationErrorHandler),
     zValidator('query', validators.GetMerchantAccountQuery, validationErrorHandler),
     createExpandMiddleware("MerchantAccount"),
-    registry.getMerchantAccount as unknown as Handler
+    registry.getMerchantAccount
   );
 
   // getMerchantDashboard
   app.post('/billing/merchant-accounts/:merchantAccount/dashboard',
     authMiddleware(),
     zValidator('param', validators.GetMerchantDashboardParams, validationErrorHandler),
-    registry.getMerchantDashboard as unknown as Handler
+    registry.getMerchantDashboard
   );
 
   // onboardMerchantAccount
@@ -132,13 +131,13 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     authMiddleware(),
     zValidator('param', validators.OnboardMerchantAccountParams, validationErrorHandler),
     zValidator('json', validators.OnboardMerchantAccountBody, validationErrorHandler),
-    registry.onboardMerchantAccount as unknown as Handler
+    registry.onboardMerchantAccount
   );
 
   // handleStripeWebhook
   app.post('/billing/webhooks/stripe',
     zValidator('json', validators.HandleStripeWebhookBody, validationErrorHandler),
-    registry.handleStripeWebhook as unknown as Handler
+    registry.handleStripeWebhook
   );
 
   // createBooking
@@ -146,14 +145,14 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     authMiddleware({ roles: ["user"] }),
     zValidator('json', validators.CreateBookingBody, validationErrorHandler),
     createExpandMiddleware("Booking"),
-    registry.createBooking as unknown as Handler
+    registry.createBooking
   );
 
   // listBookings
   app.get('/booking/bookings',
     authMiddleware({ roles: ["client:owner", "provider:owner", "admin", "support"] }),
     zValidator('query', validators.ListBookingsQuery, validationErrorHandler),
-    registry.listBookings as unknown as Handler
+    registry.listBookings
   );
 
   // getBooking
@@ -162,7 +161,7 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     zValidator('param', validators.GetBookingParams, validationErrorHandler),
     zValidator('query', validators.GetBookingQuery, validationErrorHandler),
     createExpandMiddleware("Booking"),
-    registry.getBooking as unknown as Handler
+    registry.getBooking
   );
 
   // cancelBooking
@@ -171,7 +170,7 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     zValidator('param', validators.CancelBookingParams, validationErrorHandler),
     zValidator('json', validators.CancelBookingBody, validationErrorHandler),
     createExpandMiddleware("Booking"),
-    registry.cancelBooking as unknown as Handler
+    registry.cancelBooking
   );
 
   // confirmBooking
@@ -180,7 +179,7 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     zValidator('param', validators.ConfirmBookingParams, validationErrorHandler),
     zValidator('json', validators.ConfirmBookingBody, validationErrorHandler),
     createExpandMiddleware("Booking"),
-    registry.confirmBooking as unknown as Handler
+    registry.confirmBooking
   );
 
   // markNoShowBooking
@@ -189,7 +188,7 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     zValidator('param', validators.MarkNoShowBookingParams, validationErrorHandler),
     zValidator('json', validators.MarkNoShowBookingBody, validationErrorHandler),
     createExpandMiddleware("Booking"),
-    registry.markNoShowBooking as unknown as Handler
+    registry.markNoShowBooking
   );
 
   // rejectBooking
@@ -198,14 +197,14 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     zValidator('param', validators.RejectBookingParams, validationErrorHandler),
     zValidator('json', validators.RejectBookingBody, validationErrorHandler),
     createExpandMiddleware("Booking"),
-    registry.rejectBooking as unknown as Handler
+    registry.rejectBooking
   );
 
   // listBookingEvents
   app.get('/booking/events',
-    authMiddleware(),
+    authMiddleware({ required: false }), // Optional auth - public endpoint
     zValidator('query', validators.ListBookingEventsQuery, validationErrorHandler),
-    registry.listBookingEvents as unknown as Handler
+    registry.listBookingEvents
   );
 
   // createBookingEvent
@@ -213,7 +212,7 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     authMiddleware({ roles: ["user"] }),
     zValidator('json', validators.CreateBookingEventBody, validationErrorHandler),
     createExpandMiddleware("BookingEvent"),
-    registry.createBookingEvent as unknown as Handler
+    registry.createBookingEvent
   );
 
   // getBookingEvent
@@ -222,7 +221,7 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     zValidator('param', validators.GetBookingEventParams, validationErrorHandler),
     zValidator('query', validators.GetBookingEventQuery, validationErrorHandler),
     createExpandMiddleware("BookingEvent"),
-    registry.getBookingEvent as unknown as Handler
+    registry.getBookingEvent
   );
 
   // updateBookingEvent
@@ -231,14 +230,14 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     zValidator('param', validators.UpdateBookingEventParams, validationErrorHandler),
     zValidator('json', validators.UpdateBookingEventBody, validationErrorHandler),
     createExpandMiddleware("BookingEvent"),
-    registry.updateBookingEvent as unknown as Handler
+    registry.updateBookingEvent
   );
 
   // deleteBookingEvent
   app.delete('/booking/events/:event',
     authMiddleware({ roles: ["event:owner", "admin"] }),
     zValidator('param', validators.DeleteBookingEventParams, validationErrorHandler),
-    registry.deleteBookingEvent as unknown as Handler
+    registry.deleteBookingEvent
   );
 
   // createScheduleException
@@ -246,7 +245,7 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     authMiddleware({ roles: ["event:owner", "admin"] }),
     zValidator('param', validators.CreateScheduleExceptionParams, validationErrorHandler),
     zValidator('json', validators.CreateScheduleExceptionBody, validationErrorHandler),
-    registry.createScheduleException as unknown as Handler
+    registry.createScheduleException
   );
 
   // listScheduleExceptions
@@ -254,21 +253,21 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     authMiddleware({ roles: ["event:owner", "admin", "support"] }),
     zValidator('param', validators.ListScheduleExceptionsParams, validationErrorHandler),
     zValidator('query', validators.ListScheduleExceptionsQuery, validationErrorHandler),
-    registry.listScheduleExceptions as unknown as Handler
+    registry.listScheduleExceptions
   );
 
   // getScheduleException
   app.get('/booking/events/:event/exceptions/:exception',
     authMiddleware({ roles: ["event:owner", "admin", "support"] }),
     zValidator('param', validators.GetScheduleExceptionParams, validationErrorHandler),
-    registry.getScheduleException as unknown as Handler
+    registry.getScheduleException
   );
 
   // deleteScheduleException
   app.delete('/booking/events/:event/exceptions/:exception',
     authMiddleware({ roles: ["event:owner", "admin"] }),
     zValidator('param', validators.DeleteScheduleExceptionParams, validationErrorHandler),
-    registry.deleteScheduleException as unknown as Handler
+    registry.deleteScheduleException
   );
 
   // listEventSlots
@@ -276,37 +275,37 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     authMiddleware({ required: false }),
     zValidator('param', validators.ListEventSlotsParams, validationErrorHandler),
     zValidator('query', validators.ListEventSlotsQuery, validationErrorHandler),
-    registry.listEventSlots as unknown as Handler
+    registry.listEventSlots
   );
 
   // getTimeSlot
   app.get('/booking/slots/:slotId',
-    authMiddleware(),
+    authMiddleware({ required: false }), // Optional auth - public endpoint
     zValidator('param', validators.GetTimeSlotParams, validationErrorHandler),
     zValidator('query', validators.GetTimeSlotQuery, validationErrorHandler),
     createExpandMiddleware("TimeSlot"),
-    registry.getTimeSlot as unknown as Handler
+    registry.getTimeSlot
   );
 
   // createChatRoom
   app.post('/comms/chat-rooms',
     authMiddleware({ roles: ["user"] }),
     zValidator('json', validators.CreateChatRoomBody, validationErrorHandler),
-    registry.createChatRoom as unknown as Handler
+    registry.createChatRoom
   );
 
   // listChatRooms
   app.get('/comms/chat-rooms',
     authMiddleware({ roles: ["user:participant"] }),
     zValidator('query', validators.ListChatRoomsQuery, validationErrorHandler),
-    registry.listChatRooms as unknown as Handler
+    registry.listChatRooms
   );
 
   // getChatRoom
   app.get('/comms/chat-rooms/:room',
     authMiddleware({ roles: ["user:participant"] }),
     zValidator('param', validators.GetChatRoomParams, validationErrorHandler),
-    registry.getChatRoom as unknown as Handler
+    registry.getChatRoom
   );
 
   // getChatMessages
@@ -314,7 +313,7 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     authMiddleware({ roles: ["user:participant"] }),
     zValidator('param', validators.GetChatMessagesParams, validationErrorHandler),
     zValidator('query', validators.GetChatMessagesQuery, validationErrorHandler),
-    registry.getChatMessages as unknown as Handler
+    registry.getChatMessages
   );
 
   // sendChatMessage
@@ -322,14 +321,14 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     authMiddleware({ roles: ["user:participant"] }),
     zValidator('param', validators.SendChatMessageParams, validationErrorHandler),
     zValidator('json', validators.SendChatMessageBody, validationErrorHandler),
-    registry.sendChatMessage as unknown as Handler
+    registry.sendChatMessage
   );
 
   // endVideoCall
   app.post('/comms/chat-rooms/:room/video-call/end',
     authMiddleware({ roles: ["user:admin"] }),
     zValidator('param', validators.EndVideoCallParams, validationErrorHandler),
-    registry.endVideoCall as unknown as Handler
+    registry.endVideoCall
   );
 
   // joinVideoCall
@@ -337,14 +336,14 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     authMiddleware({ roles: ["user:participant"] }),
     zValidator('param', validators.JoinVideoCallParams, validationErrorHandler),
     zValidator('json', validators.JoinVideoCallBody, validationErrorHandler),
-    registry.joinVideoCall as unknown as Handler
+    registry.joinVideoCall
   );
 
   // leaveVideoCall
   app.post('/comms/chat-rooms/:room/video-call/leave',
     authMiddleware({ roles: ["user:participant"] }),
     zValidator('param', validators.LeaveVideoCallParams, validationErrorHandler),
-    registry.leaveVideoCall as unknown as Handler
+    registry.leaveVideoCall
   );
 
   // updateVideoCallParticipant
@@ -352,27 +351,27 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     authMiddleware({ roles: ["user:participant"] }),
     zValidator('param', validators.UpdateVideoCallParticipantParams, validationErrorHandler),
     zValidator('json', validators.UpdateVideoCallParticipantBody, validationErrorHandler),
-    registry.updateVideoCallParticipant as unknown as Handler
+    registry.updateVideoCallParticipant
   );
 
   // getIceServers
   app.get('/comms/ice-servers',
     authMiddleware({ roles: ["user"] }),
-    registry.getIceServers as unknown as Handler
+    registry.getIceServers
   );
 
   // listEmailQueueItems
   app.get('/email/queue',
     authMiddleware({ roles: ["admin"] }),
     zValidator('query', validators.ListEmailQueueItemsQuery, validationErrorHandler),
-    registry.listEmailQueueItems as unknown as Handler
+    registry.listEmailQueueItems
   );
 
   // getEmailQueueItem
   app.get('/email/queue/:queue',
     authMiddleware({ roles: ["admin"] }),
     zValidator('param', validators.GetEmailQueueItemParams, validationErrorHandler),
-    registry.getEmailQueueItem as unknown as Handler
+    registry.getEmailQueueItem
   );
 
   // cancelEmailQueueItem
@@ -380,35 +379,35 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     authMiddleware({ roles: ["admin"] }),
     zValidator('param', validators.CancelEmailQueueItemParams, validationErrorHandler),
     zValidator('json', validators.CancelEmailQueueItemBody, validationErrorHandler),
-    registry.cancelEmailQueueItem as unknown as Handler
+    registry.cancelEmailQueueItem
   );
 
   // retryEmailQueueItem
   app.post('/email/queue/:queue/retry',
     authMiddleware({ roles: ["admin"] }),
     zValidator('param', validators.RetryEmailQueueItemParams, validationErrorHandler),
-    registry.retryEmailQueueItem as unknown as Handler
+    registry.retryEmailQueueItem
   );
 
   // listEmailTemplates
   app.get('/email/templates',
     authMiddleware({ roles: ["admin"] }),
     zValidator('query', validators.ListEmailTemplatesQuery, validationErrorHandler),
-    registry.listEmailTemplates as unknown as Handler
+    registry.listEmailTemplates
   );
 
   // createEmailTemplate
   app.post('/email/templates',
     authMiddleware({ roles: ["admin"] }),
     zValidator('json', validators.CreateEmailTemplateBody, validationErrorHandler),
-    registry.createEmailTemplate as unknown as Handler
+    registry.createEmailTemplate
   );
 
   // getEmailTemplate
   app.get('/email/templates/:template',
     authMiddleware({ roles: ["admin"] }),
     zValidator('param', validators.GetEmailTemplateParams, validationErrorHandler),
-    registry.getEmailTemplate as unknown as Handler
+    registry.getEmailTemplate
   );
 
   // updateEmailTemplate
@@ -416,7 +415,7 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     authMiddleware({ roles: ["admin"] }),
     zValidator('param', validators.UpdateEmailTemplateParams, validationErrorHandler),
     zValidator('json', validators.UpdateEmailTemplateBody, validationErrorHandler),
-    registry.updateEmailTemplate as unknown as Handler
+    registry.updateEmailTemplate
   );
 
   // testEmailTemplate
@@ -424,35 +423,35 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     authMiddleware({ roles: ["admin"] }),
     zValidator('param', validators.TestEmailTemplateParams, validationErrorHandler),
     zValidator('json', validators.TestEmailTemplateBody, validationErrorHandler),
-    registry.testEmailTemplate as unknown as Handler
+    registry.testEmailTemplate
   );
 
   // listNotifications
   app.get('/notifs',
     authMiddleware({ roles: ["user", "admin"] }),
     zValidator('query', validators.ListNotificationsQuery, validationErrorHandler),
-    registry.listNotifications as unknown as Handler
+    registry.listNotifications
   );
 
   // markAllNotificationsAsRead
   app.post('/notifs/read-all',
     authMiddleware({ roles: ["user"] }),
     zValidator('query', validators.MarkAllNotificationsAsReadQuery, validationErrorHandler),
-    registry.markAllNotificationsAsRead as unknown as Handler
+    registry.markAllNotificationsAsRead
   );
 
   // getNotification
   app.get('/notifs/:notif',
     authMiddleware({ roles: ["user", "admin"] }),
     zValidator('param', validators.GetNotificationParams, validationErrorHandler),
-    registry.getNotification as unknown as Handler
+    registry.getNotification
   );
 
   // markNotificationAsRead
   app.post('/notifs/:notif/read',
     authMiddleware({ roles: ["user"] }),
     zValidator('param', validators.MarkNotificationAsReadParams, validationErrorHandler),
-    registry.markNotificationAsRead as unknown as Handler
+    registry.markNotificationAsRead
   );
 
   // listPatients
@@ -506,21 +505,21 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
   app.post('/persons',
     authMiddleware({ roles: ["user"] }),
     zValidator('json', validators.CreatePersonBody, validationErrorHandler),
-    registry.createPerson as unknown as Handler
+    registry.createPerson
   );
 
   // listPersons
   app.get('/persons',
     authMiddleware({ roles: ["admin", "support"] }),
     zValidator('query', validators.ListPersonsQuery, validationErrorHandler),
-    registry.listPersons as unknown as Handler
+    registry.listPersons
   );
 
   // getPerson
   app.get('/persons/:person',
     authMiddleware({ roles: ["admin", "support", "user:owner"] }),
     zValidator('param', validators.GetPersonParams, validationErrorHandler),
-    registry.getPerson as unknown as Handler
+    registry.getPerson
   );
 
   // updatePerson
@@ -528,77 +527,77 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     authMiddleware({ roles: ["user:owner"] }),
     zValidator('param', validators.UpdatePersonParams, validationErrorHandler),
     zValidator('json', validators.UpdatePersonBody, validationErrorHandler),
-    registry.updatePerson as unknown as Handler
+    registry.updatePerson
   );
 
   // createReview
   app.post('/reviews/',
     authMiddleware({ roles: ["user"] }),
     zValidator('json', validators.CreateReviewBody, validationErrorHandler),
-    registry.createReview as unknown as Handler
+    registry.createReview
   );
 
   // listReviews
   app.get('/reviews/',
     authMiddleware({ roles: ["user"] }),
     zValidator('query', validators.ListReviewsQuery, validationErrorHandler),
-    registry.listReviews as unknown as Handler
+    registry.listReviews
   );
 
   // getReview
   app.get('/reviews/:review',
     authMiddleware({ roles: ["user"] }),
     zValidator('param', validators.GetReviewParams, validationErrorHandler),
-    registry.getReview as unknown as Handler
+    registry.getReview
   );
 
   // deleteReview
   app.delete('/reviews/:review',
     authMiddleware({ roles: ["review:owner", "admin"] }),
     zValidator('param', validators.DeleteReviewParams, validationErrorHandler),
-    registry.deleteReview as unknown as Handler
+    registry.deleteReview
   );
 
   // listFiles
   app.get('/storage/files',
     authMiddleware(),
     zValidator('query', validators.ListFilesQuery, validationErrorHandler),
-    registry.listFiles as unknown as Handler
+    registry.listFiles
   );
 
   // uploadFile
   app.post('/storage/files/upload',
     authMiddleware({ roles: ["user"] }),
     zValidator('json', validators.UploadFileBody, validationErrorHandler),
-    registry.uploadFile as unknown as Handler
+    registry.uploadFile
   );
 
   // getFile
   app.get('/storage/files/:file',
     authMiddleware({ roles: ["admin", "user:owner"] }),
     zValidator('param', validators.GetFileParams, validationErrorHandler),
-    registry.getFile as unknown as Handler
+    registry.getFile
   );
 
   // deleteFile
   app.delete('/storage/files/:file',
     authMiddleware({ roles: ["user:owner"] }),
     zValidator('param', validators.DeleteFileParams, validationErrorHandler),
-    registry.deleteFile as unknown as Handler
+    registry.deleteFile
   );
 
   // completeFileUpload
   app.post('/storage/files/:file/complete',
     authMiddleware({ roles: ["user:owner"] }),
     zValidator('param', validators.CompleteFileUploadParams, validationErrorHandler),
-    registry.completeFileUpload as unknown as Handler
+    registry.completeFileUpload
   );
 
   // getFileDownload
   app.get('/storage/files/:file/download',
     authMiddleware({ roles: ["admin", "user:owner"] }),
     zValidator('param', validators.GetFileDownloadParams, validationErrorHandler),
-    registry.getFileDownload as unknown as Handler
+    registry.getFileDownload
   );
 
 }
