@@ -455,6 +455,53 @@ export function registerRoutes(app: Hono<{ Variables: Variables }>) {
     registry.markNotificationAsRead as unknown as Handler
   );
 
+  // listPatients
+  app.get('/patients',
+    authMiddleware({ roles: ["admin", "support"] }),
+    zValidator('query', validators.ListPatientsQuery, validationErrorHandler),
+    async (ctx) => {
+      return registry.listPatients(ctx);
+    }
+  );
+
+  // createPatient
+  app.post('/patients',
+    authMiddleware({ roles: ["user"] }),
+    zValidator('json', validators.CreatePatientBody, validationErrorHandler),
+    async (ctx) => {
+      return registry.createPatient(ctx);
+    }
+  );
+
+  // getPatient
+  app.get('/patients/:patient',
+    authMiddleware({ roles: ["admin", "support", "patient:owner"] }),
+    zValidator('param', validators.GetPatientParams, validationErrorHandler),
+    zValidator('query', validators.GetPatientQuery, validationErrorHandler),
+    async (ctx) => {
+      return registry.getPatient(ctx);
+    }
+  );
+
+  // updatePatient
+  app.patch('/patients/:patient',
+    authMiddleware({ roles: ["patient:owner"] }),
+    zValidator('param', validators.UpdatePatientParams, validationErrorHandler),
+    zValidator('json', validators.UpdatePatientBody, validationErrorHandler),
+    async (ctx) => {
+      return registry.updatePatient(ctx);
+    }
+  );
+
+  // deletePatient
+  app.delete('/patients/:patient',
+    authMiddleware({ roles: ["patient:owner"] }),
+    zValidator('param', validators.DeletePatientParams, validationErrorHandler),
+    async (ctx) => {
+      return registry.deletePatient(ctx);
+    }
+  );
+
   // createPerson
   app.post('/persons',
     authMiddleware({ roles: ["user"] }),

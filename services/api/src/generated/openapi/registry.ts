@@ -61,6 +61,11 @@ import { listNotifications } from '../../handlers/notifs/listNotifications';
 import { markAllNotificationsAsRead } from '../../handlers/notifs/markAllNotificationsAsRead';
 import { getNotification } from '../../handlers/notifs/getNotification';
 import { markNotificationAsRead } from '../../handlers/notifs/markNotificationAsRead';
+import { listPatients } from '../../handlers/patient/listPatients';
+import { createPatient } from '../../handlers/patient/createPatient';
+import { getPatient } from '../../handlers/patient/getPatient';
+import { updatePatient } from '../../handlers/patient/updatePatient';
+import { deletePatient } from '../../handlers/patient/deletePatient';
 import { createPerson } from '../../handlers/person/createPerson';
 import { listPersons } from '../../handlers/person/listPersons';
 import { getPerson } from '../../handlers/person/getPerson';
@@ -146,6 +151,13 @@ export const registry = {
   markAllNotificationsAsRead,
   getNotification,
   markNotificationAsRead,
+
+  // Patient handlers
+  listPatients,
+  createPatient,
+  getPatient,
+  updatePatient,
+  deletePatient,
 
   // Person handlers
   createPerson,
