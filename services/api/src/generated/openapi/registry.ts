@@ -57,6 +57,12 @@ import { createEmailTemplate } from '../../handlers/email/createEmailTemplate';
 import { getEmailTemplate } from '../../handlers/email/getEmailTemplate';
 import { updateEmailTemplate } from '../../handlers/email/updateEmailTemplate';
 import { testEmailTemplate } from '../../handlers/email/testEmailTemplate';
+import { createConsultation } from '../../handlers/emr/createConsultation';
+import { listConsultations } from '../../handlers/emr/listConsultations';
+import { getConsultation } from '../../handlers/emr/getConsultation';
+import { updateConsultation } from '../../handlers/emr/updateConsultation';
+import { finalizeConsultation } from '../../handlers/emr/finalizeConsultation';
+import { listEMRPatients } from '../../handlers/emr/listEMRPatients';
 import { listNotifications } from '../../handlers/notifs/listNotifications';
 import { markAllNotificationsAsRead } from '../../handlers/notifs/markAllNotificationsAsRead';
 import { getNotification } from '../../handlers/notifs/getNotification';
@@ -145,6 +151,14 @@ export const registry = {
   getEmailTemplate,
   updateEmailTemplate,
   testEmailTemplate,
+
+  // Emr handlers
+  createConsultation,
+  listConsultations,
+  getConsultation,
+  updateConsultation,
+  finalizeConsultation,
+  listEMRPatients,
 
   // Notifs handlers
   listNotifications,

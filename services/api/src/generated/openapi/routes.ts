@@ -202,7 +202,7 @@ export function registerRoutes(app: Hono) {
 
   // listBookingEvents
   app.get('/booking/events',
-    authMiddleware({ required: false }), // Optional auth - public endpoint
+    authMiddleware(),
     zValidator('query', validators.ListBookingEventsQuery, validationErrorHandler),
     registry.listBookingEvents
   );
@@ -280,7 +280,7 @@ export function registerRoutes(app: Hono) {
 
   // getTimeSlot
   app.get('/booking/slots/:slotId',
-    authMiddleware({ required: false }), // Optional auth - public endpoint
+    authMiddleware(),
     zValidator('param', validators.GetTimeSlotParams, validationErrorHandler),
     zValidator('query', validators.GetTimeSlotQuery, validationErrorHandler),
     createExpandMiddleware("TimeSlot"),
@@ -424,6 +424,61 @@ export function registerRoutes(app: Hono) {
     zValidator('param', validators.TestEmailTemplateParams, validationErrorHandler),
     zValidator('json', validators.TestEmailTemplateBody, validationErrorHandler),
     registry.testEmailTemplate
+  );
+
+  // createConsultation
+  app.post('/emr/consultations',
+    authMiddleware({ roles: ["provider"] }),
+    zValidator('json', validators.CreateConsultationBody, validationErrorHandler),
+    async (ctx) => {
+      return registry.createConsultation(ctx);
+    }
+  );
+
+  // listConsultations
+  app.get('/emr/consultations',
+    authMiddleware({ roles: ["provider", "admin", "patient"] }),
+    zValidator('query', validators.ListConsultationsQuery, validationErrorHandler),
+    async (ctx) => {
+      return registry.listConsultations(ctx);
+    }
+  );
+
+  // getConsultation
+  app.get('/emr/consultations/:consultation',
+    authMiddleware({ roles: ["admin", "provider:owner", "patient:owner"] }),
+    zValidator('param', validators.GetConsultationParams, validationErrorHandler),
+    async (ctx) => {
+      return registry.getConsultation(ctx);
+    }
+  );
+
+  // updateConsultation
+  app.patch('/emr/consultations/:consultation',
+    authMiddleware({ roles: ["provider:owner"] }),
+    zValidator('param', validators.UpdateConsultationParams, validationErrorHandler),
+    zValidator('json', validators.UpdateConsultationBody, validationErrorHandler),
+    async (ctx) => {
+      return registry.updateConsultation(ctx);
+    }
+  );
+
+  // finalizeConsultation
+  app.post('/emr/consultations/:consultation/finalize',
+    authMiddleware({ roles: ["provider:owner"] }),
+    zValidator('param', validators.FinalizeConsultationParams, validationErrorHandler),
+    async (ctx) => {
+      return registry.finalizeConsultation(ctx);
+    }
+  );
+
+  // listEMRPatients
+  app.get('/emr/patients',
+    authMiddleware({ roles: ["provider", "admin"] }),
+    zValidator('query', validators.ListEMRPatientsQuery, validationErrorHandler),
+    async (ctx) => {
+      return registry.listEMRPatients(ctx);
+    }
   );
 
   // listNotifications
