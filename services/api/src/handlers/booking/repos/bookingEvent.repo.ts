@@ -25,6 +25,9 @@ export interface BookingEventFilters {
   owner?: string;
   context?: string;
   status?: 'draft' | 'active' | 'paused' | 'archived';
+  q?: string; // Text search query across title, description, and keywords
+  tagsOr?: string[]; // OR filtering (any tag matches) - from ?tags=csv
+  tagsAnd?: string[]; // AND filtering (all tags must match) - from ?tags=a&tags=b
   effectiveDate?: string; // Find events effective on this date
   dateRangeStart?: Date; // Find events that overlap with date range starting from this date
   dateRangeEnd?: Date; // Find events that overlap with date range ending at this date
@@ -54,6 +57,40 @@ export interface BookingEventFilters {
 
     if (filters.status) {
       conditions.push(eq(bookingEvents.status, filters.status));
+    }
+
+    // Text search across title, description, and keywords
+    if (filters.q) {
+      const searchTerm = filters.q.trim();
+
+      // Use PostgreSQL full-text search with websearch_to_tsquery for natural language
+      // Also search in keywords array (case-insensitive)
+      conditions.push(
+        or(
+          // Full-text search on title + description
+          sql`to_tsvector('english', ${bookingEvents.title} || ' ' || COALESCE(${bookingEvents.description}, '')) @@ websearch_to_tsquery('english', ${searchTerm})`,
+
+          // Array contains search on keywords (case-insensitive)
+          sql`EXISTS (
+            SELECT 1 FROM jsonb_array_elements_text(${bookingEvents.keywords}) AS keyword
+            WHERE keyword ILIKE ${'%' + searchTerm + '%'}
+          )`
+        )
+      );
+    }
+
+    // OR tag filtering (any tag matches) - from ?tags=csv
+    if (filters.tagsOr && filters.tagsOr.length > 0) {
+      conditions.push(
+        sql`${bookingEvents.tags} ?| array[${sql.join(filters.tagsOr.map(tag => sql`${tag}`), sql`, `)}]`
+      );
+    }
+
+    // AND tag filtering (all tags must match) - from ?tags=a&tags=b
+    if (filters.tagsAnd && filters.tagsAnd.length > 0) {
+      conditions.push(
+        sql`${bookingEvents.tags} ?& array[${sql.join(filters.tagsAnd.map(tag => sql`${tag}`), sql`, `)}]`
+      );
     }
 
     if (filters.effectiveDate) {
@@ -101,6 +138,8 @@ export interface BookingEventFilters {
       owner: ownerId,
       title: request.title,
       description: request.description,
+      keywords: request.keywords,
+      tags: request.tags,
       context: request.context,
       timezone: request.timezone || 'America/New_York',
       locationTypes: request.locationTypes || ['video', 'phone', 'in-person'],

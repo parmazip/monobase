@@ -166,6 +166,12 @@ model BookingEvent extends BaseEntity {
   @doc("Event description")
   description?: string;
 
+  @doc("Searchable keywords for discovery (e.g., 'therapy', 'massage', 'counseling')")
+  keywords?: string[];
+
+  @doc("Category tags for filtering (e.g., 'wellness', 'mental-health', 'fitness')")
+  tags?: string[];
+
   @doc("Event timezone")
   timezone: string;
 
@@ -461,6 +467,9 @@ enum RecurrenceType {
 
   @doc("Monthly recurrence")
   monthly: "monthly",
+
+  @doc("Yearly recurrence")
+  yearly: "yearly",
 }
 
 // ============================================================================
@@ -474,6 +483,12 @@ model BookingEventCreateRequest {
 
   @doc("Event description")
   description?: string;
+
+  @doc("Searchable keywords for discovery")
+  keywords?: string[];
+
+  @doc("Category tags for filtering")
+  tags?: string[];
 
   @doc("Optional context for domain associations")
   context?: UUID;
@@ -520,6 +535,12 @@ model BookingEventUpdateRequest {
 
   @doc("Event description - can be null to clear")
   description?: string | null;
+
+  @doc("Searchable keywords for discovery - can be null to clear")
+  keywords?: string[] | null;
+
+  @doc("Category tags for filtering - can be null to clear")
+  tags?: string[] | null;
 
   @doc("Event timezone")
   timezone?: string;
@@ -649,6 +670,8 @@ namespace BookingModule {
       @query availableFrom?: utcDateTime,
       @doc("Filter by availability end time (UTC, ISO 8601 format)")
       @query availableTo?: utcDateTime,
+      @doc("Filter by tags. Supports OR filtering (comma-separated: 'tag1,tag2') or AND filtering (repeated parameter: ?tags=tag1&tags=tag2)")
+      @query tags?: string | string[],
       ...ExpandParams,
       ...PaginationQuery
     ): ApiOkResponse<PaginatedResponse<BookingEvent>>
@@ -667,9 +690,10 @@ namespace BookingModule {
       | ApiUnauthorizedResponse
       | ApiForbiddenResponse;
 
-    @doc("Get booking event (public endpoint for discovery).")
+    @doc("Get booking event. Optional authentication - supports 'me' parameter when authenticated.")
     @operationId("getBookingEvent")
     @get
+    @useAuth(bearerAuth | TypeSpec.Http.NoAuth)
     @route("/events/{event}")
     getBookingEvent(
       @path event: UUID | "me",

@@ -39,6 +39,8 @@ export function generateTestBookingEventData(
   const baseData: BookingEventCreateRequest = {
     title: faker.company.catchPhrase(),
     description: faker.lorem.sentence(),
+    keywords: [],
+    tags: [],
     timezone: 'America/New_York',
     locationTypes: ['video', 'phone', 'in-person'],
     maxBookingDays: 30,
@@ -57,6 +59,25 @@ export function generateTestBookingEventData(
   };
 
   return baseData;
+}
+
+/**
+ * Generate booking event data with keywords and tags
+ */
+export function generateTestBookingEventDataWithKeywordsAndTags(
+  title: string,
+  description: string,
+  keywords: string[],
+  tags: string[],
+  overrides: Partial<BookingEventCreateRequest> = {}
+): BookingEventCreateRequest {
+  return generateTestBookingEventData({
+    title,
+    description,
+    keywords,
+    tags,
+    ...overrides
+  });
 }
 
 /**
@@ -344,23 +365,29 @@ export async function deleteScheduleException(
 
 /**
  * List booking events via API (public endpoint)
+ * Supports array parameters for AND tag filtering (repeated params)
  */
 export async function listBookingEvents(
   apiClient: ApiClient,
   queryParams: Record<string, any> = {}
 ): Promise<BookingTestResponse<any>> {
   const searchParams = new URLSearchParams();
-  
+
   Object.entries(queryParams).forEach(([key, value]) => {
     if (value !== undefined && value !== null) {
-      searchParams.append(key, String(value));
+      // Handle array parameters (for AND tag filtering with repeated params)
+      if (Array.isArray(value)) {
+        value.forEach(item => searchParams.append(key, String(item)));
+      } else {
+        searchParams.append(key, String(value));
+      }
     }
   });
 
-  const url = searchParams.toString() 
+  const url = searchParams.toString()
     ? `/booking/events?${searchParams.toString()}`
     : '/booking/events';
-    
+
   const response = await apiClient.fetch(url);
 
   if (!response.ok) {

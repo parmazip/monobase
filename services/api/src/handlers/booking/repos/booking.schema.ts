@@ -63,7 +63,8 @@ export const locationTypeEnum = pgEnum('location_type', [
 export const recurrenceTypeEnum = pgEnum('recurrence_type', [
   'daily',
   'weekly',
-  'monthly'
+  'monthly',
+  'yearly'
 ]);// Booking Events - Flexible event scheduling system
 export const bookingEvents = pgTable('booking_event', {
   // Base entity fields (includes id, timestamps, version, audit fields)
@@ -79,6 +80,15 @@ export const bookingEvents = pgTable('booking_event', {
   // Event metadata
   title: text('title').notNull(), // Event title
   description: text('description'), // Event description
+
+  // Discovery and filtering fields
+  keywords: jsonb('keywords')
+    .$type<string[]>()
+    .default(sql`'[]'::jsonb`), // Searchable keywords for discovery
+
+  tags: jsonb('tags')
+    .$type<string[]>()
+    .default(sql`'[]'::jsonb`), // Category tags for filtering
 
   // Event configuration
   timezone: text('timezone')
@@ -127,6 +137,14 @@ export const bookingEvents = pgTable('booking_event', {
   deletedAtIdx: index('booking_events_deleted_at_idx').on(table.deletedAt),
   effectiveDatesIdx: index('booking_events_effective_dates_idx')
     .on(table.effectiveFrom, table.effectiveTo),
+
+  // GIN indexes for full-text search and array operations
+  searchIdx: index('booking_events_search_idx')
+    .using('gin', sql`to_tsvector('english', ${table.title} || ' ' || COALESCE(${table.description}, ''))`),
+  keywordsIdx: index('booking_events_keywords_idx')
+    .using('gin', table.keywords),
+  tagsIdx: index('booking_events_tags_idx')
+    .using('gin', table.tags),
 
   // Check constraints
   maxBookingDaysCheck: check('booking_events_max_booking_days_check', sql`${table.maxBookingDays} >= 0 AND ${table.maxBookingDays} <= 365`),
@@ -387,7 +405,7 @@ export interface BillingConfig {
 }
 
 // RecurrenceType type matching the enum
-export type RecurrenceType = 'daily' | 'weekly' | 'monthly';
+export type RecurrenceType = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 export interface RecurrencePattern {
   type: RecurrenceType;
@@ -415,6 +433,8 @@ export interface FormResponses {
 export interface BookingEventCreateRequest {
   title: string; // Event title
   description?: string; // Event description
+  keywords?: string[]; // Searchable keywords for discovery
+  tags?: string[]; // Category tags for filtering
   context?: string; // Optional context for domain associations
   timezone?: string; // Default: 'America/New_York'
   locationTypes?: ('video' | 'phone' | 'in-person')[]; // Default: all types
@@ -429,6 +449,8 @@ export interface BookingEventCreateRequest {
 }export interface BookingEventUpdateRequest {
   title?: string;
   description?: string;
+  keywords?: string[] | null; // Can be null to clear - matches TypeSpec
+  tags?: string[] | null; // Can be null to clear - matches TypeSpec
   timezone?: string;
   locationTypes?: ('video' | 'phone' | 'in-person')[];
   maxBookingDays?: number;
