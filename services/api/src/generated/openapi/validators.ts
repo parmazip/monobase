@@ -272,6 +272,8 @@ export const BookingEventSchema = z.intersection(BaseEntitySchema, z.object({
   context: UUIDSchema.optional(),
   title: z.string(),
   description: z.string().optional(),
+  keywords: z.array(z.string()).optional(),
+  tags: z.array(z.string()).optional(),
   timezone: z.string(),
   locationTypes: z.array(LocationTypeSchema),
   maxBookingDays: z.number().int().gte(0).lte(365),
@@ -287,6 +289,8 @@ export const BookingEventSchema = z.intersection(BaseEntitySchema, z.object({
 export const BookingEventCreateRequestSchema = z.object({
   title: z.string(),
   description: z.string().optional(),
+  keywords: z.array(z.string()).optional(),
+  tags: z.array(z.string()).optional(),
   context: UUIDSchema.optional(),
   timezone: z.string().optional(),
   locationTypes: z.array(LocationTypeSchema).optional(),
@@ -308,6 +312,8 @@ export const DailyConfigUpdateSchema = z.object({
 export const BookingEventUpdateRequestSchema = z.object({
   title: z.string().optional(),
   description: z.union([z.string(), z.null()]).optional(),
+  keywords: z.union([z.array(z.string()), z.null()]).optional(),
+  tags: z.union([z.array(z.string()), z.null()]).optional(),
   timezone: z.string().optional(),
   locationTypes: z.array(LocationTypeSchema).optional(),
   maxBookingDays: z.number().int().optional(),
@@ -420,6 +426,14 @@ export const CreateMerchantAccountRequestSchema = z.object({
   refreshUrl: z.string().url(),
   returnUrl: z.string().url(),
   metadata: z.record(z.string(), z.unknown()).optional()
+});
+
+export const CreateReviewRequestSchema = z.object({
+  context: UUIDSchema,
+  reviewType: z.string().max(50),
+  reviewedEntity: UUIDSchema.optional(),
+  npsScore: z.number().int().gte(0).lte(10),
+  comment: z.string().max(1000).optional()
 });
 
 export const VariableTypeSchema = z.enum(["string", "number", "boolean", "date", "datetime", "url", "email", "array"]);
@@ -731,7 +745,7 @@ export const RateLimitErrorSchema = z.intersection(ErrorDetailSchema, z.object({
   windowSize: z.number().int()
 }));
 
-export const RecurrenceTypeSchema = z.enum(["daily", "weekly", "monthly"]);
+export const RecurrenceTypeSchema = z.enum(["daily", "weekly", "monthly", "yearly"]);
 
 export const RecurrencePatternSchema = z.object({
   type: RecurrenceTypeSchema,
@@ -752,6 +766,15 @@ export const RefundResponseSchema = z.object({
   refundedAmount: CurrencyAmountSchema,
   metadata: z.record(z.string(), z.unknown()).optional()
 });
+
+export const ReviewSchema = z.intersection(BaseEntitySchema, z.object({
+  context: UUIDSchema,
+  reviewer: UUIDSchema,
+  reviewType: z.string().max(50),
+  reviewedEntity: UUIDSchema.optional(),
+  npsScore: z.number().int().gte(0).lte(10),
+  comment: z.string().max(1000).optional()
+}));
 
 export const ScheduleExceptionSchema = z.intersection(BaseEntitySchema, z.object({
   event: UUIDSchema,
@@ -1063,6 +1086,7 @@ export const ListBookingEventsQuery = z.object({
   status: BookingEventStatusSchema.optional(),
   availableFrom: z.string().datetime().transform((str) => new Date(str)).optional(),
   availableTo: z.string().datetime().transform((str) => new Date(str)).optional(),
+  tags: z.union([z.string(), z.array(z.string())]).optional(),
   expand: z.string().optional(),
   offset: z.coerce.number().int().gte(0).optional(),
   limit: z.coerce.number().int().gte(1).lte(100).optional(),
@@ -1392,6 +1416,40 @@ export const UpdatePersonParams = z.object({
 export const UpdatePersonBody = PersonUpdateRequestSchema;
 
 export const UpdatePersonResponse = PersonSchema;
+
+export const CreateReviewBody = CreateReviewRequestSchema;
+
+export const CreateReviewResponse = ReviewSchema;
+
+export const ListReviewsQuery = z.object({
+  context: UUIDSchema.optional(),
+  reviewer: UUIDSchema.optional(),
+  reviewType: z.string().optional(),
+  reviewedEntity: UUIDSchema.optional(),
+  offset: z.coerce.number().int().gte(0).optional(),
+  limit: z.coerce.number().int().gte(1).lte(100).optional(),
+  page: z.coerce.number().int().gte(1).optional(),
+  pageSize: z.coerce.number().int().gte(1).lte(100).optional(),
+  q: z.string().max(500).optional(),
+  sort: z.string().optional(),
+});
+
+export const ListReviewsResponse = z.object({
+  data: z.array(ReviewSchema),
+  pagination: OffsetPaginationMetaSchema
+});
+
+export const GetReviewParams = z.object({
+  review: UUIDSchema,
+});
+
+export const GetReviewResponse = ReviewSchema;
+
+export const DeleteReviewParams = z.object({
+  review: UUIDSchema,
+});
+
+export const DeleteReviewResponse = z.void();
 
 export const ListFilesQuery = z.object({
   status: FileStatusSchema.optional(),

@@ -17,6 +17,7 @@ import "./modules/comms.tsp";
 import "./modules/storage.tsp";
 import "./modules/email.tsp";
 import "./modules/booking.tsp";
+import "./modules/reviews.tsp";
 
 using TypeSpec.Http;
 using TypeSpec.Versioning;
@@ -62,6 +63,9 @@ using TypeSpec.OpenAPI;
 })
 @tagMetadata("Booking", #{
   description: "Professional booking and scheduling system for time-based services. Enables service providers to define booking events with flexible availability patterns, location options (in-person, virtual, or hybrid), and automated time slot generation. Supports booking lifecycle management with confirmation workflows, mutual cancellation, no-show tracking, and schedule exception handling. Features public event discovery for seamless booking experiences."
+})
+@tagMetadata("Reviews", #{
+  description: "Flexible NPS review system for feedback collection. Enables users to submit Net Promoter Score (0-10) reviews with optional comments for any context (appointments, sessions, orders). Supports application-defined review types and optional reviewed entities for maximum flexibility. Features immutable reviews, role-based access control, and duplicate prevention."
 })
 namespace MonobaseAPI {
 
@@ -130,6 +134,11 @@ namespace MonobaseAPI {
   @tag("Booking")
   @route("/booking")
   interface ScheduleExceptionManagement extends BookingModule.ScheduleExceptionManagement {}
+
+  // Reviews Management
+  @tag("Reviews")
+  @route("/reviews")
+  interface ReviewsManagement extends ReviewsModule.ReviewsManagement {}
 
 }
 

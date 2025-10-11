@@ -249,6 +249,7 @@ export function registerRoutes(app: Hono) {
 
   // getBookingEvent
   app.get('/booking/events/:event',
+    authMiddleware({ required: false }),
     zValidator('param', validators.GetBookingEventParams, validationErrorHandler),
     zValidator('query', validators.GetBookingEventQuery, validationErrorHandler),
     async (ctx) => {
@@ -569,6 +570,42 @@ export function registerRoutes(app: Hono) {
     zValidator('json', validators.UpdatePersonBody, validationErrorHandler),
     async (ctx) => {
       return registry.updatePerson(ctx);
+    }
+  );
+
+  // createReview
+  app.post('/reviews/',
+    authMiddleware({ roles: ["user"] }),
+    zValidator('json', validators.CreateReviewBody, validationErrorHandler),
+    async (ctx) => {
+      return registry.createReview(ctx);
+    }
+  );
+
+  // listReviews
+  app.get('/reviews/',
+    authMiddleware({ roles: ["user"] }),
+    zValidator('query', validators.ListReviewsQuery, validationErrorHandler),
+    async (ctx) => {
+      return registry.listReviews(ctx);
+    }
+  );
+
+  // getReview
+  app.get('/reviews/:review',
+    authMiddleware({ roles: ["user"] }),
+    zValidator('param', validators.GetReviewParams, validationErrorHandler),
+    async (ctx) => {
+      return registry.getReview(ctx);
+    }
+  );
+
+  // deleteReview
+  app.delete('/reviews/:review',
+    authMiddleware({ roles: ["review:owner", "admin"] }),
+    zValidator('param', validators.DeleteReviewParams, validationErrorHandler),
+    async (ctx) => {
+      return registry.deleteReview(ctx);
     }
   );
 

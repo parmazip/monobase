@@ -64,6 +64,10 @@ import { createPerson } from '../../handlers/person/createPerson';
 import { listPersons } from '../../handlers/person/listPersons';
 import { getPerson } from '../../handlers/person/getPerson';
 import { updatePerson } from '../../handlers/person/updatePerson';
+import { createReview } from '../../handlers/reviews/createReview';
+import { listReviews } from '../../handlers/reviews/listReviews';
+import { getReview } from '../../handlers/reviews/getReview';
+import { deleteReview } from '../../handlers/reviews/deleteReview';
 import { listFiles } from '../../handlers/storage/listFiles';
 import { uploadFile } from '../../handlers/storage/uploadFile';
 import { getFile } from '../../handlers/storage/getFile';
@@ -146,6 +150,12 @@ export const registry = {
   listPersons,
   getPerson,
   updatePerson,
+
+  // Reviews handlers
+  createReview,
+  listReviews,
+  getReview,
+  deleteReview,
 
   // Storage handlers
   listFiles,
