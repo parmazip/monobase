@@ -10,6 +10,7 @@ import "./common/security.tsp";
 // Import all module definitions
 // Note: identity/auth is handled by Better-Auth, not TypeSpec
 import "./modules/person.tsp";
+import "./modules/patient.tsp";
 import "./modules/billing.tsp";
 import "./modules/audit.tsp";
 import "./modules/notifs.tsp";
@@ -39,6 +40,9 @@ using TypeSpec.OpenAPI;
 // Tag Metadata Definitions
 @tagMetadata("Person", #{
   description: "Central person management module serving as the foundation for all user types in the platform. Handles core PII (Personally Identifiable Information) with strict data protection, supporting both client and service provider roles. Manages identity verification, profile updates, consent preferences (marketing, data sharing, SMS, email), and serves as the single source of truth for user information across the platform ecosystem."
+})
+@tagMetadata("Patient", #{
+  description: "Patient profile management extending the Person module with healthcare-specific information. Manages primary care provider relationships and pharmacy preferences for individuals receiving medical services. Provides streamlined patient profile system with essential provider and pharmacy information management for basic healthcare service coordination."
 })
 @tagMetadata("Billing", #{
   description: "Invoice-based payment processing with Stripe integration. Manages invoices, merchant accounts, payment processing, and refunds. Supports both automatic and manual payment capture flows with comprehensive authorization controls. Any person can become a merchant and receive payments through Stripe Connect."
@@ -76,6 +80,11 @@ namespace MonobaseAPI {
   @tag("Person")
   @route("/persons")
   interface PersonManagement extends PersonModule.PersonManagement {}
+  
+  // Patient Management
+  @tag("Patient")
+  @route("/patients")
+  interface PatientManagement extends PatientModule.PatientManagement {}
   
   // Billing Management
   @tag("Billing")
