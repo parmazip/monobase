@@ -9,6 +9,7 @@
     "./hooks/*": "./src/hooks/*",
     "./components/*": "./src/components/*",
     "./person/*": "./src/person/*",
+    "./provider/*": "./src/provider/*",
     "./comms/*": "./src/comms/*",
     "./booking/*": "./src/booking/*",
     "./billing/*": "./src/billing/*"
