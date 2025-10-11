@@ -384,6 +384,66 @@ export const ConflictErrorSchema = z.intersection(ErrorDetailSchema, z.object({
   resolution: z.array(z.string()).optional()
 }));
 
+export const VitalsDataSchema = z.object({
+  temperatureCelsius: z.number().optional(),
+  systolicBp: z.number().int().optional(),
+  diastolicBp: z.number().int().optional(),
+  heartRate: z.number().int().optional(),
+  weightKg: z.number().optional(),
+  heightCm: z.number().optional(),
+  respiratoryRate: z.number().int().optional(),
+  oxygenSaturation: z.number().int().optional(),
+  notes: z.string().optional()
+});
+
+export const SymptomSeveritySchema = z.union([z.string(), z.enum(["mild", "moderate", "severe"])]);
+
+export const SymptomsDataSchema = z.object({
+  onset: z.string().datetime().transform((str) => new Date(str)).optional(),
+  durationHours: z.number().int().optional(),
+  severity: SymptomSeveritySchema.optional(),
+  description: z.string().optional(),
+  associated: z.array(z.string()).optional(),
+  denies: z.array(z.string()).optional()
+});
+
+export const PrescriptionDataSchema = z.object({
+  id: z.string().optional(),
+  medication: z.string(),
+  dosageAmount: z.number().optional(),
+  dosageUnit: z.string().optional(),
+  frequency: z.string().optional(),
+  durationDays: z.number().int().optional(),
+  instructions: z.string().optional(),
+  notes: z.string().optional()
+});
+
+export const FollowUpDataSchema = z.object({
+  needed: z.boolean(),
+  timeframeDays: z.number().int().optional(),
+  instructions: z.string().optional(),
+  specialistReferral: z.string().optional()
+});
+
+export const ConsultationStatusSchema = z.union([z.string(), z.enum(["draft", "finalized", "amended"])]);
+
+export const ConsultationNoteSchema = z.intersection(BaseEntitySchema, z.object({
+  patient: UUIDSchema,
+  provider: UUIDSchema,
+  context: z.string().max(255).optional(),
+  chiefComplaint: z.string().min(1).max(500).optional(),
+  assessment: z.string().min(1).max(2000).optional(),
+  plan: z.string().min(1).max(2000).optional(),
+  vitals: VitalsDataSchema.optional(),
+  symptoms: SymptomsDataSchema.optional(),
+  prescriptions: z.array(PrescriptionDataSchema).optional(),
+  followUp: FollowUpDataSchema.optional(),
+  externalDocumentation: z.record(z.string(), z.unknown()).optional(),
+  status: ConsultationStatusSchema,
+  finalizedAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  finalizedBy: UUIDSchema.optional()
+}));
+
 export const EmailSchema = z.string().email();
 
 export const PhoneNumberSchema = z.string().regex(/^\+[1-9]\d{1,14}$/).refine(val => validatePhoneNumber(val), { message: "Invalid phone number in E.164 format" });
@@ -398,6 +458,19 @@ export const CreateChatRoomRequestSchema = z.object({
   admins: z.array(UUIDSchema).optional(),
   context: UUIDSchema.optional(),
   upsert: z.boolean().optional()
+});
+
+export const CreateConsultationRequestSchema = z.object({
+  patient: UUIDSchema,
+  provider: UUIDSchema,
+  context: z.string().max(255).optional(),
+  chiefComplaint: z.string().min(1).max(500).optional(),
+  assessment: z.string().min(1).max(2000).optional(),
+  plan: z.string().min(1).max(2000).optional(),
+  vitals: VitalsDataSchema.optional(),
+  symptoms: SymptomsDataSchema.optional(),
+  prescriptions: z.array(PrescriptionDataSchema).optional(),
+  followUp: FollowUpDataSchema.optional()
 });
 
 export const CurrencyCodeSchema = z.string().regex(/^[A-Z]{3}$/);
@@ -554,6 +627,13 @@ export const FileUploadResponseSchema = z.object({
   uploadUrl: UrlSchema,
   uploadMethod: z.enum(["PUT"]),
   expiresAt: z.string().datetime().transform((str) => new Date(str))
+});
+
+export const FollowUpDataUpdateSchema = z.object({
+  needed: z.boolean().optional(),
+  timeframeDays: z.number().int().optional(),
+  instructions: z.string().optional(),
+  specialistReferral: z.string().optional()
 });
 
 export const GenderSchema = z.enum(["male", "female", "non-binary", "other", "prefer-not-to-say"]);
@@ -911,6 +991,17 @@ export const TimeSlotSchema = z.intersection(BaseEntitySchema, z.object({
   billingOverride: BillingConfigSchema.optional(),
   booking: UUIDSchema.optional()
 }));
+
+export const UpdateConsultationRequestSchema = z.object({
+  chiefComplaint: z.union([z.string().max(500), z.null()]).optional(),
+  assessment: z.union([z.string().max(2000), z.null()]).optional(),
+  plan: z.union([z.string().max(2000), z.null()]).optional(),
+  vitals: z.union([VitalsDataSchema, z.null()]).optional(),
+  symptoms: z.union([SymptomsDataSchema, z.null()]).optional(),
+  prescriptions: z.union([z.array(PrescriptionDataSchema), z.null()]).optional(),
+  followUp: z.union([FollowUpDataUpdateSchema, z.null()]).optional(),
+  externalDocumentation: z.union([z.record(z.string(), z.unknown()), z.null()]).optional()
+});
 
 export const UpdateInvoiceRequestSchema = z.object({
   paymentCaptureMethod: CaptureMethodSchema.optional(),
@@ -1419,6 +1510,61 @@ export const TestEmailTemplateParams = z.object({
 export const TestEmailTemplateBody = TestTemplateRequestSchema;
 
 export const TestEmailTemplateResponse = TestTemplateResultSchema;
+
+export const CreateConsultationBody = CreateConsultationRequestSchema;
+
+export const CreateConsultationResponse = ConsultationNoteSchema;
+
+export const ListConsultationsQuery = z.object({
+  patient: UUIDSchema.optional(),
+  status: ConsultationStatusSchema.optional(),
+  offset: z.coerce.number().int().gte(0).optional(),
+  limit: z.coerce.number().int().gte(1).lte(100).optional(),
+  page: z.coerce.number().int().gte(1).optional(),
+  pageSize: z.coerce.number().int().gte(1).lte(100).optional(),
+  q: z.string().max(500).optional(),
+  sort: z.string().optional(),
+});
+
+export const ListConsultationsResponse = z.object({
+  data: z.array(ConsultationNoteSchema),
+  pagination: OffsetPaginationMetaSchema
+});
+
+export const GetConsultationParams = z.object({
+  consultation: UUIDSchema,
+});
+
+export const GetConsultationResponse = ConsultationNoteSchema;
+
+export const UpdateConsultationParams = z.object({
+  consultation: UUIDSchema,
+});
+
+export const UpdateConsultationBody = UpdateConsultationRequestSchema;
+
+export const UpdateConsultationResponse = ConsultationNoteSchema;
+
+export const FinalizeConsultationParams = z.object({
+  consultation: UUIDSchema,
+});
+
+export const FinalizeConsultationResponse = ConsultationNoteSchema;
+
+export const ListEMRPatientsQuery = z.object({
+  expand: z.string().optional(),
+  offset: z.coerce.number().int().gte(0).optional(),
+  limit: z.coerce.number().int().gte(1).lte(100).optional(),
+  page: z.coerce.number().int().gte(1).optional(),
+  pageSize: z.coerce.number().int().gte(1).lte(100).optional(),
+  q: z.string().max(500).optional(),
+  sort: z.string().optional(),
+});
+
+export const ListEMRPatientsResponse = z.object({
+  data: z.array(PatientSchema),
+  pagination: OffsetPaginationMetaSchema
+});
 
 export const ListNotificationsQuery = z.object({
   type: NotificationTypeSchema.optional(),
