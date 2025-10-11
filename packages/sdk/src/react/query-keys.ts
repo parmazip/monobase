@@ -25,4 +25,10 @@ export const queryKeys = {
   chatMessage: (roomId: string, messageId: string) => 
     [...queryKeys.chatMessages(roomId), messageId] as const,
 
+  // Booking
+  booking: () => [...queryKeys.all, 'booking'] as const,
+  bookingProviders: (filters?: Record<string, unknown>) =>
+    filters ? [...queryKeys.booking(), 'providers', filters] as const : [...queryKeys.booking(), 'providers'] as const,
+  bookingProviderSlots: (providerId: string) => [...queryKeys.booking(), 'providers', providerId, 'slots'] as const,
+
 } as const

@@ -18,7 +18,8 @@ packages/sdk/src/
 │   ├── person.ts       # Person profile operations
 │   ├── notifications.ts # Notification operations
 │   ├── storage.ts      # File upload/download
-│   └── comms.ts        # Chat rooms, messages, video calls
+│   ├── comms.ts        # Chat rooms, messages, video calls
+│   └── booking.ts      # Provider search and booking slots
 ├── lib/                # Core libraries
 │   ├── signaling-client.ts  # WebSocket signaling for WebRTC
 │   └── peer-connection.ts   # RTCPeerConnection wrapper
@@ -32,7 +33,8 @@ packages/sdk/src/
 │       ├── use-notifications.ts # Notification hooks
 │       ├── use-storage.ts       # File upload hook
 │       ├── use-chat-rooms.ts    # Chat room management
-│       └── use-chat-messages.ts # Message operations
+│       ├── use-chat-messages.ts # Message operations
+│       └── use-booking.ts       # Booking providers and slots
 └── utils/
     ├── api.ts          # API utilities (pagination, sanitization)
     └── format.ts       # Date formatting utilities
@@ -174,6 +176,31 @@ await completeFileUpload(upload.file)
 const download = await getFileDownload(upload.file)
 ```
 
+#### Booking Service
+
+```typescript
+import {
+  searchProviders,
+  getProviderWithSlots,
+  type SearchProvidersParams,
+  type PaginatedProviders,
+  type ProviderWithSlots,
+} from "@monobase/sdk/services/booking"
+
+// Search providers
+const providers = await searchProviders({
+  q: 'massage therapy',
+  location: 'New York',
+  language: 'en',
+  offset: 0,
+  limit: 20,
+})
+
+// Get provider with available slots
+const providerData = await getProviderWithSlots(providerId)
+console.log(providerData.provider, providerData.slots, providerData.event)
+```
+
 ### React Hooks
 
 #### Authentication Hooks
@@ -270,6 +297,52 @@ function FileUploader() {
     <div>
       <input type="file" onChange={(e) => handleUpload(e.target.files?.[0])} />
       {isUploading && <div>Progress: {progress}%</div>}
+    </div>
+  )
+}
+```
+
+#### Booking Hooks
+
+```typescript
+import {
+  useSearchProviders,
+  useProviderWithSlots,
+} from "@monobase/sdk/react/hooks/use-booking"
+
+// Search providers
+function ProviderSearch() {
+  const { data, isLoading } = useSearchProviders({
+    q: 'therapy',
+    limit: 20,
+  })
+
+  if (isLoading) return <div>Loading...</div>
+
+  return (
+    <div>
+      {data?.data.map(provider => (
+        <div key={provider.id}>{provider.name}</div>
+      ))}
+    </div>
+  )
+}
+
+// Get provider with slots
+function BookingPage({ providerId }: { providerId: string }) {
+  const { data, isLoading } = useProviderWithSlots(providerId)
+
+  if (isLoading) return <div>Loading...</div>
+
+  return (
+    <div>
+      <h1>{data?.provider.name}</h1>
+      <p>Available slots: {data?.slots.length}</p>
+      {data?.slots.map(slot => (
+        <div key={slot.id}>
+          {slot.startTime.toLocaleString()} - ${slot.price}
+        </div>
+      ))}
     </div>
   )
 }

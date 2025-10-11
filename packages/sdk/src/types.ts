@@ -45,3 +45,55 @@ export interface Preferences {
   languagesSpoken: string[]
   timezone: string
 }
+
+// ============================================================================
+// Booking Types
+// ============================================================================
+
+export interface BookingTimeSlot {
+  id: string
+  providerId: string
+  date: Date
+  startTime: Date
+  endTime: Date
+  status: 'available' | 'booked' | 'blocked'
+  consultationModes: ('video' | 'phone' | 'in-person')[]
+  price: number
+  billingOverride?: {
+    price?: number
+    currency?: string
+    paymentRequired?: boolean
+    freeCancellationMinutes?: number
+  }
+}
+
+export interface BookingProvider {
+  id: string
+  name: string
+  email?: string
+  avatar?: string
+  biography?: string
+  yearsOfExperience?: number
+  specialties?: string[]
+  serviceLocations?: string[]
+  city?: string
+  state?: string
+  languages?: string[]
+}
+
+export interface BookingEventData {
+  id: string
+  timezone: string
+  locationTypes: ('video' | 'phone' | 'in-person')[]
+  billingConfig?: {
+    price: number
+    currency: string
+    cancellationThresholdMinutes: number
+  }
+}
+
+export interface ProviderWithSlots {
+  provider: BookingProvider
+  slots: BookingTimeSlot[]
+  event?: BookingEventData
+}

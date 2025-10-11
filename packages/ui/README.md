@@ -19,10 +19,13 @@ packages/ui/src/
 ├── person/          # Person domain module
 │   ├── components/  # Person-specific forms
 │   └── schemas.ts   # Person validation schemas
-└── comms/           # Comms domain module
-    ├── components/  # Video call UI components
-    ├── hooks/       # Media device hooks
-    └── lib/         # Browser media APIs
+├── comms/           # Comms domain module
+│   ├── components/  # Video call UI components
+│   ├── hooks/       # Media device hooks
+│   └── lib/         # Browser media APIs
+└── booking/         # Booking domain module
+    ├── types.ts     # Booking types
+    └── components/  # Booking widgets
 ```
 
 ## Installation
@@ -114,6 +117,23 @@ import {
 } from "@monobase/ui/comms/lib/media-devices"
 ```
 
+### Domain: Booking
+```typescript
+// Booking UI components
+import { BookingWidget } from "@monobase/ui/booking/components/booking-widget"
+import { BookingWidgetSkeleton } from "@monobase/ui/booking/components/booking-widget-skeleton"
+import { ActiveBookingCard } from "@monobase/ui/booking/components/active-booking-card"
+
+// Booking types
+import type {
+  BookingTimeSlot,
+  BookingProvider,
+  BookingEventData,
+  ActiveBooking,
+  BookingUser,
+} from "@monobase/ui/booking/types"
+```
+
 ## Usage Examples
 
 ### Person Forms
@@ -192,6 +212,52 @@ export function VideoCallPage({ roomId }: { roomId: string }) {
       onEndCall={handleEndCall}
       localLabel="You"
       remoteLabel="Remote User"
+    />
+  )
+}
+```
+
+### Booking Widget
+
+```tsx
+import "@monobase/ui/styles"
+import { BookingWidget, BookingWidgetSkeleton } from "@monobase/ui/booking/components/booking-widget"
+import { useProviderWithSlots } from "@monobase/sdk/react/hooks/use-booking"
+
+export function BookingPage({ providerId }: { providerId: string }) {
+  const { data, isLoading } = useProviderWithSlots(providerId)
+
+  if (isLoading) return <BookingWidgetSkeleton />
+
+  return (
+    <BookingWidget
+      provider={data.provider}
+      slots={data.slots}
+      event={data.event}
+      onSlotSelect={(slot) => {
+        console.log('Selected slot:', slot)
+        // Handle booking creation
+      }}
+    />
+  )
+}
+```
+
+### Active Booking Status Card
+
+```tsx
+import { ActiveBookingCard } from "@monobase/ui/booking/components/active-booking-card"
+
+export function BookingStatusPage({ booking, user }) {
+  return (
+    <ActiveBookingCard
+      booking={booking}
+      user={user}
+      onPaymentClick={() => router.push('/payment')}
+      onCancelClick={() => handleCancel()}
+      onProfileClick={() => router.push('/profile')}
+      onBrowseProviders={() => router.push('/providers')}
+      onViewAppointments={() => router.push('/appointments')}
     />
   )
 }
