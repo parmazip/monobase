@@ -437,9 +437,9 @@ bun run build          # Compile TypeSpec
 bun run watch         # Watch mode
 
 # Generation
-bun run build:all     # Generate everything
-bun run generate:openapi    # OpenAPI only
-bun run generate:typescript # Types only
+bun run build              # Generate both OpenAPI and types
+bun run build:openapi      # OpenAPI only
+bun run build:types        # Types only
 
 # Quality
 bun run lint          # Validate syntax

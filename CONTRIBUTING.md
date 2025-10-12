@@ -155,7 +155,7 @@ model CreatePersonRequest {
 
 ```bash
 cd specs/api
-bun run build:all
+bun run build
 ```
 
 This generates:
@@ -291,7 +291,7 @@ You should **only** edit these files:
 vim specs/api/src/modules/patient.tsp
 
 # 2. Generate OpenAPI spec and types
-cd specs/api && bun run build:all
+cd specs/api && bun run build
 
 # 3. Generate API code (routes, validators, handlers)
 cd ../../services/api && bun run generate
@@ -322,7 +322,7 @@ The generation script (`scripts/generate.ts`):
 **Problem**: Routes not updating after TypeSpec changes
 **Solution**:
 ```bash
-cd specs/api && bun run build:all  # Regenerate OpenAPI
+cd specs/api && bun run build  # Regenerate OpenAPI
 cd ../../services/api && bun run generate  # Regenerate routes
 ```
 
@@ -1082,7 +1082,6 @@ Opens a web interface at `http://localhost:4983`
 - **Foreign Keys**: Always define relationships
 - **JSONB**: Use for flexible consent and configuration data
 - **Timestamps**: Include `created_at` and `updated_at` on all tables
-- **Soft Deletes**: Use `deleted_at` instead of hard deletes for audit trails
 
 ## Test File Organization and Naming
 
@@ -1765,7 +1764,7 @@ console.log(import.meta.env.VITE_API_URL);
 ```bash
 # Regenerate API types
 cd specs/api
-bun run build:all
+bun run build
 
 # Restart dev server
 cd apps/account

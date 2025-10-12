@@ -60,7 +60,7 @@ Consent types on Person:
 ### API-First Development
 Always follow this workflow:
 1. Define APIs in TypeSpec (`specs/api/src/modules/`)
-2. Generate OpenAPI + TypeScript types (`cd specs/api && bun run build:all`)
+2. Generate OpenAPI + TypeScript types (`cd specs/api && bun run build`)
 3. Generate routes/validators/handlers (`cd services/api && bun run generate`)
 4. Implement handler business logic (`services/api/src/handlers/`)
 5. Use generated types from `@monobase/api-spec` in frontends
@@ -201,7 +201,7 @@ Essential commands:
 bun install
 
 # API-first workflow
-cd specs/api && bun run build:all           # Generate OpenAPI + types
+cd specs/api && bun run build              # Generate OpenAPI + types
 cd ../../services/api && bun run generate  # Generate routes/validators
 
 # Start development

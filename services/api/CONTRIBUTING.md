@@ -271,15 +271,13 @@ export const baseEntityFields = {
   id: uuid('id').primaryKey().defaultRandom(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-  deletedAt: timestamp('deleted_at'),  // Soft delete
   version: integer('version').default(1).notNull(),  // Optimistic locking
   createdBy: uuid('created_by'),
   updatedBy: uuid('updated_by'),
-  deletedBy: uuid('deleted_by'),
 };
 ```
 
-**Benefits**: Consistency, audit trail, soft deletes, optimistic locking, type safety.
+**Benefits**: Consistency, audit trail, optimistic locking, type safety.
 
 ### Modern Foreign Key Pattern
 
@@ -344,12 +342,10 @@ const [updated] = await db.update(persons)
   .returning();
 ```
 
-**Delete** (prefer soft delete):
+**Delete** (hard delete):
 ```typescript
-const [deleted] = await db.update(persons)
-  .set({ deletedAt: new Date() })
-  .where(eq(persons.id, id))
-  .returning();
+await db.delete(persons)
+  .where(eq(persons.id, id));
 ```
 
 ### Schema Migrations

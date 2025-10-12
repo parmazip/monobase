@@ -94,7 +94,7 @@ bun dev
 ### API-First Development
 
 1. **Define API** - Create/modify TypeSpec definitions in `specs/api/src/modules/`
-2. **Generate** - Run `cd specs/api && bun run build:all`
+2. **Generate** - Run `cd specs/api && bun run build`
 3. **Implement** - Build Hono handlers in `services/api/src/handlers/`
 4. **Test** - Write tests and run `cd services/api && bun test`
 5. **Integrate** - Use generated TypeScript types in frontend apps
@@ -142,9 +142,9 @@ bun run db:studio              # Open Drizzle Studio
 ### API Specifications (`specs/api/`)
 
 ```bash
-bun run build                  # Generate OpenAPI specs
-bun run build:types            # Generate TypeScript types
-bun run build:all              # Generate both OpenAPI and types
+bun run build                  # Generate both OpenAPI and types
+bun run build:openapi          # Generate OpenAPI specs only
+bun run build:types            # Generate TypeScript types only
 ```
 
 ### Account App (`apps/account/`)

@@ -646,7 +646,7 @@ model Example extends BaseEntity {
 ### 1. API-First Development Process
 
 1. **Define API in TypeSpec** (`specs/api/src/modules/`)
-2. **Generate OpenAPI + TypeScript** (`cd specs/api && bun run build:all`)
+2. **Generate OpenAPI + TypeScript** (`cd specs/api && bun run build`)
 3. **Generate Assets** (`cd services/api && bun run generate`)
 4. **Implement Hono handlers** (`services/api/src/handlers/`)
 5. **Use generated types** (import from `@monobase/api-spec`)
@@ -655,7 +655,7 @@ model Example extends BaseEntity {
 
 ```bash
 # After API changes
-cd specs/api && bun run build:all
+cd specs/api && bun run build
 
 # Development
 cd services/api && bun run generate && bun dev

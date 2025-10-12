@@ -17,7 +17,7 @@ COPY specs/api/tspconfig.yaml ./
 
 # Install spec dependencies and build using bun (faster than npm)
 RUN --mount=type=cache,target=/home/bun/.bun/install/cache bun install
-RUN bun run build:all
+RUN bun run build
 
 # Stage 2: Build API Application  
 FROM oven/bun:1.2.21-alpine

@@ -95,7 +95,6 @@ model Person {
   lastName?: string;           // Optional
   middleName?: string;         // Optional
   dateOfBirth?: utcDateTime;   // Optional (privacy)
-  deletedAt?: utcDateTime;     // Optional (soft delete)
 }
 ```
 

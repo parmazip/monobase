@@ -261,7 +261,7 @@ For detailed development patterns, handler implementation, database operations, 
 
 **Before implementing features:**
 1. Define API in TypeSpec (`specs/api/src/modules/`)
-2. Generate OpenAPI + types (`cd specs/api && bun run build:all`)
+2. Generate OpenAPI + types (`cd specs/api && bun run build`)
 3. Implement handlers in `src/handlers/`
 4. Use generated types for type safety
 

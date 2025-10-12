@@ -21,7 +21,7 @@ The Monobase API specification defines secure, HIPAA-compliant endpoints for:
 bun install
 
 # Generate OpenAPI spec and TypeScript types
-bun run build:all
+bun run build
 
 # Watch mode for development
 bun run watch
@@ -125,7 +125,7 @@ For detailed development guidelines, patterns, and best practices, see [CONTRIBU
 
 **Before implementing API features:**
 1. Define endpoints in TypeSpec (`src/modules/`)
-2. Run `bun run build:all` to generate OpenAPI + types
+2. Run `bun run build` to generate OpenAPI + types
 3. Implement backend handlers in `services/api/`
 4. Use generated types in frontend apps
 
