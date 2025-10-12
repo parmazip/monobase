@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@mono
 import { Progress } from '@monobase/ui/components/progress'
 import { ChevronLeft, ChevronRight, UserCheck, MapPin, Stethoscope, Pill } from 'lucide-react'
 import { Logo } from '@/components/logo'
-import { requireAuthWithoutProfile } from '@/utils/guards'
+import { requireAuth, requireNoPerson, composeGuards } from '@/utils/guards'
 import { useDetectTimezone } from '@monobase/ui/hooks/use-detect-timezone'
 import { useDetectCountry } from '@monobase/ui/hooks/use-detect-country'
 import { toast } from 'sonner'
@@ -28,7 +28,7 @@ import { PrimaryCareProviderForm } from '@monobase/ui/patient/components/primary
 import { PrimaryPharmacyForm } from '@monobase/ui/patient/components/primary-pharmacy-form'
 
 export const Route = createFileRoute('/onboarding')({
-  beforeLoad: requireAuthWithoutProfile(),
+  beforeLoad: composeGuards(requireAuth, requireNoPerson),
   component: OnboardingPage,
 })
 

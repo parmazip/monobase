@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Search, X, AlertCircle, Loader2 } from 'lucide-react'
-import { requireAuthWithProfile } from '@/utils/guards'
+import { requireAuth, requireEmailVerified, requirePerson, composeGuards } from '@/utils/guards'
 import { useSearchProviders, useProviderWithSlots } from '@monobase/sdk/react/hooks/use-booking'
 import { Button } from '@monobase/ui/components/button'
 import { Card, CardContent } from '@monobase/ui/components/card'
@@ -23,7 +23,7 @@ import { MINOR_AILMENTS_PRACTICE_LOCATIONS } from '@monobase/ui/constants/minor-
 import { LANGUAGES } from '@monobase/ui/constants/languages'
 
 export const Route = createFileRoute('/_dashboard/providers')({
-  beforeLoad: requireAuthWithProfile(),
+  beforeLoad: composeGuards(requireAuth, requireEmailVerified, requirePerson),
   component: ProvidersPage,
 })
 

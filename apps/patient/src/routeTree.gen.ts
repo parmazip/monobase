@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as DashboardRouteImport } from './routes/_dashboard'
 import { Route as IndexRouteImport } from './routes/index'
@@ -37,6 +38,11 @@ import { Route as BookingNewSlotIdConsentSecureRouteImport } from './routes/book
 import { Route as BookingNewSlotIdConsentRouteImport } from './routes/booking/new/$slotId/consent'
 import { Route as BookingNewSlotIdConfirmRouteImport } from './routes/booking/new/$slotId/confirm'
 
+const VerifyEmailRoute = VerifyEmailRouteImport.update({
+  id: '/verify-email',
+  path: '/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
@@ -186,6 +192,7 @@ const BookingNewSlotIdConfirmRoute = BookingNewSlotIdConfirmRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/onboarding': typeof OnboardingRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/appointments': typeof DashboardAppointmentsRouteWithChildren
   '/billing': typeof DashboardBillingRoute
   '/dashboard': typeof DashboardDashboardRoute
@@ -214,6 +221,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/onboarding': typeof OnboardingRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/billing': typeof DashboardBillingRoute
   '/dashboard': typeof DashboardDashboardRoute
   '/medical-records': typeof DashboardMedicalRecordsRoute
@@ -243,6 +251,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_dashboard': typeof DashboardRouteWithChildren
   '/onboarding': typeof OnboardingRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/_dashboard/appointments': typeof DashboardAppointmentsRouteWithChildren
   '/_dashboard/billing': typeof DashboardBillingRoute
   '/_dashboard/dashboard': typeof DashboardDashboardRoute
@@ -273,6 +282,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/onboarding'
+    | '/verify-email'
     | '/appointments'
     | '/billing'
     | '/dashboard'
@@ -301,6 +311,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/onboarding'
+    | '/verify-email'
     | '/billing'
     | '/dashboard'
     | '/medical-records'
@@ -329,6 +340,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_dashboard'
     | '/onboarding'
+    | '/verify-email'
     | '/_dashboard/appointments'
     | '/_dashboard/billing'
     | '/_dashboard/dashboard'
@@ -359,6 +371,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRouteWithChildren
   OnboardingRoute: typeof OnboardingRoute
+  VerifyEmailRoute: typeof VerifyEmailRoute
   AuthAuthViewRoute: typeof AuthAuthViewRoute
   BookingAppointmentIdDetailsRoute: typeof BookingAppointmentIdDetailsRoute
   BookingPaymentCancelRoute: typeof BookingPaymentCancelRoute
@@ -372,6 +385,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/verify-email': {
+      id: '/verify-email'
+      path: '/verify-email'
+      fullPath: '/verify-email'
+      preLoaderRoute: typeof VerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/onboarding': {
       id: '/onboarding'
       path: '/onboarding'
@@ -619,6 +639,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRouteWithChildren,
   OnboardingRoute: OnboardingRoute,
+  VerifyEmailRoute: VerifyEmailRoute,
   AuthAuthViewRoute: AuthAuthViewRoute,
   BookingAppointmentIdDetailsRoute: BookingAppointmentIdDetailsRoute,
   BookingPaymentCancelRoute: BookingPaymentCancelRoute,
