@@ -2,7 +2,7 @@
 import { createRouter as createTanStackRouter } from '@tanstack/react-router'
 import { routeTree } from './routeTree.gen.ts'
 import { NotFound } from '@/components/not-found'
-import type { Person } from '@/utils/guards'
+import type { Person, Patient } from '@/utils/guards'
 import type { User, Session } from '@monobase/sdk/auth'
 
 // ============================================================================
@@ -14,6 +14,7 @@ export interface RouterContext {
     user: User | null
     session: Session | null
     person: Person | null
+    patient: Patient | null
   }
 }
 

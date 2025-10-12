@@ -17,10 +17,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@mono
 import { Button } from '@monobase/ui/components/button'
 import { Badge } from '@monobase/ui/components/badge'
 import { Avatar, AvatarFallback } from '@monobase/ui/components/avatar'
-import { usePatientProfile } from '@/hooks/use-patient'
-import { usePersonProfile } from '@/hooks/use-person'
-import { useAppointments } from '@/hooks/use-appointments'
-import { useNotifications } from '@/hooks/use-notifications'
+import { useMyPatient } from '@monobase/sdk/react/hooks/use-patient'
+import { useMyPerson } from '@monobase/sdk/react/hooks/use-person'
+import { useListBookings } from '@monobase/sdk/react/hooks/use-booking'
+import { useNotifications } from '@monobase/sdk/react/hooks/use-notifications'
 import { Skeleton } from '@monobase/ui/components/skeleton'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { formatDate, formatRelativeDate } from '@monobase/ui/lib/format-date'
@@ -50,11 +50,11 @@ function WidgetErrorFallback({ title }: { title: string }) {
 }
 
 function DashboardPage() {
-  const { data: patient, isLoading: patientLoading } = usePatientProfile()
-  const { data: person, isLoading: personLoading } = usePersonProfile()
+  const { data: patient, isLoading: patientLoading } = useMyPatient()
+  const { data: person, isLoading: personLoading } = useMyPerson()
 
   // Fetch upcoming appointments
-  const { data: upcomingAppointmentsData, isLoading: appointmentsLoading } = useAppointments({
+  const { data: upcomingAppointmentsData, isLoading: appointmentsLoading } = useListBookings({
     expand: 'provider,provider.person',
     status: 'confirmed',
     limit: 3,
@@ -67,7 +67,7 @@ function DashboardPage() {
   })
 
   // Fetch last completed appointment for "Last Visit" date
-  const { data: completedAppointmentsData } = useAppointments({
+  const { data: completedAppointmentsData } = useListBookings({
     status: 'completed',
     limit: 1,
     sort: '-scheduledAt', // Most recent first

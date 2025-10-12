@@ -17,11 +17,10 @@ import type { PrimaryProviderData, PrimaryPharmacyData } from '@monobase/ui/pati
 
 // Import patient hooks
 import {
-  usePatientProfile,
-  usePatientFormData,
+  useMyPatient,
   useUpdatePrimaryProvider,
   useUpdatePrimaryPharmacy
-} from '@/hooks/use-patient'
+} from '@monobase/sdk/react/hooks/use-patient'
 
 export const Route = createFileRoute('/_dashboard/settings/healthcare')({
   component: HealthcareSettingsPage,
@@ -29,8 +28,8 @@ export const Route = createFileRoute('/_dashboard/settings/healthcare')({
 
 function HealthcareSettingsPage() {
   // Use hooks for data fetching and mutations
-  const { data: patient, isLoading: isLoadingPatient } = usePatientProfile()
-  const { data: patientFormData } = usePatientFormData()
+  const { data: patient, isLoading: isLoadingPatient } = useMyPatient()
+  // Data transformation done inline below
 
   // Mutation hooks
   const updatePrimaryProviderMutation = useUpdatePrimaryProvider()

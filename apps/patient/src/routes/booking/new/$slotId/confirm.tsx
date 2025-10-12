@@ -8,10 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@mono
 import { Alert, AlertDescription } from '@monobase/ui/components/alert'
 import { Separator } from '@monobase/ui/components/separator'
 import { BookingFlowLayout } from '@/components/layouts/booking-flow-layout'
-import { useSession } from '@/hooks/use-auth'
-import { usePatientProfile } from '@/hooks/use-patient'
+import { useSession } from '@monobase/sdk/react/hooks/use-auth'
+import { useMyPatient } from '@monobase/sdk/react/hooks/use-patient'
 import { ErrorBoundary } from '@/components/error-boundary'
-import { useSlot, useCreateAppointmentFromSlot } from '@/hooks/use-booking-slots'
+import { useTimeSlot, useCreateBooking } from '@monobase/sdk/react/hooks/use-booking'
 import { Skeleton } from '@monobase/ui/components/skeleton'
 
 // Route params schema
@@ -32,13 +32,13 @@ function BookingConfirmPage() {
   const { slotId } = Route.useParams()
   const navigate = useNavigate()
   const { data: session } = useSession()
-  const { data: patientProfile } = usePatientProfile()
+  const { data: patientProfile } = useMyPatient()
 
   // Use real API hook to fetch slot data
-  const { data: slot, isLoading: isLoadingSlot, error: slotError } = useSlot(slotId)
+  const { data: slot, isLoading: isLoadingSlot, error: slotError } = useTimeSlot(slotId)
 
   // Use mutation hook for creating appointment
-  const createAppointmentMutation = useCreateAppointmentFromSlot()
+  const createAppointmentMutation = useCreateBooking()
   const isSubmitting = createAppointmentMutation.isPending
 
   // Retrieve consent and form data from sessionStorage

@@ -9,8 +9,8 @@ import {
   Loader2,
   AlertCircle,
 } from 'lucide-react'
-import { useAppointments } from '@/hooks/use-appointments'
-import type { Appointment, LocationType, AppointmentStatus } from '@/api/appointments'
+import { useListBookings } from '@monobase/sdk/react/hooks/use-booking'
+import type { Appointment, LocationType, AppointmentStatus } from '@monobase/sdk/types'
 import { Button } from '@monobase/ui/components/button'
 import {
   Card,
@@ -68,15 +68,15 @@ function getStatusBadge(status: AppointmentStatus) {
 function PastAppointmentsPage() {
   // Fetch all past appointment statuses separately
   const { data: completedData, isLoading: isLoadingCompleted, error: completedError } =
-    useAppointments({ status: 'completed', expand: 'provider,provider.person' })
+    useListBookings({ status: 'completed', expand: 'provider,provider.person' })
   const { data: cancelledData, isLoading: isLoadingCancelled, error: cancelledError } =
-    useAppointments({ status: 'cancelled', expand: 'provider,provider.person' })
+    useListBookings({ status: 'cancelled', expand: 'provider,provider.person' })
   const { data: rejectedData, isLoading: isLoadingRejected, error: rejectedError } =
-    useAppointments({ status: 'rejected', expand: 'provider,provider.person' })
+    useListBookings({ status: 'rejected', expand: 'provider,provider.person' })
   const { data: noShowClientData, isLoading: isLoadingNoShowClient, error: noShowClientError } =
-    useAppointments({ status: 'no_show_client', expand: 'provider,provider.person' })
+    useListBookings({ status: 'no_show_client', expand: 'provider,provider.person' })
   const { data: noShowProviderData, isLoading: isLoadingNoShowProvider, error: noShowProviderError } =
-    useAppointments({ status: 'no_show_provider', expand: 'provider,provider.person' })
+    useListBookings({ status: 'no_show_provider', expand: 'provider,provider.person' })
 
   const isLoading =
     isLoadingCompleted ||

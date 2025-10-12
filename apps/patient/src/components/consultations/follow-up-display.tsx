@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@monobase/ui/components/card'
 import { Badge } from '@monobase/ui/components/badge'
 import { Calendar, Info } from 'lucide-react'
-import type { FollowUpData } from '@/api/consultations'
+import type { FollowUpData } from '@monobase/sdk/types'
 
 interface FollowUpDisplayProps {
   followUp: FollowUpData

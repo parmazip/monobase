@@ -14,9 +14,9 @@ import {
   Eye,
   Loader2,
 } from 'lucide-react'
-import { requireAuthWithProfile } from '@/services/guards'
-import { useInvoices, useInitiatePayment } from '@/hooks/use-invoices'
-import type { Invoice, InvoiceStatus } from '@/api/invoices'
+import { requireAuthWithProfile } from '@/utils/guards'
+import { useMyInvoices, useInitiatePayment } from '@monobase/sdk/react/hooks/use-billing'
+import type { Invoice, InvoiceStatus } from '@monobase/sdk/types'
 import { useFormatCurrency } from '@monobase/ui/hooks/use-format-currency'
 import { Button } from '@monobase/ui/components/button'
 import {
@@ -88,7 +88,7 @@ function BillingPage() {
   const { formatCurrency } = useFormatCurrency({ symbol: true })
 
   // Fetch invoices from API
-  const { data: invoicesData, isLoading, error } = useInvoices({ customer: profile.personId })
+  const { data: invoicesData, isLoading, error } = useMyInvoices({ customer: profile.personId })
   const payInvoiceMutation = useInitiatePayment()
 
   const invoices = invoicesData?.items || []

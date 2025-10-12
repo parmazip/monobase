@@ -7,7 +7,7 @@ import {
   TableRow,
 } from '@monobase/ui/components/table'
 import { Card, CardContent, CardHeader, CardTitle } from '@monobase/ui/components/card'
-import type { PrescriptionData } from '@/api/consultations'
+import type { PrescriptionData } from '@monobase/sdk/types'
 
 interface PrescriptionsListProps {
   prescriptions: PrescriptionData[]

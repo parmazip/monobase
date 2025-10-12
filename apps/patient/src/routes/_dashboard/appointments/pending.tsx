@@ -11,8 +11,8 @@ import {
   AlertCircle,
   X,
 } from 'lucide-react'
-import { useAppointments, useCancelAppointment } from '@/hooks/use-appointments'
-import type { Appointment, LocationType } from '@/api/appointments'
+import { useListBookings, useCancelBooking } from '@monobase/sdk/react/hooks/use-booking'
+import type { Appointment, LocationType } from '@monobase/sdk/types'
 import { Button } from '@monobase/ui/components/button'
 import {
   Card,
@@ -73,13 +73,13 @@ function PendingAppointmentsPage() {
     data: pendingData,
     isLoading,
     error,
-  } = useAppointments({
+  } = useListBookings({
     status: 'pending',
     expand: 'provider,provider.person',
     sort: 'scheduledAt',
   })
 
-  const cancelAppointmentMutation = useCancelAppointment()
+  const cancelAppointmentMutation = useCancelBooking()
 
   const pendingAppointments = pendingData?.data || []
 

@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@monobase/ui/components/card'
 import { Activity, Thermometer, Heart, Weight, Ruler } from 'lucide-react'
-import type { VitalsData } from '@/api/consultations'
+import type { VitalsData } from '@monobase/sdk/types'
 
 interface VitalsDisplayProps {
   vitals: VitalsData
