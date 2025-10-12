@@ -221,12 +221,12 @@ export default function PharmacistsPage(): React.JSX.Element {
                     provider={{
                       id: pharmacist.id,
                       name: pharmacist.name,
-                      title: pharmacist.title,
+                      title: "Pharmacist",
                       avatar: pharmacist.avatar,
-                      bio: pharmacist.bio || "Virtual consultation with your pharmacist",
-                      specialties: pharmacist.specialties,
-                      practiceLocations: pharmacist.practiceLocations,
-                      languages: pharmacist.languages
+                      bio: pharmacist.biography || "Virtual consultation with your pharmacist",
+                      specialties: pharmacist.specialties || [],
+                      practiceLocations: pharmacist.serviceLocations || [],
+                      languages: pharmacist.languages || []
                     }}
                   >
                     <Link href={`/pharmacists/${pharmacist.id}`} className="block">

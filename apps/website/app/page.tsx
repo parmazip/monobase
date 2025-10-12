@@ -40,7 +40,7 @@ export default function PlatformLandingPage(): React.JSX.Element {
   const signOut = useSignOut()
 
   const handleSignOut = async () => {
-    await signOut.mutateAsync({})
+    await signOut.mutateAsync()
   }
 
   return (

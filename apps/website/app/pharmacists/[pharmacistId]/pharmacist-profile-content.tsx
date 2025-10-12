@@ -21,10 +21,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@monobase/ui/components/ava
 import { Separator } from "@monobase/ui/components/separator"
 import { BookingWidget, type BookingTimeSlot, type BookingProvider } from "@monobase/ui/booking/components/booking-widget"
 import { BookingWidgetSkeleton } from "@monobase/ui/booking/components/booking-widget-skeleton"
-import type { Pharmacist } from '@/types/ui'
-import type { SimpleTimeSlot } from '@/types/ui'
-import type { BookingEvent } from '@/types/api'
 import { useProviderWithSlots } from '@monobase/sdk/react/hooks/use-booking'
+
+// Website-specific type aliases  
+type Pharmacist = BookingProvider
+type SimpleTimeSlot = BookingTimeSlot
 import { patientAppUrl } from '@/utils/config'
 
 export function PharmacistProfileContent(): React.JSX.Element {
@@ -39,32 +40,8 @@ export function PharmacistProfileContent(): React.JSX.Element {
   const event = data?.event
   const pharmacistError = pharmacistQueryError?.message || null
 
-  // Transform website-specific types to generic booking types
-  const bookingSlots: BookingTimeSlot[] = slots.map(slot => ({
-    id: slot.id,
-    providerId: pharmacistId,
-    date: slot.date,
-    startTime: slot.startTime,
-    endTime: slot.endTime,
-    status: slot.status,
-    consultationModes: ['video'], // Default to video consultation
-    price: slot.price
-  }))
-
-  const bookingProvider: BookingProvider = pharmacist ? {
-    id: pharmacist.id,
-    name: pharmacist.name,
-    avatar: pharmacist.avatar
-  } : { id: '', name: '', avatar: undefined }
-
-  const bookingEvent = event ? {
-    billingConfig: event.billingConfig ? {
-      cancellationThresholdMinutes: event.billingConfig.cancellationThresholdMinutes
-    } : undefined
-  } : undefined
-
   // Handler for controlled BookingWidget
-  const handleSlotSelect = (slot: BookingTimeSlot) => {
+  const handleSlotSelect = (slot: any) => {
     // Directly open patient app booking page in new tab
     const bookingUrl = `${patientAppUrl}/booking/new/${slot.id}`
     window.open(bookingUrl, '_blank')
@@ -132,11 +109,11 @@ export function PharmacistProfileContent(): React.JSX.Element {
                   </Avatar>
                   <div className="flex-1">
                     <h1 className="text-2xl font-bold" data-testid="pharmacist-name">{pharmacist.name}</h1>
-                    <p className="text-lg text-muted-foreground" data-testid="pharmacist-title">{pharmacist.title}</p>
+                    <p className="text-lg text-muted-foreground" data-testid="pharmacist-title">{"Pharmacist"}</p>
 
                     {/* Display all specialties */}
                     <div className="flex flex-wrap gap-1 mt-2" data-testid="pharmacist-specializations">
-                      {pharmacist.specialties.map((specialty: string) => (
+                      {pharmacist.specialties?.map((specialty: string) => (
                         <Badge key={specialty} variant="outline" className="text-xs">
                           {specialty}
                         </Badge>
@@ -144,9 +121,9 @@ export function PharmacistProfileContent(): React.JSX.Element {
                     </div>
 
                     {/* Display all practice locations with icon */}
-                    {pharmacist.practiceLocations.length > 0 && (
+                    {(pharmacist.serviceLocations?.length || 0) > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2" data-testid="pharmacist-locations">
-                        {pharmacist.practiceLocations.map((location: string) => (
+                        {pharmacist.serviceLocations?.map((location: string) => (
                           <Badge key={location} variant="secondary" className="text-xs">
                             {location}
                           </Badge>
@@ -157,7 +134,7 @@ export function PharmacistProfileContent(): React.JSX.Element {
                     {/* Experience with icon */}
                     <div className="flex items-center gap-1.5 mt-3">
                       <Badge variant="secondary" className="text-xs">
-                        {pharmacist.yearsExperience} years experience
+                        {pharmacist.yearsOfExperience} years experience
                       </Badge>
                     </div>
 
@@ -181,7 +158,7 @@ export function PharmacistProfileContent(): React.JSX.Element {
               <CardContent className="space-y-6">
                 {/* Biography */}
                 <div>
-                  <p className="text-muted-foreground leading-relaxed" data-testid="pharmacist-bio">{pharmacist.bio}</p>
+                  <p className="text-muted-foreground leading-relaxed" data-testid="pharmacist-bio">{pharmacist.biography}</p>
                 </div>
 
                 {/* Quick Stats Grid */}
@@ -192,7 +169,7 @@ export function PharmacistProfileContent(): React.JSX.Element {
                       <Clock className="w-4 h-4 text-primary" />
                       <span className="text-sm font-medium">Experience</span>
                     </div>
-                    <p className="text-lg font-semibold" data-testid="years-experience">{pharmacist.yearsExperience} years</p>
+                    <p className="text-lg font-semibold" data-testid="years-experience">{pharmacist.yearsOfExperience} years</p>
                   </div>
 
                   {/* Languages */}
@@ -202,7 +179,7 @@ export function PharmacistProfileContent(): React.JSX.Element {
                       <span className="text-sm font-medium">Languages</span>
                     </div>
                     <div className="flex flex-wrap gap-1" data-testid="pharmacist-languages">
-                      {pharmacist.languages.map((lang: string) => (
+                      {pharmacist.languages?.map((lang: string) => (
                         <Badge key={lang} variant="secondary" className="text-xs">
                           {lang}
                         </Badge>
@@ -217,9 +194,9 @@ export function PharmacistProfileContent(): React.JSX.Element {
           {/* Right Column - Booking Widget */}
           <div className="space-y-6">
             <BookingWidget
-              provider={bookingProvider}
-              slots={bookingSlots}
-              event={bookingEvent}
+              provider={pharmacist as any}
+              slots={slots as any}
+              event={event as any}
               onSlotSelect={handleSlotSelect}
               className="sticky top-24"
             />
