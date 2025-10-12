@@ -1,3 +1,5 @@
-// Re-export auth client from SDK
-import { authClient } from '@monobase/sdk/react/auth-client'
-export { authClient }
+// Create auth client instance
+import { createAuth } from '@monobase/sdk/auth'
+import { apiBaseUrl } from '@/utils/config'
+
+export const authClient = createAuth({ baseURL: apiBaseUrl })
