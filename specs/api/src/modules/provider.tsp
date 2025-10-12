@@ -29,6 +29,7 @@ enum ProviderType {
 @doc("Healthcare provider profile with professional credentials and practice information")
 model Provider extends BaseEntity {
   @doc("Reference to person record ID or expanded person object")
+  @extension("x-expandable-field", #{ opId: "getPerson" })
   person: UUID | Person;
 
   @doc("Provider type")

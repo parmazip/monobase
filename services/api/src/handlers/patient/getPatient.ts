@@ -7,7 +7,7 @@ import {
   BusinessLogicError
 } from '@/core/errors';
 import { PatientRepository } from './repos/patient.repo';
-import { shouldExpand } from '@/utils/query';
+// Auto-expand via middleware - no manual expand logic needed
 import type { User } from '@/types/auth';
 
 /**
@@ -56,13 +56,8 @@ export async function getPatient(ctx: Context) {
     patientId = patient.id;
   }
   
-  // Check if person field should be expanded
-  const expandPerson = shouldExpand(query, 'person');
-  
-  // Call the appropriate repository method
-  const patient = expandPerson 
-    ? await repo.findOneByIdWithPerson(patientId)
-    : await repo.findOneById(patientId);
+  // Get patient (expansion handled automatically by auto-expand middleware)
+  const patient = await repo.findOneById(patientId);
   
   if (!patient) {
     throw new NotFoundError('Patient not found', {
@@ -87,7 +82,6 @@ export async function getPatient(ctx: Context) {
     action: 'view',
     viewedBy: user.id,
     isOwner,
-    expandPerson,
     wasMeEndpoint: ctx.req.param('patient') === 'me'
   }, 'Patient retrieved');
   

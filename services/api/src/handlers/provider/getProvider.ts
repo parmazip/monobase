@@ -9,7 +9,7 @@ import {
   BusinessLogicError
 } from '@/core/errors';
 import { ProviderRepository } from './repos/provider.repo';
-import { shouldExpand } from '@/utils/query';
+// Auto-expand via middleware - no manual expand logic needed
 
 /**
  * getProvider
@@ -59,14 +59,10 @@ export async function getProvider(ctx: Context) {
     providerId = provider.id;
   }
   
-  // Check if person field should be expanded
-  const expandPerson = shouldExpand(query, 'person');
   const user = ctx.get('user') as User | undefined;
   
-  // Call the appropriate repository method
-  const provider = expandPerson
-    ? await repo.findOneByIdWithPerson(providerId)
-    : await repo.findOneById(providerId);
+  // Get provider (expansion handled automatically by auto-expand middleware)
+  const provider = await repo.findOneById(providerId);
   
   if (!provider) {
     throw new NotFoundError('Provider not found', {
@@ -95,7 +91,6 @@ export async function getProvider(ctx: Context) {
     viewedBy: user?.id || 'anonymous',
     isOwner: isOwner || false,
     isPublic: !isOwner,
-    expandPerson,
     wasMeEndpoint: ctx.req.param('provider') === 'me'
   }, 'Provider retrieved');
   

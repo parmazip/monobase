@@ -6,7 +6,8 @@ import {
   BusinessLogicError
 } from '@/core/errors';
 import { PatientRepository } from './repos/patient.repo';
-import { shouldExpand, parsePagination, buildPaginationMeta, parseFilters } from '@/utils/query';
+import { parsePagination, buildPaginationMeta, parseFilters } from '@/utils/query';
+// Auto-expand via middleware - no manual expand logic needed
 import type { User } from '@/types/auth';
 
 /**
@@ -38,9 +39,6 @@ export async function listPatients(ctx: Context) {
   // Parse filters with utilities
   const filters = parseFilters(query, ['q', 'status']);
   
-  // Check if person field should be expanded
-  const expandPerson = shouldExpand(query, 'person');
-  
   // Get dependencies from context
   const db = ctx.get('database') as DatabaseInstance;
   const logger = ctx.get('logger');
@@ -48,10 +46,8 @@ export async function listPatients(ctx: Context) {
   // Instantiate repository
   const repo = new PatientRepository(db, logger);
   
-  // Call the appropriate repository method
-  const patients = expandPerson
-    ? await repo.findManyWithPerson(filters, { pagination: { limit, offset } })
-    : await repo.findMany(filters, { pagination: { limit, offset } });
+  // Fetch patients (expansion handled automatically by auto-expand middleware)
+  const patients = await repo.findMany(filters, { pagination: { limit, offset } });
   
   // Get total count for proper pagination metadata
   const totalCount = await repo.count(filters);
@@ -65,7 +61,6 @@ export async function listPatients(ctx: Context) {
     requestedBy: user.id,
     filters,
     pagination: { limit, offset },
-    expandPerson,
     resultCount: patients.length,
     totalCount
   }, 'Patients list retrieved');

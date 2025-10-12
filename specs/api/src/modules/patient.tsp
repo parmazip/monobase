@@ -16,6 +16,7 @@ using TypeSpec.OpenAPI;
 @doc("Patient profile with medical and administrative information")
 model Patient extends BaseEntity {
   @doc("Reference to person record ID or expanded person object")
+  @extension("x-expandable-field", #{ opId: "getPerson" })
   person: UUID | Person;
 
   @doc("Primary care provider information")
