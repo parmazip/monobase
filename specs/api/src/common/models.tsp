@@ -273,10 +273,23 @@ model TimeRange {
 
 /**
  * Expand query parameters
+ *
+ * Enables automatic expansion of related resources in API responses.
+ * Based on Stripe's expand pattern with secure internal service-to-service communication.
+ *
+ * Usage in TypeSpec:
+ *   @extension("x-expandable-field", #{ opId: "getRelatedResource" })
+ *   fieldName: string | RelatedModel;
+ *
+ * Example requests:
+ *   GET /invoices/123?expand=customer
+ *   GET /invoices/123?expand=customer,merchant
+ *
+ * Supports nested expansion up to 4 levels deep.
  */
 @doc("Query parameters for expanding related entities")
 model ExpandParams {
-  @doc("Comma-separated list of related entities to expand (e.g., 'provider,patient,slot')")
+  @doc("Comma-separated list of related entities to expand (e.g., 'customer,merchant')")
   @query
   expand?: string;
 }

@@ -5,6 +5,7 @@ import "../common/models.tsp";
 import "../common/errors.tsp";
 import "../common/pagination.tsp";
 import "../common/security.tsp";
+import "./person.tsp";
 
 using TypeSpec.Http;
 using TypeSpec.OpenAPI;
@@ -121,15 +122,18 @@ model Invoice extends BaseEntity {
   @doc("Auto-generated invoice number")
   @maxLength(50)
   invoiceNumber: string;
-  
+
   @doc("Customer (person who pays)")
-  customer: UUID;
-  
+  @extension("x-expandable-field", #{ opId: "getPerson" })
+  customer: string | Person;
+
   @doc("Merchant (person who receives payment)")
-  merchant: UUID;
-  
+  @extension("x-expandable-field", #{ opId: "getPerson" })
+  merchant: string | Person;
+
   @doc("Optional merchant account for payment processing")
-  merchantAccount?: UUID;
+  @extension("x-expandable-field", #{ opId: "getMerchantAccount" })
+  merchantAccount?: string | MerchantAccount;
   
   @doc("Unique context for idempotency (e.g., 'booking:123')")
   @maxLength(255)
@@ -196,11 +200,12 @@ model Invoice extends BaseEntity {
 @doc("Merchant account for payment processing")
 model MerchantAccount extends BaseEntity {
   @doc("Person who owns this merchant account")
-  person: UUID;
-  
+  @extension("x-expandable-field", #{ opId: "getPerson" })
+  person: string | Person;
+
   @doc("Whether account is active")
   active: boolean;
-  
+
   @doc("Metadata (includes stripeAccountId, onboardingComplete, etc.)")
   metadata: Record<unknown>;
 }
@@ -426,7 +431,8 @@ namespace BillingModule {
     @route("/invoices/{invoice}")
     @useAuth(bearerAuth)
     getInvoice(
-      @path invoice: UUID
+      @path invoice: UUID,
+      ...ExpandParams
     ): ApiOkResponse<Invoice>
       | ApiNotFoundResponse
       | ApiUnauthorizedResponse;
@@ -582,7 +588,8 @@ namespace BillingModule {
     @route("/merchant-accounts/{merchantAccount}")
     @useAuth(bearerAuth)
     getMerchantAccount(
-      @path @doc("Merchant Account ID (UUID) or 'me' for current user's account") merchantAccount: UUID | "me"
+      @path @doc("Merchant Account ID (UUID) or 'me' for current user's account") merchantAccount: UUID | "me",
+      ...ExpandParams
     ): ApiOkResponse<MerchantAccount>
       | ApiNotFoundResponse
       | ApiUnauthorizedResponse;

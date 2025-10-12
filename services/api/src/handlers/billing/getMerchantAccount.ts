@@ -6,10 +6,10 @@
  */
 
 import type { Context } from 'hono';
-import { ForbiddenError, NotFoundError } from '@/core/errors';
+import { ForbiddenError, NotFoundError, ValidationError } from '@/core/errors';
 import type { Session } from '@/types/auth';
+import type { User } from '@/types/auth';
 import { MerchantAccountRepository } from './repos/billing.repo';
-import { shouldExpand } from '@/utils/query';
 
 /**
  * getMerchantAccount
@@ -20,26 +20,30 @@ import { shouldExpand } from '@/utils/query';
  * Get merchant account by ID with authorization checks
  */
 export async function getMerchantAccount(ctx: Context) {
+  // Check if this is an internal expand request
+  const isInternalExpand = ctx.get('isInternalExpand');
+
   const database = ctx.get('database');
   const logger = ctx.get('logger');
 
-  // Get authenticated session (guaranteed by middleware)
-  const session = ctx.get('session') as Session;
-  const user = session.user;
+  // Get authenticated user (may be undefined for internal expand requests)
+  const user = ctx.get('user') as User | undefined;
 
   // Extract validated parameters
   const params = ctx.req.valid('param') as any;
-  const query = ctx.req.valid('query') as any;
 
   let merchantAccountId = params.merchantAccount;
 
-  logger.debug({ merchantAccountId, userId: user.id }, 'Getting merchant account');
+  logger.debug({ merchantAccountId, userId: user?.id, isInternalExpand }, 'Getting merchant account');
 
   // Create repository instance
   const merchantAccountRepo = new MerchantAccountRepository(database, logger);
 
   // Handle special 'me' endpoint - get current user's merchant account
   if (merchantAccountId === 'me') {
+    if (!user) {
+      throw new ValidationError('"me" parameter not supported for internal expand requests');
+    }
     const merchantAccount = await merchantAccountRepo.findByPerson(user.id);
     if (!merchantAccount) {
       throw new NotFoundError('No merchant account found for current user', {
@@ -51,13 +55,8 @@ export async function getMerchantAccount(ctx: Context) {
     merchantAccountId = merchantAccount.id;
   }
 
-  // Check expansion needs
-  const expandPerson = shouldExpand(query, 'person');
-
-  // Get merchant account with optional expansion (TypeSpec-aligned)
-  const merchantAccount = expandPerson
-    ? await merchantAccountRepo.findOneWithPerson(merchantAccountId)
-    : await merchantAccountRepo.findOneById(merchantAccountId);
+  // Get merchant account (expand handled automatically by middleware)
+  const merchantAccount = await merchantAccountRepo.findOneById(merchantAccountId);
 
   if (!merchantAccount) {
     throw new NotFoundError('Merchant account not found', {
@@ -67,10 +66,13 @@ export async function getMerchantAccount(ctx: Context) {
     });
   }
 
-  // Authorization check: user must be the person who owns the merchant account
-  // TODO: Add admin access check
-  if (merchantAccount.person !== user.id) {
-    throw new ForbiddenError('You can only access your own merchant account');
+  // Skip authorization for internal expand requests (already authorized at parent resource level)
+  if (!isInternalExpand) {
+    // Authorization check: user must be the person who owns the merchant account
+    const personId = typeof merchantAccount.person === 'string' ? merchantAccount.person : merchantAccount.person.id;
+    if (personId !== user?.id) {
+      throw new ForbiddenError('You can only access your own merchant account');
+    }
   }
 
   logger.info({
@@ -88,10 +90,7 @@ export async function getMerchantAccount(ctx: Context) {
     metadata: merchantAccount.metadata,
     createdAt: merchantAccount.createdAt.toISOString(),
     updatedAt: merchantAccount.updatedAt.toISOString(),
-    version: merchantAccount.version,
-    ...(expandPerson && 'person' in merchantAccount && merchantAccount.person && {
-      personDetails: merchantAccount.person
-    })
+    version: merchantAccount.version
   };
 
   return ctx.json(response, 200);

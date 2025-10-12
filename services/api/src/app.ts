@@ -50,6 +50,11 @@ import { createSecurityHeaders, createCorsMiddleware } from '@/middleware/securi
 export function createApp(config: Config): App {
   const app = new Hono<{ Variables: Variables }>();
 
+  // Generate internal service token for secure service-to-service communication
+  // Used for expand requests and future microservice communication
+  // TODO: Move to config/env for production deployments
+  const internalServiceToken = crypto.randomUUID();
+
   // Create core dependencies with config
   const logger = createLogger(config);
   const database = createDatabase(config.database);
@@ -64,7 +69,7 @@ export function createApp(config: Config): App {
   const billing = createBillingService(config.billing, database, logger);
 
   // Attach dependencies to the app instance early for access throughout
-  Object.assign(app, { database, logger, auth, storage, jobs, notifs, email, audit, ws, billing });
+  Object.assign(app, { database, logger, auth, storage, jobs, notifs, email, audit, ws, billing, internalServiceToken });
 
   // Global middleware - order matters!
 

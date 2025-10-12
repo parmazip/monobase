@@ -18,7 +18,9 @@ export function normalizeOpenAPISpec(spec: OpenAPISpec): OpenAPISpec {
   // First normalize allOf patterns
   const normalizedSpec = normalizeAllOf(spec, spec);
   // Then add security roles to descriptions
-  return addSecurityRolesToDescriptions(normalizedSpec);
+  const withRoles = addSecurityRolesToDescriptions(normalizedSpec);
+  // Then add expandable field documentation
+  return addExpandableFieldsToDescriptions(withRoles);
 }
 
 /**
@@ -57,6 +59,43 @@ function addSecurityRolesToDescriptions(spec: OpenAPISpec): OpenAPISpec {
     }
   }
   
+  return updatedSpec;
+}
+
+/**
+ * Add expandable field documentation to schema property descriptions
+ * @param spec - The OpenAPI specification
+ * @returns The spec with expandable field descriptions enhanced
+ */
+function addExpandableFieldsToDescriptions(spec: OpenAPISpec): OpenAPISpec {
+  if (!spec.components?.schemas) return spec;
+
+  const updatedSpec = { ...spec };
+
+  for (const [schemaName, schema] of Object.entries(updatedSpec.components.schemas)) {
+    if (!schema || typeof schema !== 'object') continue;
+    if (!schema.properties) continue;
+
+    for (const [propName, property] of Object.entries(schema.properties)) {
+      if (!property || typeof property !== 'object') continue;
+
+      // Check if this property is expandable
+      const expandMeta = (property as any)['x-expandable-field'];
+      if (expandMeta?.opId) {
+        const suffix = ` (expandable)`;
+
+        // Add to description if not already present
+        if ((property as any).description) {
+          if (!(property as any).description.includes('(expandable)')) {
+            (property as any).description += suffix;
+          }
+        } else {
+          (property as any).description = `Expandable field${suffix}`;
+        }
+      }
+    }
+  }
+
   return updatedSpec;
 }
 
