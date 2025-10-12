@@ -1,4 +1,4 @@
-/* Import Parmazip brand theme from shared UI */
-@import "@parmazip/ui/styles";
+/* Import Monobase brand theme from shared UI */
+@import "@monobase/ui/styles";
 
 /* Website app-specific style overrides (if any) */

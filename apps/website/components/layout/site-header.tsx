@@ -15,23 +15,9 @@ import { SignupModal } from '@/components/auth/signup-modal'
 import { patientAppUrl, providerAppUrl } from '@/utils/config'
 
 interface SiteHeaderProps {
-  session: {
-    user: {
-      id: string
-      email: string
-      name: string
-      image?: string | null
-      role?: string
-    }
-    session: {
-      id: string
-      expiresAt: Date
-      token: string
-      userId: string
-    }
-  } | null | undefined
+  session: any | null | undefined
   isLoading: boolean
-  onSignOut: () => void
+  onSignOut: () => Promise<void>
 }
 
 export function SiteHeader({ session, isLoading, onSignOut }: SiteHeaderProps): React.JSX.Element {
