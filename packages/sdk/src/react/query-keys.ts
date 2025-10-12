@@ -40,5 +40,13 @@ export const queryKeys = {
   billingInvoices: (params?: Record<string, unknown>) =>
     params ? [...queryKeys.billing(), 'invoices', params] as const : [...queryKeys.billing(), 'invoices'] as const,
   billingInvoice: (id: string) => [...queryKeys.billing(), 'invoices', id] as const,
+  billingEarnings: (type: string, ...params: any[]) => [...queryKeys.billing(), 'earnings', type, ...params] as const,
+
+  // EMR
+  emr: () => [...queryKeys.all, 'emr'] as const,
+  emrPatients: (params?: any) => [...queryKeys.emr(), 'patients', params] as const,
+  emrPatient: (id: string) => [...queryKeys.emr(), 'patients', id] as const,
+  emrConsultations: (params?: any) => [...queryKeys.emr(), 'consultations', params] as const,
+  emrConsultation: (id: string) => [...queryKeys.emr(), 'consultations', id] as const,
 
 } as const

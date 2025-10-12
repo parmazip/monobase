@@ -8,8 +8,7 @@
  * - Document management
  */
 
-import { apiClient } from '../api'
-import type { ApiResponse, PaginatedResponse } from '../types'
+import { apiGet, apiPost, apiPatch, apiDelete } from '../api'
 
 // ============================================================================
 // Types
@@ -93,34 +92,50 @@ export interface EmrDocument {
 /**
  * List EMR patients with pagination
  */
+export interface PaginatedResponse<T> {
+  data: T[]
+  pagination: {
+    totalCount: number
+    offset: number
+    limit: number
+  }
+}
+
+export interface ApiResponse<T> {
+  data: T
+}
+
 export async function listEmrPatients(params?: {
   page?: number
   limit?: number
   search?: string
   providerId?: string
 }): Promise<PaginatedResponse<EmrPatient>> {
-  return apiClient.get('/emr/patients', { params })
+  return apiGet('/emr/patients', params)
 }
 
 /**
  * Get EMR patient by ID
  */
 export async function getEmrPatient(id: string): Promise<ApiResponse<EmrPatient>> {
-  return apiClient.get(`/emr/patients/${id}`)
+  const data = await apiGet<EmrPatient>(`/emr/patients/${id}`)
+  return { data }
 }
 
 /**
  * Create EMR patient record
  */
 export async function createEmrPatient(data: Partial<EmrPatient>): Promise<ApiResponse<EmrPatient>> {
-  return apiClient.post('/emr/patients', data)
+  const result = await apiPost<EmrPatient>('/emr/patients', data)
+  return { data: result }
 }
 
 /**
  * Update EMR patient
  */
 export async function updateEmrPatient(id: string, data: Partial<EmrPatient>): Promise<ApiResponse<EmrPatient>> {
-  return apiClient.patch(`/emr/patients/${id}`, data)
+  const result = await apiPatch<EmrPatient>(`/emr/patients/${id}`, data)
+  return { data: result }
 }
 
 // ============================================================================
@@ -136,28 +151,31 @@ export async function listMedicalRecords(params: {
   page?: number
   limit?: number
 }): Promise<PaginatedResponse<MedicalRecord>> {
-  return apiClient.get('/emr/records', { params })
+  return apiGet('/emr/records', params)
 }
 
 /**
  * Get medical record by ID
  */
 export async function getMedicalRecord(id: string): Promise<ApiResponse<MedicalRecord>> {
-  return apiClient.get(`/emr/records/${id}`)
+  const data = await apiGet<MedicalRecord>(`/emr/records/${id}`)
+  return { data }
 }
 
 /**
  * Create medical record
  */
 export async function createMedicalRecord(data: Partial<MedicalRecord>): Promise<ApiResponse<MedicalRecord>> {
-  return apiClient.post('/emr/records', data)
+  const result = await apiPost<MedicalRecord>('/emr/records', data)
+  return { data: result }
 }
 
 /**
  * Update medical record
  */
 export async function updateMedicalRecord(id: string, data: Partial<MedicalRecord>): Promise<ApiResponse<MedicalRecord>> {
-  return apiClient.patch(`/emr/records/${id}`, data)
+  const result = await apiPatch<MedicalRecord>(`/emr/records/${id}`, data)
+  return { data: result }
 }
 
 // ============================================================================
@@ -174,27 +192,71 @@ export async function listConsultations(params?: {
   page?: number
   limit?: number
 }): Promise<PaginatedResponse<Consultation>> {
-  return apiClient.get('/emr/consultations', { params })
+  return apiGet('/emr/consultations', params)
 }
 
 /**
  * Get consultation by ID
  */
 export async function getConsultation(id: string): Promise<ApiResponse<Consultation>> {
-  return apiClient.get(`/emr/consultations/${id}`)
+  const data = await apiGet<Consultation>(`/emr/consultations/${id}`)
+  return { data }
 }
 
 /**
  * Create consultation record
  */
 export async function createConsultation(data: Partial<Consultation>): Promise<ApiResponse<Consultation>> {
-  return apiClient.post('/emr/consultations', data)
+  const result = await apiPost<Consultation>('/emr/consultations', data)
+  return { data: result }
 }
 
 /**
  * Update consultation
  */
 export async function updateConsultation(id: string, data: Partial<Consultation>): Promise<ApiResponse<Consultation>> {
-  return apiClient.patch(`/emr/consultations/${id}`, data)
+  const result = await apiPatch<Consultation>(`/emr/consultations/${id}`, data)
+  return { data: result }
 }
 
+// ============================================================================
+// Document Operations
+// ============================================================================
+
+/**
+ * List documents for patient/record/consultation
+ */
+export async function listEmrDocuments(params: {
+  emrPatientId?: string
+  recordId?: string
+  consultationId?: string
+  type?: EmrDocument['type']
+  page?: number
+  limit?: number
+}): Promise<PaginatedResponse<EmrDocument>> {
+  return apiGet('/emr/documents', params)
+}
+
+/**
+ * Get document by ID
+ */
+export async function getEmrDocument(id: string): Promise<ApiResponse<EmrDocument>> {
+  const data = await apiGet<EmrDocument>(`/emr/documents/${id}`)
+  return { data }
+}
+
+/**
+ * Upload EMR document
+ */
+export async function uploadEmrDocument(data: FormData): Promise<ApiResponse<EmrDocument>> {
+  const result = await apiPost<EmrDocument>('/emr/documents', data)
+  return { data: result }
+}
+
+/**
+ * Delete document
+ */
+export async function deleteEmrDocument(id: string): Promise<ApiResponse<void>> {
+  await apiDelete(`/emr/documents/${id}`)
+  return { data: undefined as any }
+}

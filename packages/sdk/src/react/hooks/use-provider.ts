@@ -124,3 +124,69 @@ function computeProviderTitle(providerType: string, yearsOfExperience?: number):
   }
   return 'Healthcare Provider'
 }
+
+// ============================================================================
+// "My" Provider Hooks (Current User)
+// ============================================================================
+
+/**
+ * Get current user's provider profile
+ */
+export function useMyProvider() {
+  return useQuery({
+    queryKey: ['provider', 'me'],
+    queryFn: providerService.getMyProvider,
+    retry: (failureCount, error: any) => {
+      // Don't retry 404 (no provider profile)
+      if (error?.status === 404) return false
+      return failureCount < 3
+    },
+  })
+}
+
+/**
+ * Create provider profile for current user
+ */
+export function useCreateMyProvider() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: Omit<ProviderCreateRequest, 'person'>) =>
+      providerService.createMyProvider(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['provider', 'me'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.providers() })
+    },
+  })
+}
+
+/**
+ * Update current user's provider profile
+ */
+export function useUpdateMyProvider() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (updates: ProviderUpdateRequest) =>
+      providerService.updateMyProvider(updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['provider', 'me'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.providers() })
+    },
+  })
+}
+
+/**
+ * Delete current user's provider profile
+ */
+export function useDeleteMyProvider() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: () => providerService.deleteMyProvider(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['provider', 'me'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.providers() })
+    },
+  })
+}
