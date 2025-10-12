@@ -1,5 +1,5 @@
 {
-  "id": "4358b7f6-05bb-4a8e-8d20-6c3ecaefd59f",
+  "id": "ca31cd2b-a83a-4df9-b726-d04b8a6fb569",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -1788,7 +1788,7 @@
         },
         "context_id": {
           "name": "context_id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -1803,6 +1803,20 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "keywords": {
+          "name": "keywords",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'[]'::jsonb"
+        },
+        "tags": {
+          "name": "tags",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'[]'::jsonb"
         },
         "timezone": {
           "name": "timezone",
@@ -1974,6 +1988,51 @@
           "isUnique": false,
           "concurrently": false,
           "method": "btree",
+          "with": {}
+        },
+        "booking_events_search_idx": {
+          "name": "booking_events_search_idx",
+          "columns": [
+            {
+              "expression": "to_tsvector('english', \"title\" || ' ' || COALESCE(\"description\", ''))",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gin",
+          "with": {}
+        },
+        "booking_events_keywords_idx": {
+          "name": "booking_events_keywords_idx",
+          "columns": [
+            {
+              "expression": "keywords",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gin",
+          "with": {}
+        },
+        "booking_events_tags_idx": {
+          "name": "booking_events_tags_idx",
+          "columns": [
+            {
+              "expression": "tags",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gin",
           "with": {}
         }
       },
@@ -2473,7 +2532,7 @@
         },
         "context_id": {
           "name": "context_id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -2739,7 +2798,7 @@
         },
         "context_id": {
           "name": "context_id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -3296,7 +3355,7 @@
         },
         "context_id": {
           "name": "context_id",
-          "type": "uuid",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -4348,6 +4407,233 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.review": {
+      "name": "review",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deleted_by": {
+          "name": "deleted_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "context_id": {
+          "name": "context_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reviewer_id": {
+          "name": "reviewer_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "review_type": {
+          "name": "review_type",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reviewed_entity_id": {
+          "name": "reviewed_entity_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "nps_score": {
+          "name": "nps_score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "comment": {
+          "name": "comment",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "reviews_context_idx": {
+          "name": "reviews_context_idx",
+          "columns": [
+            {
+              "expression": "context_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "reviews_reviewer_idx": {
+          "name": "reviews_reviewer_idx",
+          "columns": [
+            {
+              "expression": "reviewer_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "reviews_review_type_idx": {
+          "name": "reviews_review_type_idx",
+          "columns": [
+            {
+              "expression": "review_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "reviews_reviewed_entity_idx": {
+          "name": "reviews_reviewed_entity_idx",
+          "columns": [
+            {
+              "expression": "reviewed_entity_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "reviews_deleted_at_idx": {
+          "name": "reviews_deleted_at_idx",
+          "columns": [
+            {
+              "expression": "deleted_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "review_reviewer_id_person_id_fk": {
+          "name": "review_reviewer_id_person_id_fk",
+          "tableFrom": "review",
+          "tableTo": "person",
+          "columnsFrom": [
+            "reviewer_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "review_reviewed_entity_id_person_id_fk": {
+          "name": "review_reviewed_entity_id_person_id_fk",
+          "tableFrom": "review",
+          "tableTo": "person",
+          "columnsFrom": [
+            "reviewed_entity_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "reviews_context_reviewer_type_unique": {
+          "name": "reviews_context_reviewer_type_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "context_id",
+            "reviewer_id",
+            "review_type"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "reviews_nps_score_check": {
+          "name": "reviews_nps_score_check",
+          "value": "\"review\".\"nps_score\" >= 0 AND \"review\".\"nps_score\" <= 10"
+        },
+        "reviews_comment_check": {
+          "name": "reviews_comment_check",
+          "value": "LENGTH(\"review\".\"comment\") <= 1000"
+        },
+        "reviews_review_type_check": {
+          "name": "reviews_review_type_check",
+          "value": "LENGTH(\"review\".\"review_type\") <= 50"
+        }
+      },
+      "isRLSEnabled": false
+    },
     "public.stored_file": {
       "name": "stored_file",
       "schema": "",
@@ -4587,7 +4873,8 @@
       "values": [
         "daily",
         "weekly",
-        "monthly"
+        "monthly",
+        "yearly"
       ]
     },
     "public.slot_status": {

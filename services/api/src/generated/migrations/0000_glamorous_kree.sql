@@ -455,6 +455,27 @@ CREATE TABLE IF NOT EXISTS "person" (
 	"timezone" varchar(50)
 );
 --> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "review" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp,
+	"version" integer DEFAULT 1 NOT NULL,
+	"created_by" uuid,
+	"updated_by" uuid,
+	"deleted_by" uuid,
+	"context_id" uuid NOT NULL,
+	"reviewer_id" uuid NOT NULL,
+	"review_type" varchar(50) NOT NULL,
+	"reviewed_entity_id" uuid,
+	"nps_score" integer NOT NULL,
+	"comment" text,
+	CONSTRAINT "reviews_context_reviewer_type_unique" UNIQUE("context_id","reviewer_id","review_type"),
+	CONSTRAINT "reviews_nps_score_check" CHECK ("review"."nps_score" >= 0 AND "review"."nps_score" <= 10),
+	CONSTRAINT "reviews_comment_check" CHECK (LENGTH("review"."comment") <= 1000),
+	CONSTRAINT "reviews_review_type_check" CHECK (LENGTH("review"."review_type") <= 50)
+);
+--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "stored_file" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
@@ -604,6 +625,18 @@ EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "review" ADD CONSTRAINT "review_reviewer_id_person_id_fk" FOREIGN KEY ("reviewer_id") REFERENCES "public"."person"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "review" ADD CONSTRAINT "review_reviewed_entity_id_person_id_fk" FOREIGN KEY ("reviewed_entity_id") REFERENCES "public"."person"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "audit_event_type_idx" ON "audit_log_entry" USING btree ("event_type");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "audit_category_idx" ON "audit_log_entry" USING btree ("category");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "audit_user_idx" ON "audit_log_entry" USING btree ("user");--> statement-breakpoint
@@ -634,6 +667,7 @@ CREATE INDEX IF NOT EXISTS "booking_events_status_idx" ON "booking_event" USING 
 CREATE INDEX IF NOT EXISTS "booking_events_active_idx" ON "booking_event" USING btree ("owner_id","status") WHERE "booking_event"."status" = 'active';--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "booking_events_deleted_at_idx" ON "booking_event" USING btree ("deleted_at");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "booking_events_effective_dates_idx" ON "booking_event" USING btree ("effective_from","effective_to");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "booking_events_search_idx" ON "booking_event" USING gin (to_tsvector('english', "title" || ' ' || COALESCE("description", '')));--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "booking_events_keywords_idx" ON "booking_event" USING gin ("keywords");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "booking_events_tags_idx" ON "booking_event" USING gin ("tags");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "bookings_client_id_idx" ON "booking" USING btree ("client_id");--> statement-breakpoint
@@ -690,4 +724,9 @@ CREATE INDEX IF NOT EXISTS "notifications_type_channel_idx" ON "notification" US
 CREATE INDEX IF NOT EXISTS "notifications_created_at_idx" ON "notification" USING btree ("created_at");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "notifications_deleted_at_idx" ON "notification" USING btree ("deleted_at");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "persons_name_idx" ON "person" USING btree ("first_name","last_name");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "persons_deleted_at_idx" ON "person" USING btree ("deleted_at");
+CREATE INDEX IF NOT EXISTS "persons_deleted_at_idx" ON "person" USING btree ("deleted_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "reviews_context_idx" ON "review" USING btree ("context_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "reviews_reviewer_idx" ON "review" USING btree ("reviewer_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "reviews_review_type_idx" ON "review" USING btree ("review_type");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "reviews_reviewed_entity_idx" ON "review" USING btree ("reviewed_entity_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "reviews_deleted_at_idx" ON "review" USING btree ("deleted_at");
