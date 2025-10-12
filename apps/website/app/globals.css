@@ -1,0 +1,4 @@
+/* Import Parmazip brand theme from shared UI */
+@import "@parmazip/ui/styles";
+
+/* Website app-specific style overrides (if any) */
