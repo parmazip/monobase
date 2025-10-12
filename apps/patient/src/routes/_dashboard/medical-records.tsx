@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from '@monobase/ui/components/select'
 import { useConsultations } from '@monobase/sdk/react/hooks/use-emr'
-import { ConsultationCard } from '@/components/consultations/consultation-card'
+import { ConsultationCard } from '@monobase/ui/emr/components/consultation-card'
 import type { ConsultationStatus } from '@monobase/sdk/types'
 
 export const Route = createFileRoute('/_dashboard/medical-records')({
