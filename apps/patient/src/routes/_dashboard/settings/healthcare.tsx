@@ -9,11 +9,11 @@ import {
 } from '@monobase/ui/components/card'
 
 // Import patient-specific form components
-import { PrimaryCareProviderForm } from '@/components/patient/primary-care-provider-form'
-import { PrimaryPharmacyForm } from '@/components/patient/primary-pharmacy-form'
+import { PrimaryCareProviderForm } from '@monobase/ui/patient/components/primary-care-provider-form'
+import { PrimaryPharmacyForm } from '@monobase/ui/patient/components/primary-pharmacy-form'
 
 // Import types
-import type { PrimaryProviderData, PrimaryPharmacyData } from '@/components/patient/schema'
+import type { PrimaryProviderData, PrimaryPharmacyData } from '@monobase/ui/patient/schemas'
 
 // Import patient hooks
 import {

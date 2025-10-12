@@ -18,14 +18,14 @@ import { useCreatePatient } from '@/hooks/use-patient'
 // Import types
 import { type PersonCreateRequest } from '@/api/person'
 import type { PersonalInfo, OptionalAddress } from '@monobase/ui/person/schemas'
-import type { PrimaryProviderData, PrimaryPharmacyData } from '@/components/patient/schema'
+import type { PrimaryProviderData, PrimaryPharmacyData } from '@monobase/ui/patient/schemas'
 import { ApiError } from '@/api/client'
 
 // Import form components
 import { PersonalInfoForm } from '@monobase/ui/person/components/personal-info-form'
 import { AddressForm } from '@monobase/ui/person/components/address-form'
-import { PrimaryCareProviderForm } from '@/components/patient/primary-care-provider-form'
-import { PrimaryPharmacyForm } from '@/components/patient/primary-pharmacy-form'
+import { PrimaryCareProviderForm } from '@monobase/ui/patient/components/primary-care-provider-form'
+import { PrimaryPharmacyForm } from '@monobase/ui/patient/components/primary-pharmacy-form'
 
 export const Route = createFileRoute('/onboarding')({
   beforeLoad: requireAuthWithoutProfile(),
