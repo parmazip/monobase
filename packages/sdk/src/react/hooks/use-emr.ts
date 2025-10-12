@@ -223,6 +223,33 @@ export function useCreateConsultation(
 }
 
 /**
+ * Finalize consultation (mark as completed)
+ */
+export function useFinalizeConsultation(
+  options?: {
+    onSuccess?: () => void
+    onError?: (error: Error) => void
+  }
+) {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async (consultationId: string) => {
+      return await emrService.updateConsultation(consultationId, { status: 'completed' as any })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: emrKeys.consultations() })
+      toast.success('Consultation finalized successfully')
+      options?.onSuccess?.()
+    },
+    onError: (error) => {
+      toast.error('Failed to finalize consultation')
+      options?.onError?.(error)
+    },
+  })
+}
+
+/**
  * Update consultation
  */
 export function useUpdateConsultation(
