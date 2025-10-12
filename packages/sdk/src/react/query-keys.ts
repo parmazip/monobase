@@ -6,6 +6,10 @@ export const queryKeys = {
   person: () => [...queryKeys.all, 'person'] as const,
   personProfile: (id?: string) => [...queryKeys.person(), id] as const,
 
+  // Patient
+  patient: () => [...queryKeys.all, 'patient'] as const,
+  patientProfile: (id?: string) => [...queryKeys.patient(), id] as const,
+
   // Providers
   providers: () => [...queryKeys.all, 'providers'] as const,
   providersList: (params?: any) => [...queryKeys.providers(), 'list', params] as const,
