@@ -1,14 +1,13 @@
 import { Context } from 'hono';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
-import { 
+import {
   ForbiddenError,
   NotFoundError,
   ValidationError,
   BusinessLogicError
 } from '@/core/errors';
 import { BookingRepository } from './repos/booking.repo';
-import { shouldExpand } from '@/utils/query';
 import { checkBookingOwnership } from './utils/ownership';
 
 /**
@@ -35,16 +34,9 @@ export async function getBooking(ctx: Context) {
   
   // Instantiate repository
   const repo = new BookingRepository(db, logger);
-  
-  // Check expansion requirements
-  const expandProvider = shouldExpand(query, 'provider');
-  const expandClient = shouldExpand(query, 'client'); 
-  const expandSlot = shouldExpand(query, 'slot');
-  
-  // Get booking (with details if any expansions requested)
-  const booking = (expandProvider || expandClient || expandSlot)
-    ? await repo.findWithDetails(params.booking)
-    : await repo.findOneById(params.booking);
+
+  // Get booking (expand handled automatically by middleware)
+  const booking = await repo.findOneById(params.booking);
     
   if (!booking) {
     throw new NotFoundError('Booking not found', {
@@ -63,9 +55,6 @@ export async function getBooking(ctx: Context) {
   logger?.info({
     bookingId: booking.id,
     userId: user.id,
-    expandProvider,
-    expandClient,
-    expandSlot,
     action: 'view_booking'
   }, 'Booking retrieved');
   

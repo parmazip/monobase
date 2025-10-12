@@ -175,6 +175,141 @@ export const BillingConfigUpdateSchema = z.object({
   cancellationThresholdMinutes: z.number().int().gte(0).lte(10080).optional()
 });
 
+export const LanguageCodeSchema = z.string().regex(/^[a-z]{2}$/).refine(val => validateLanguageCode(val), { message: "Invalid ISO 639-1 language code" });
+
+export const PersonSchema = z.object({
+  id: z.string().uuid(),
+  version: z.number().int(),
+  createdAt: z.string().datetime().transform((str) => new Date(str)),
+  createdBy: z.string().uuid().optional(),
+  updatedAt: z.string().datetime().transform((str) => new Date(str)),
+  updatedBy: z.string().uuid().optional(),
+  deletedAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  deletedBy: z.string().uuid().optional(),
+  firstName: z.string().min(1).max(50),
+  lastName: z.string().min(1).max(50).optional(),
+  middleName: z.string().max(50).optional(),
+  dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(val => { const parsed = new Date(val + "T00:00:00Z"); return !isNaN(parsed.getTime()) && parsed.toISOString().split("T")[0] === val; }, { message: "Invalid calendar date" }).optional(),
+  gender: z.enum(["male", "female", "non-binary", "other", "prefer-not-to-say"]).optional(),
+  primaryAddress: z.object({
+  street1: z.string().min(1).max(100),
+  street2: z.string().max(100).optional(),
+  city: z.string().min(1).max(50),
+  state: z.string().min(1).max(50),
+  postalCode: z.string().min(1).max(20),
+  country: z.string().regex(/^[A-Z]{2}$/).refine(val => validateCountryCode(val), { message: "Invalid ISO 3166-1 country code" }),
+  coordinates: z.object({
+  latitude: z.number().gte(-90).lte(90),
+  longitude: z.number().gte(-180).lte(180),
+  accuracy: z.number().gte(0).optional()
+}).optional()
+}).optional(),
+  contactInfo: z.object({
+  email: z.string().email().optional(),
+  phone: z.string().regex(/^\+[1-9]\d{1,14}$/).refine(val => validatePhoneNumber(val), { message: "Invalid phone number in E.164 format" }).optional()
+}).optional(),
+  avatar: z.object({
+  file: z.string().uuid().optional(),
+  url: z.string().url()
+}).optional(),
+  languagesSpoken: z.array(LanguageCodeSchema).optional(),
+  timezone: z.string().regex(/^[A-Za-z_]+\/[A-Za-z_]+$/).refine(val => validateTimezone(val), { message: "Invalid IANA timezone identifier" }).optional()
+});
+
+export const LocationTypeSchema = z.enum(["video", "phone", "in-person"]);
+
+export const FormFieldOptionSchema = z.object({
+  label: z.string(),
+  value: z.string()
+});
+
+export const FormFieldConfigSchema = z.object({
+  name: z.string(),
+  type: z.enum(["text", "textarea", "email", "phone", "number", "date", "datetime", "url", "select", "multiselect", "checkbox", "display"]),
+  label: z.string(),
+  required: z.boolean().optional(),
+  options: z.array(FormFieldOptionSchema).optional(),
+  validation: z.object({
+  minLength: z.number().int().optional(),
+  maxLength: z.number().int().optional(),
+  min: z.union([z.number(), z.string()]).optional(),
+  max: z.union([z.number(), z.string()]).optional(),
+  pattern: z.string().optional()
+}).optional(),
+  placeholder: z.string().optional(),
+  helpText: z.string().optional()
+});
+
+export const TimeBlockSchema = z.object({
+  startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+  endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+  slotDuration: z.number().int().gte(15).lte(480).optional(),
+  bufferTime: z.number().int().gte(0).lte(120).optional()
+});
+
+export const DailyConfigSchema = z.object({
+  enabled: z.boolean(),
+  timeBlocks: z.array(TimeBlockSchema)
+});
+
+export const BookingEventSchema = z.object({
+  id: z.string().uuid(),
+  version: z.number().int(),
+  createdAt: z.string().datetime().transform((str) => new Date(str)),
+  createdBy: z.string().uuid().optional(),
+  updatedAt: z.string().datetime().transform((str) => new Date(str)),
+  updatedBy: z.string().uuid().optional(),
+  deletedAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  deletedBy: z.string().uuid().optional(),
+  owner: z.union([z.string(), PersonSchema]),
+  context: z.string().optional(),
+  title: z.string(),
+  description: z.string().optional(),
+  keywords: z.array(z.string()).optional(),
+  tags: z.array(z.string()).optional(),
+  timezone: z.string(),
+  locationTypes: z.array(LocationTypeSchema),
+  maxBookingDays: z.number().int().gte(0).lte(365),
+  minBookingMinutes: z.number().int().gte(0).lte(4320),
+  formConfig: z.object({
+  fields: z.array(FormFieldConfigSchema).optional()
+}).optional(),
+  billingConfig: z.object({
+  price: z.number().int().gte(0),
+  currency: z.string(),
+  cancellationThresholdMinutes: z.number().int().gte(0).lte(10080)
+}).optional(),
+  status: z.enum(["draft", "active", "paused", "archived"]),
+  effectiveFrom: z.string().datetime().transform((str) => new Date(str)),
+  effectiveTo: z.string().datetime().transform((str) => new Date(str)).optional(),
+  dailyConfigs: z.record(z.string(), z.unknown())
+});
+
+export const TimeSlotSchema = z.object({
+  id: z.string().uuid(),
+  version: z.number().int(),
+  createdAt: z.string().datetime().transform((str) => new Date(str)),
+  createdBy: z.string().uuid().optional(),
+  updatedAt: z.string().datetime().transform((str) => new Date(str)),
+  updatedBy: z.string().uuid().optional(),
+  deletedAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  deletedBy: z.string().uuid().optional(),
+  owner: z.string().uuid(),
+  event: z.union([z.string(), BookingEventSchema]),
+  context: z.string().optional(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(val => { const parsed = new Date(val + "T00:00:00Z"); return !isNaN(parsed.getTime()) && parsed.toISOString().split("T")[0] === val; }, { message: "Invalid calendar date" }),
+  startTime: z.string().datetime().transform((str) => new Date(str)),
+  endTime: z.string().datetime().transform((str) => new Date(str)),
+  locationTypes: z.array(LocationTypeSchema),
+  status: z.enum(["available", "booked", "blocked"]),
+  billingOverride: z.object({
+  price: z.number().int().gte(0),
+  currency: z.string(),
+  cancellationThresholdMinutes: z.number().int().gte(0).lte(10080)
+}).optional(),
+  booking: z.string().uuid().optional()
+});
+
 export const BookingSchema = z.object({
   id: z.string().uuid(),
   version: z.number().int(),
@@ -184,9 +319,9 @@ export const BookingSchema = z.object({
   updatedBy: z.string().uuid().optional(),
   deletedAt: z.string().datetime().transform((str) => new Date(str)).optional(),
   deletedBy: z.string().uuid().optional(),
-  client: z.string().uuid(),
-  provider: z.string().uuid(),
-  slot: z.string().uuid(),
+  client: z.union([z.string(), PersonSchema]),
+  provider: z.union([z.string(), PersonSchema]),
+  slot: z.union([z.string(), TimeSlotSchema]),
   locationType: z.enum(["video", "phone", "in-person"]),
   reason: z.string().max(500),
   status: z.enum(["pending", "confirmed", "rejected", "cancelled", "completed", "no_show_client", "no_show_provider"]),
@@ -223,81 +358,12 @@ export const BookingCreateRequestSchema = z.object({
 }).optional()
 });
 
-export const LocationTypeSchema = z.enum(["video", "phone", "in-person"]);
-
-export const FormFieldOptionSchema = z.object({
-  label: z.string(),
-  value: z.string()
-});
-
-export const FormFieldConfigSchema = z.object({
-  id: z.string(),
-  type: z.enum(["text", "textarea", "email", "phone", "number", "datetime", "select", "multiselect", "checkbox", "display"]),
-  label: z.string(),
-  required: z.boolean().optional(),
-  options: z.array(FormFieldOptionSchema).optional(),
-  validation: z.object({
-  minLength: z.number().int().optional(),
-  maxLength: z.number().int().optional(),
-  min: z.number().optional(),
-  max: z.number().optional(),
-  pattern: z.string().optional()
-}).optional(),
-  placeholder: z.string().optional(),
-  helpText: z.string().optional()
-});
-
-export const TimeBlockSchema = z.object({
-  startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
-  endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
-  slotDuration: z.number().int().gte(15).lte(480).optional(),
-  bufferTime: z.number().int().gte(0).lte(120).optional()
-});
-
-export const DailyConfigSchema = z.object({
-  enabled: z.boolean(),
-  timeBlocks: z.array(TimeBlockSchema)
-});
-
-export const BookingEventSchema = z.object({
-  id: z.string().uuid(),
-  version: z.number().int(),
-  createdAt: z.string().datetime().transform((str) => new Date(str)),
-  createdBy: z.string().uuid().optional(),
-  updatedAt: z.string().datetime().transform((str) => new Date(str)),
-  updatedBy: z.string().uuid().optional(),
-  deletedAt: z.string().datetime().transform((str) => new Date(str)).optional(),
-  deletedBy: z.string().uuid().optional(),
-  owner: z.string().uuid(),
-  context: z.string().uuid().optional(),
-  title: z.string(),
-  description: z.string().optional(),
-  keywords: z.array(z.string()).optional(),
-  tags: z.array(z.string()).optional(),
-  timezone: z.string(),
-  locationTypes: z.array(LocationTypeSchema),
-  maxBookingDays: z.number().int().gte(0).lte(365),
-  minBookingMinutes: z.number().int().gte(0).lte(4320),
-  formConfig: z.object({
-  fields: z.array(FormFieldConfigSchema).optional()
-}).optional(),
-  billingConfig: z.object({
-  price: z.number().int().gte(0),
-  currency: z.string(),
-  cancellationThresholdMinutes: z.number().int().gte(0).lte(10080)
-}).optional(),
-  status: z.enum(["draft", "active", "paused", "archived"]),
-  effectiveFrom: z.string().datetime().transform((str) => new Date(str)),
-  effectiveTo: z.string().datetime().transform((str) => new Date(str)).optional(),
-  dailyConfigs: z.record(z.string(), z.unknown())
-});
-
 export const BookingEventCreateRequestSchema = z.object({
   title: z.string(),
   description: z.string().optional(),
   keywords: z.array(z.string()).optional(),
   tags: z.array(z.string()).optional(),
-  context: z.string().uuid().optional(),
+  context: z.string().optional(),
   timezone: z.string().optional(),
   locationTypes: z.array(LocationTypeSchema).optional(),
   maxBookingDays: z.number().int().gte(0).lte(365).optional(),
@@ -632,13 +698,13 @@ export const FormConfigSchema = z.object({
   fields: z.array(FormFieldConfigSchema).optional()
 });
 
-export const FormFieldTypeSchema = z.enum(["text", "textarea", "email", "phone", "number", "datetime", "select", "multiselect", "checkbox", "display"]);
+export const FormFieldTypeSchema = z.enum(["text", "textarea", "email", "phone", "number", "date", "datetime", "url", "select", "multiselect", "checkbox", "display"]);
 
 export const FormFieldValidationSchema = z.object({
   minLength: z.number().int().optional(),
   maxLength: z.number().int().optional(),
-  min: z.number().optional(),
-  max: z.number().optional(),
+  min: z.union([z.number(), z.string()]).optional(),
+  max: z.union([z.number(), z.string()]).optional(),
   pattern: z.string().optional()
 });
 
@@ -697,47 +763,6 @@ export const InternalServerErrorSchema = z.object({
   helpUrl: z.string().url().optional(),
   trackingId: z.string().optional(),
   reported: z.boolean().optional()
-});
-
-export const LanguageCodeSchema = z.string().regex(/^[a-z]{2}$/).refine(val => validateLanguageCode(val), { message: "Invalid ISO 639-1 language code" });
-
-export const PersonSchema = z.object({
-  id: z.string().uuid(),
-  version: z.number().int(),
-  createdAt: z.string().datetime().transform((str) => new Date(str)),
-  createdBy: z.string().uuid().optional(),
-  updatedAt: z.string().datetime().transform((str) => new Date(str)),
-  updatedBy: z.string().uuid().optional(),
-  deletedAt: z.string().datetime().transform((str) => new Date(str)).optional(),
-  deletedBy: z.string().uuid().optional(),
-  firstName: z.string().min(1).max(50),
-  lastName: z.string().min(1).max(50).optional(),
-  middleName: z.string().max(50).optional(),
-  dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(val => { const parsed = new Date(val + "T00:00:00Z"); return !isNaN(parsed.getTime()) && parsed.toISOString().split("T")[0] === val; }, { message: "Invalid calendar date" }).optional(),
-  gender: z.enum(["male", "female", "non-binary", "other", "prefer-not-to-say"]).optional(),
-  primaryAddress: z.object({
-  street1: z.string().min(1).max(100),
-  street2: z.string().max(100).optional(),
-  city: z.string().min(1).max(50),
-  state: z.string().min(1).max(50),
-  postalCode: z.string().min(1).max(20),
-  country: z.string().regex(/^[A-Z]{2}$/).refine(val => validateCountryCode(val), { message: "Invalid ISO 3166-1 country code" }),
-  coordinates: z.object({
-  latitude: z.number().gte(-90).lte(90),
-  longitude: z.number().gte(-180).lte(180),
-  accuracy: z.number().gte(0).optional()
-}).optional()
-}).optional(),
-  contactInfo: z.object({
-  email: z.string().email().optional(),
-  phone: z.string().regex(/^\+[1-9]\d{1,14}$/).refine(val => validatePhoneNumber(val), { message: "Invalid phone number in E.164 format" }).optional()
-}).optional(),
-  avatar: z.object({
-  file: z.string().uuid().optional(),
-  url: z.string().url()
-}).optional(),
-  languagesSpoken: z.array(LanguageCodeSchema).optional(),
-  timezone: z.string().regex(/^[A-Za-z_]+\/[A-Za-z_]+$/).refine(val => validateTimezone(val), { message: "Invalid IANA timezone identifier" }).optional()
 });
 
 export const MerchantAccountSchema = z.object({
@@ -984,6 +1009,7 @@ export const RecurrencePatternSchema = z.object({
   interval: z.number().int().gte(1).optional(),
   daysOfWeek: z.array(z.number().int()).optional(),
   dayOfMonth: z.number().int().gte(1).lte(31).optional(),
+  monthOfYear: z.number().int().gte(1).lte(12).optional(),
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(val => { const parsed = new Date(val + "T00:00:00Z"); return !isNaN(parsed.getTime()) && parsed.toISOString().split("T")[0] === val; }, { message: "Invalid calendar date" }).optional(),
   maxOccurrences: z.number().int().gte(1).optional()
 });
@@ -1029,7 +1055,7 @@ export const ScheduleExceptionSchema = z.object({
   deletedBy: z.string().uuid().optional(),
   event: z.string().uuid(),
   owner: z.string().uuid(),
-  context: z.string().uuid().optional(),
+  context: z.string().optional(),
   timezone: z.string(),
   startDatetime: z.string().datetime().transform((str) => new Date(str)),
   endDatetime: z.string().datetime().transform((str) => new Date(str)),
@@ -1040,6 +1066,7 @@ export const ScheduleExceptionSchema = z.object({
   interval: z.number().int().gte(1).optional(),
   daysOfWeek: z.array(z.number().int()).optional(),
   dayOfMonth: z.number().int().gte(1).lte(31).optional(),
+  monthOfYear: z.number().int().gte(1).lte(12).optional(),
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(val => { const parsed = new Date(val + "T00:00:00Z"); return !isNaN(parsed.getTime()) && parsed.toISOString().split("T")[0] === val; }, { message: "Invalid calendar date" }).optional(),
   maxOccurrences: z.number().int().gte(1).optional()
 }).optional()
@@ -1056,6 +1083,7 @@ export const ScheduleExceptionCreateRequestSchema = z.object({
   interval: z.number().int().gte(1).optional(),
   daysOfWeek: z.array(z.number().int()).optional(),
   dayOfMonth: z.number().int().gte(1).lte(31).optional(),
+  monthOfYear: z.number().int().gte(1).lte(12).optional(),
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(val => { const parsed = new Date(val + "T00:00:00Z"); return !isNaN(parsed.getTime()) && parsed.toISOString().split("T")[0] === val; }, { message: "Invalid calendar date" }).optional(),
   maxOccurrences: z.number().int().gte(1).optional()
 }).optional()
@@ -1136,31 +1164,6 @@ export const TestTemplateResultSchema = z.object({
   cancelledBy: z.string().uuid().optional(),
   cancellationReason: z.string().max(500).optional()
 })
-});
-
-export const TimeSlotSchema = z.object({
-  id: z.string().uuid(),
-  version: z.number().int(),
-  createdAt: z.string().datetime().transform((str) => new Date(str)),
-  createdBy: z.string().uuid().optional(),
-  updatedAt: z.string().datetime().transform((str) => new Date(str)),
-  updatedBy: z.string().uuid().optional(),
-  deletedAt: z.string().datetime().transform((str) => new Date(str)).optional(),
-  deletedBy: z.string().uuid().optional(),
-  owner: z.string().uuid(),
-  event: z.string().uuid(),
-  context: z.string().uuid().optional(),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(val => { const parsed = new Date(val + "T00:00:00Z"); return !isNaN(parsed.getTime()) && parsed.toISOString().split("T")[0] === val; }, { message: "Invalid calendar date" }),
-  startTime: z.string().datetime().transform((str) => new Date(str)),
-  endTime: z.string().datetime().transform((str) => new Date(str)),
-  locationTypes: z.array(LocationTypeSchema),
-  status: z.enum(["available", "booked", "blocked"]),
-  billingOverride: z.object({
-  price: z.number().int().gte(0),
-  currency: z.string(),
-  cancellationThresholdMinutes: z.number().int().gte(0).lte(10080)
-}).optional(),
-  booking: z.string().uuid().optional()
 });
 
 export const TimezoneIdSchema = z.string().regex(/^[A-Za-z_]+\/[A-Za-z_]+$/).refine(val => validateTimezone(val), { message: "Invalid IANA timezone identifier" });
@@ -1470,7 +1473,7 @@ export const RejectBookingResponse = BookingSchema;
 
 export const ListBookingEventsQuery = z.object({
   owner: UUIDSchema.optional(),
-  context: UUIDSchema.optional(),
+  context: z.string().optional(),
   locationType: LocationTypeSchema.optional(),
   status: BookingEventStatusSchema.optional(),
   availableFrom: z.string().datetime().transform((str) => new Date(str)).optional(),

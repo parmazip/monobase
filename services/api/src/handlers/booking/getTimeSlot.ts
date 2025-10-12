@@ -2,8 +2,6 @@ import { Context } from 'hono';
 import type { DatabaseInstance } from '@/core/database';
 import { NotFoundError } from '@/core/errors';
 import { TimeSlotRepository } from './repos/timeSlot.repo';
-import { BookingEventRepository } from './repos/bookingEvent.repo';
-import { shouldExpand } from '@/utils/query';
 
 /**
  * getTimeSlot
@@ -25,7 +23,7 @@ export async function getTimeSlot(ctx: Context) {
   // Use repository pattern
   const slotRepo = new TimeSlotRepository(db, logger);
 
-  // Find time slot
+  // Find time slot (expand handled automatically by middleware)
   const slot = await slotRepo.findOneById(params.slotId);
 
   if (!slot) {
@@ -35,24 +33,5 @@ export async function getTimeSlot(ctx: Context) {
     });
   }
 
-  // Build response with optional event expansion
-  let response: any = { ...slot };
-
-  // Check if event should be expanded
-  if (shouldExpand(query, 'event') && slot.event) {
-    const eventRepo = new BookingEventRepository(db, logger);
-    const event = await eventRepo.findOneById(slot.event);
-    
-    if (event) {
-      response.event = event;
-      
-      logger?.info({
-        slotId: slot.id,
-        eventId: event.id,
-        action: 'get_slot_with_event'
-      }, 'Time slot retrieved with event expansion');
-    }
-  }
-
-  return ctx.json(response, 200);
+  return ctx.json(slot, 200);
 }

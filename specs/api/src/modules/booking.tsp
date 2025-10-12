@@ -5,6 +5,7 @@ import "../common/models.tsp";
 import "../common/errors.tsp";
 import "../common/pagination.tsp";
 import "../common/security.tsp";
+import "./person.tsp";
 
 using TypeSpec.Http;
 using TypeSpec.OpenAPI;
@@ -161,7 +162,8 @@ model BillingConfig {
 @doc("Booking event with configurable availability schedule")
 model BookingEvent extends BaseEntity {
   @doc("Event owner (provider, organization, etc.)")
-  owner: UUID;
+  @extension("x-expandable-field", #{ opId: "getPerson" })
+  owner: string | Person;
 
   @doc("Optional context for domain associations")
   context?: string;
@@ -252,7 +254,8 @@ model TimeSlot extends BaseEntity {
   owner: UUID;
 
   @doc("Source booking event")
-  event: UUID;
+  @extension("x-expandable-field", #{ opId: "getBookingEvent" })
+  event: string | BookingEvent;
 
   @doc("Optional context (inherited from event)")
   context?: string;
@@ -282,13 +285,16 @@ model TimeSlot extends BaseEntity {
 @doc("Booking between client and provider")
 model Booking extends BaseEntity {
   @doc("Client user ID (person.id)")
-  client: UUID;
+  @extension("x-expandable-field", #{ opId: "getPerson" })
+  client: string | Person;
 
   @doc("Provider user ID (person.id)")
-  provider: UUID;
+  @extension("x-expandable-field", #{ opId: "getPerson" })
+  provider: string | Person;
 
   @doc("Time slot")
-  slot: UUID;
+  @extension("x-expandable-field", #{ opId: "getTimeSlot" })
+  slot: string | TimeSlot;
 
   @doc("Selected location type")
   locationType: LocationType;

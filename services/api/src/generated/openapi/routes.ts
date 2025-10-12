@@ -144,6 +144,7 @@ export function registerRoutes(app: Hono) {
   app.post('/booking/bookings',
     authMiddleware({ roles: ["user"] }),
     zValidator('json', validators.CreateBookingBody, validationErrorHandler),
+    createExpandMiddleware("Booking"),
     registry.createBooking
   );
 
@@ -159,6 +160,7 @@ export function registerRoutes(app: Hono) {
     authMiddleware({ roles: ["client:owner", "provider:owner", "admin", "support"] }),
     zValidator('param', validators.GetBookingParams, validationErrorHandler),
     zValidator('query', validators.GetBookingQuery, validationErrorHandler),
+    createExpandMiddleware("Booking"),
     registry.getBooking
   );
 
@@ -167,6 +169,7 @@ export function registerRoutes(app: Hono) {
     authMiddleware({ roles: ["client:owner", "provider:owner", "admin"] }),
     zValidator('param', validators.CancelBookingParams, validationErrorHandler),
     zValidator('json', validators.CancelBookingBody, validationErrorHandler),
+    createExpandMiddleware("Booking"),
     registry.cancelBooking
   );
 
@@ -175,6 +178,7 @@ export function registerRoutes(app: Hono) {
     authMiddleware({ roles: ["provider:owner", "admin"] }),
     zValidator('param', validators.ConfirmBookingParams, validationErrorHandler),
     zValidator('json', validators.ConfirmBookingBody, validationErrorHandler),
+    createExpandMiddleware("Booking"),
     registry.confirmBooking
   );
 
@@ -183,6 +187,7 @@ export function registerRoutes(app: Hono) {
     authMiddleware({ roles: ["client:owner", "provider:owner", "admin"] }),
     zValidator('param', validators.MarkNoShowBookingParams, validationErrorHandler),
     zValidator('json', validators.MarkNoShowBookingBody, validationErrorHandler),
+    createExpandMiddleware("Booking"),
     registry.markNoShowBooking
   );
 
@@ -191,6 +196,7 @@ export function registerRoutes(app: Hono) {
     authMiddleware({ roles: ["provider:owner", "admin"] }),
     zValidator('param', validators.RejectBookingParams, validationErrorHandler),
     zValidator('json', validators.RejectBookingBody, validationErrorHandler),
+    createExpandMiddleware("Booking"),
     registry.rejectBooking
   );
 
@@ -204,6 +210,7 @@ export function registerRoutes(app: Hono) {
   app.post('/booking/events',
     authMiddleware({ roles: ["user"] }),
     zValidator('json', validators.CreateBookingEventBody, validationErrorHandler),
+    createExpandMiddleware("BookingEvent"),
     registry.createBookingEvent
   );
 
@@ -212,6 +219,7 @@ export function registerRoutes(app: Hono) {
     authMiddleware({ required: false }),
     zValidator('param', validators.GetBookingEventParams, validationErrorHandler),
     zValidator('query', validators.GetBookingEventQuery, validationErrorHandler),
+    createExpandMiddleware("BookingEvent"),
     registry.getBookingEvent
   );
 
@@ -220,6 +228,7 @@ export function registerRoutes(app: Hono) {
     authMiddleware({ roles: ["event:owner", "admin"] }),
     zValidator('param', validators.UpdateBookingEventParams, validationErrorHandler),
     zValidator('json', validators.UpdateBookingEventBody, validationErrorHandler),
+    createExpandMiddleware("BookingEvent"),
     registry.updateBookingEvent
   );
 
@@ -264,6 +273,7 @@ export function registerRoutes(app: Hono) {
   app.get('/booking/slots/:slotId',
     zValidator('param', validators.GetTimeSlotParams, validationErrorHandler),
     zValidator('query', validators.GetTimeSlotQuery, validationErrorHandler),
+    createExpandMiddleware("TimeSlot"),
     registry.getTimeSlot
   );
 

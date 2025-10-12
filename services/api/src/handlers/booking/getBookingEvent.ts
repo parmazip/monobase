@@ -7,7 +7,6 @@ import {
 } from '@/core/errors';
 import { BookingEventRepository } from './repos/bookingEvent.repo';
 import { TimeSlotRepository } from './repos/timeSlot.repo';
-import { shouldExpand } from '@/utils/query';
 
 /**
  * getBookingEvent
@@ -44,13 +43,8 @@ export async function getBookingEvent(ctx: Context) {
     eventId = userEvents[0].id;
   }
 
-  // Check if owner should be expanded
-  const expandOwner = shouldExpand(query, 'owner');
-
-  // Find booking event with or without owner expansion
-  const event = expandOwner
-    ? await repo.findOneByIdWithOwner(eventId)
-    : await repo.findOneById(eventId);
+  // Find booking event (expand handled automatically by middleware)
+  const event = await repo.findOneById(eventId);
   
   if (!event) {
     throw new NotFoundError('Booking event not found', {

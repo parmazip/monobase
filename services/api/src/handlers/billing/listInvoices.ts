@@ -9,7 +9,7 @@ import type { Context } from 'hono';
 import { ForbiddenError } from '@/core/errors';
 import type { Session } from '@/types/auth';
 import { InvoiceRepository, type InvoiceFilters } from './repos/billing.repo';
-import { parsePagination, buildPaginationMeta, parseFilters, shouldExpand } from '@/utils/query';
+import { parsePagination, buildPaginationMeta, parseFilters } from '@/utils/query';
 
 /**
  * listInvoices
@@ -65,13 +65,8 @@ export async function listInvoices(ctx: Context) {
   // Create repository instance
   const invoiceRepo = new InvoiceRepository(database, logger);
 
-  // Check expansion needs
-  const expandDetails = shouldExpand(query, 'customer') || shouldExpand(query, 'merchant');
-
-  // Get invoices with optional expansion
-  const result = expandDetails
-    ? await invoiceRepo.findManyWithPagination(filters, { pagination: { limit, offset } }) // TODO: Implement findManyWithDetails when needed
-    : await invoiceRepo.findManyWithPagination(filters, { pagination: { limit, offset } });
+  // Get invoices (expand handled automatically by middleware)
+  const result = await invoiceRepo.findManyWithPagination(filters, { pagination: { limit, offset } });
 
   const invoices = result.data;
   const totalCount = result.totalCount;

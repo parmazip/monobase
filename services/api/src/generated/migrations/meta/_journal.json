@@ -1,5 +1,20 @@
 {
   "version": "7",
   "dialect": "postgresql",
-  "entries": [{"idx": 0, "version": "7", "when": 1760118611600, "tag": "0000_rich_domino", "breakpoints": true}]
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1760118611600,
+      "tag": "0000_rich_domino",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1760243427978,
+      "tag": "0001_wooden_bug",
+      "breakpoints": true
+    }
+  ]
 }
