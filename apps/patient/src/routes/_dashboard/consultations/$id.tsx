@@ -18,7 +18,7 @@ import {
   Loader2,
   AlertCircle,
 } from 'lucide-react'
-import { requireAuthWithProfile } from '@/utils/guards'
+import { requireAuth, requireEmailVerified, requirePerson, composeGuards } from '@/utils/guards'
 import { useSession, useToken } from '@monobase/sdk/react/hooks/use-auth'
 import { useBooking } from '@monobase/sdk/react/hooks/use-booking'
 import { useVideoCall } from '@monobase/ui/comms/hooks/use-video-call'
@@ -53,7 +53,7 @@ import {
 } from '@monobase/ui/components/alert'
 
 export const Route = createFileRoute('/_dashboard/consultations/$id')({
-  beforeLoad: requireAuthWithProfile(),
+  beforeLoad: composeGuards(requireAuth, requireEmailVerified, requirePerson),
   component: ConsultationPage,
 })
 

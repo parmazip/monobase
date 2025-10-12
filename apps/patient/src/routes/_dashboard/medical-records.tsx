@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Search, Filter, Loader2 } from 'lucide-react'
-import { requireAuthWithProfile } from '@/utils/guards'
+import { requireAuth, requireEmailVerified, requirePerson, composeGuards } from '@/utils/guards'
 import { Button } from '@monobase/ui/components/button'
 import { Input } from '@monobase/ui/components/input'
 import {
@@ -16,7 +16,7 @@ import { ConsultationCard } from '@monobase/ui/emr/components/consultation-card'
 import type { ConsultationStatus } from '@monobase/sdk/types'
 
 export const Route = createFileRoute('/_dashboard/medical-records')({
-  beforeLoad: requireAuthWithProfile(),
+  beforeLoad: composeGuards(requireAuth, requireEmailVerified, requirePerson),
   component: MedicalRecordsPage,
 })
 

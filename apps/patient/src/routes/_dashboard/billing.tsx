@@ -14,7 +14,7 @@ import {
   Eye,
   Loader2,
 } from 'lucide-react'
-import { requireAuthWithProfile } from '@/utils/guards'
+import { requireAuth, requireEmailVerified, requirePerson, composeGuards } from '@/utils/guards'
 import { useMyInvoices, useInitiatePayment } from '@monobase/sdk/react/hooks/use-billing'
 import type { Invoice, InvoiceStatus } from '@monobase/sdk/types'
 import { useFormatCurrency } from '@monobase/ui/hooks/use-format-currency'
@@ -32,7 +32,7 @@ import {
 } from '@monobase/ui/components/dropdown-menu'
 
 export const Route = createFileRoute('/_dashboard/billing')({
-  beforeLoad: requireAuthWithProfile(),
+  beforeLoad: composeGuards(requireAuth, requireEmailVerified, requirePerson),
   component: BillingPage,
 })
 

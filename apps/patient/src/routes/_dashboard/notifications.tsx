@@ -10,7 +10,7 @@ import {
   Loader2,
   type LucideIcon,
 } from 'lucide-react'
-import { requireAuthWithProfile } from '@/utils/guards'
+import { requireAuth, requireEmailVerified, requirePerson, composeGuards } from '@/utils/guards'
 import { formatRelativeDate } from '@monobase/ui/lib/format-date'
 import { useNotifications, useMarkNotificationAsRead, useMarkAllNotificationsAsRead } from '@monobase/sdk/react/hooks/use-notifications'
 import type { Notification, NotificationType } from '@/api/notifications'
@@ -29,7 +29,7 @@ import {
 } from '@monobase/ui/components/dropdown-menu'
 
 export const Route = createFileRoute('/_dashboard/notifications')({
-  beforeLoad: requireAuthWithProfile(),
+  beforeLoad: composeGuards(requireAuth, requireEmailVerified, requirePerson),
   component: NotificationsPage,
 })
 

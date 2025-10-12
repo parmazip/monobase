@@ -8,10 +8,10 @@ import {
   SessionsCard,
   // DeleteAccountCard,
 } from '@daveyplate/better-auth-ui'
-import { requireAuthWithProfile } from '@/utils/guards'
+import { requireAuth, requireEmailVerified, requirePerson, composeGuards } from '@/utils/guards'
 
 export const Route = createFileRoute('/_dashboard/settings/security')({
-  beforeLoad: requireAuthWithProfile(),
+  beforeLoad: composeGuards(requireAuth, requireEmailVerified, requirePerson),
   component: SecuritySettingsPage,
 })
 

@@ -1,13 +1,13 @@
 import { createFileRoute, Link, Outlet, useMatchRoute } from '@tanstack/react-router'
 import { Calendar } from 'lucide-react'
-import { requireAuthWithProfile } from '@/utils/guards'
+import { requireAuth, requireEmailVerified, requirePerson, composeGuards } from '@/utils/guards'
 import { useListBookings } from '@monobase/sdk/react/hooks/use-booking'
 import { Button } from '@monobase/ui/components/button'
 import { Tabs, TabsList, TabsTrigger } from '@monobase/ui/components/tabs'
 import { Badge } from '@monobase/ui/components/badge'
 
 export const Route = createFileRoute('/_dashboard/appointments')({
-  beforeLoad: requireAuthWithProfile(),
+  beforeLoad: composeGuards(requireAuth, requireEmailVerified, requirePerson),
   component: AppointmentsLayout,
 })
 

@@ -10,7 +10,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { differenceInMinutes } from 'date-fns'
-import { requireAuthWithProfile } from '@/utils/guards'
+import { requireAuth, requireEmailVerified, requirePerson, composeGuards } from '@/utils/guards'
 import { useListBookings } from '@monobase/sdk/react/hooks/use-booking'
 import { Button } from '@monobase/ui/components/button'
 import {
@@ -27,7 +27,7 @@ import { isPast, isFuture, isToday, parseISO } from 'date-fns'
 import { formatDate } from '@monobase/ui/lib/format-date'
 
 export const Route = createFileRoute('/_dashboard/consultations/')({
-  beforeLoad: requireAuthWithProfile(),
+  beforeLoad: composeGuards(requireAuth, requireEmailVerified, requirePerson),
   component: ConsultationsPage,
 })
 
