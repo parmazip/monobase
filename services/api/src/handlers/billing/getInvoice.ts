@@ -10,7 +10,6 @@ import { ForbiddenError, NotFoundError } from '@/core/errors';
 import type { Session } from '@/types/auth';
 import { InvoiceRepository } from './repos/billing.repo';
 import { PersonRepository } from '../person/repos/person.repo';
-import { shouldExpand } from '@/utils/query';
 
 /**
  * getInvoice
@@ -40,13 +39,8 @@ export async function getInvoice(ctx: Context) {
   const invoiceRepo = new InvoiceRepository(database, logger);
   const personRepo = new PersonRepository(database, logger);
 
-  // Check expansion needs
-  const expandDetails = shouldExpand(query, 'customer') || shouldExpand(query, 'merchant');
-
-  // Get invoice with optional expansion
-  const invoice = expandDetails
-    ? await invoiceRepo.findOneWithDetails(invoiceId)
-    : await invoiceRepo.findOneById(invoiceId);
+  // Get invoice (expand handled automatically by generated route wrapper)
+  const invoice = await invoiceRepo.findOneById(invoiceId);
 
   if (!invoice) {
     throw new NotFoundError('Invoice not found', {

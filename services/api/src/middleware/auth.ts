@@ -98,9 +98,29 @@ export function authMiddleware(options?: AuthMiddlewareOptions) {
   };
 
   return async (ctx: Context<{ Variables: Variables }>, next: Next) => {
+    // Check for internal service-to-service expand requests
+    const internalServiceToken = ctx.req.header('X-Internal-Service-Token');
+    const isExpandContext = ctx.req.header('X-Expand-Context');
+    const storedToken = ctx.get('internalServiceToken');
+
+    if (internalServiceToken && isExpandContext && internalServiceToken === storedToken) {
+      // Trusted internal expand request - skip user auth
+      const logger = ctx.get('logger');
+      logger.debug({
+        expandContext: true,
+        originalAuth: ctx.req.header('Authorization') ? 'present' : 'none'
+      }, 'Internal expand request - bypassing user auth');
+
+      // Set a marker so handlers know this is an internal expand request
+      ctx.set('isInternalExpand', true);
+
+      await next();
+      return;
+    }
+
     // Get auth instance from context (injected by dependency middleware)
     const auth = ctx.get('auth');
-    
+
     if (!auth) {
       throw new Error('Auth instance not found in context. Ensure dependency injection middleware is configured.');
     }

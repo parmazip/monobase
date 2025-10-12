@@ -4,42 +4,38 @@ import * as validators from './validators';
 import { registry } from './registry';
 import { authMiddleware } from '@/middleware/auth';
 import { validationErrorHandler } from '@/middleware/validation';
+import { createExpandMiddleware } from '@/middleware/expand';
 
 export function registerRoutes(app: Hono) {
   // listAuditLogs
   app.get('/audit/logs',
     authMiddleware({ roles: ["admin", "support"] }),
     zValidator('query', validators.ListAuditLogsQuery, validationErrorHandler),
-    async (ctx) => {
-      return registry.listAuditLogs(ctx);
-    }
+    registry.listAuditLogs
   );
 
   // createInvoice
   app.post('/billing/invoices',
     authMiddleware(),
     zValidator('json', validators.CreateInvoiceBody, validationErrorHandler),
-    async (ctx) => {
-      return registry.createInvoice(ctx);
-    }
+    createExpandMiddleware("Invoice"),
+    registry.createInvoice
   );
 
   // listInvoices
   app.get('/billing/invoices',
     authMiddleware(),
     zValidator('query', validators.ListInvoicesQuery, validationErrorHandler),
-    async (ctx) => {
-      return registry.listInvoices(ctx);
-    }
+    registry.listInvoices
   );
 
   // getInvoice
   app.get('/billing/invoices/:invoice',
     authMiddleware(),
     zValidator('param', validators.GetInvoiceParams, validationErrorHandler),
-    async (ctx) => {
-      return registry.getInvoice(ctx);
-    }
+    zValidator('query', validators.GetInvoiceQuery, validationErrorHandler),
+    createExpandMiddleware("Invoice"),
+    registry.getInvoice
   );
 
   // updateInvoice
@@ -47,45 +43,39 @@ export function registerRoutes(app: Hono) {
     authMiddleware(),
     zValidator('param', validators.UpdateInvoiceParams, validationErrorHandler),
     zValidator('json', validators.UpdateInvoiceBody, validationErrorHandler),
-    async (ctx) => {
-      return registry.updateInvoice(ctx);
-    }
+    createExpandMiddleware("Invoice"),
+    registry.updateInvoice
   );
 
   // deleteInvoice
   app.delete('/billing/invoices/:invoice',
     authMiddleware(),
     zValidator('param', validators.DeleteInvoiceParams, validationErrorHandler),
-    async (ctx) => {
-      return registry.deleteInvoice(ctx);
-    }
+    registry.deleteInvoice
   );
 
   // captureInvoicePayment
   app.post('/billing/invoices/:invoice/capture',
     authMiddleware(),
     zValidator('param', validators.CaptureInvoicePaymentParams, validationErrorHandler),
-    async (ctx) => {
-      return registry.captureInvoicePayment(ctx);
-    }
+    createExpandMiddleware("Invoice"),
+    registry.captureInvoicePayment
   );
 
   // finalizeInvoice
   app.post('/billing/invoices/:invoice/finalize',
     authMiddleware(),
     zValidator('param', validators.FinalizeInvoiceParams, validationErrorHandler),
-    async (ctx) => {
-      return registry.finalizeInvoice(ctx);
-    }
+    createExpandMiddleware("Invoice"),
+    registry.finalizeInvoice
   );
 
   // markInvoiceUncollectible
   app.post('/billing/invoices/:invoice/mark-uncollectible',
     authMiddleware(),
     zValidator('param', validators.MarkInvoiceUncollectibleParams, validationErrorHandler),
-    async (ctx) => {
-      return registry.markInvoiceUncollectible(ctx);
-    }
+    createExpandMiddleware("Invoice"),
+    registry.markInvoiceUncollectible
   );
 
   // payInvoice
@@ -93,9 +83,7 @@ export function registerRoutes(app: Hono) {
     authMiddleware(),
     zValidator('param', validators.PayInvoiceParams, validationErrorHandler),
     zValidator('json', validators.PayInvoiceBody, validationErrorHandler),
-    async (ctx) => {
-      return registry.payInvoice(ctx);
-    }
+    registry.payInvoice
   );
 
   // refundInvoicePayment
@@ -103,45 +91,39 @@ export function registerRoutes(app: Hono) {
     authMiddleware(),
     zValidator('param', validators.RefundInvoicePaymentParams, validationErrorHandler),
     zValidator('json', validators.RefundInvoicePaymentBody, validationErrorHandler),
-    async (ctx) => {
-      return registry.refundInvoicePayment(ctx);
-    }
+    registry.refundInvoicePayment
   );
 
   // voidInvoice
   app.post('/billing/invoices/:invoice/void',
     authMiddleware(),
     zValidator('param', validators.VoidInvoiceParams, validationErrorHandler),
-    async (ctx) => {
-      return registry.voidInvoice(ctx);
-    }
+    createExpandMiddleware("Invoice"),
+    registry.voidInvoice
   );
 
   // createMerchantAccount
   app.post('/billing/merchant-accounts',
     authMiddleware(),
     zValidator('json', validators.CreateMerchantAccountBody, validationErrorHandler),
-    async (ctx) => {
-      return registry.createMerchantAccount(ctx);
-    }
+    createExpandMiddleware("MerchantAccount"),
+    registry.createMerchantAccount
   );
 
   // getMerchantAccount
   app.get('/billing/merchant-accounts/:merchantAccount',
     authMiddleware(),
     zValidator('param', validators.GetMerchantAccountParams, validationErrorHandler),
-    async (ctx) => {
-      return registry.getMerchantAccount(ctx);
-    }
+    zValidator('query', validators.GetMerchantAccountQuery, validationErrorHandler),
+    createExpandMiddleware("MerchantAccount"),
+    registry.getMerchantAccount
   );
 
   // getMerchantDashboard
   app.post('/billing/merchant-accounts/:merchantAccount/dashboard',
     authMiddleware(),
     zValidator('param', validators.GetMerchantDashboardParams, validationErrorHandler),
-    async (ctx) => {
-      return registry.getMerchantDashboard(ctx);
-    }
+    registry.getMerchantDashboard
   );
 
   // onboardMerchantAccount
@@ -149,35 +131,27 @@ export function registerRoutes(app: Hono) {
     authMiddleware(),
     zValidator('param', validators.OnboardMerchantAccountParams, validationErrorHandler),
     zValidator('json', validators.OnboardMerchantAccountBody, validationErrorHandler),
-    async (ctx) => {
-      return registry.onboardMerchantAccount(ctx);
-    }
+    registry.onboardMerchantAccount
   );
 
   // handleStripeWebhook
   app.post('/billing/webhooks/stripe',
     zValidator('json', validators.HandleStripeWebhookBody, validationErrorHandler),
-    async (ctx) => {
-      return registry.handleStripeWebhook(ctx);
-    }
+    registry.handleStripeWebhook
   );
 
   // createBooking
   app.post('/booking/bookings',
     authMiddleware({ roles: ["user"] }),
     zValidator('json', validators.CreateBookingBody, validationErrorHandler),
-    async (ctx) => {
-      return registry.createBooking(ctx);
-    }
+    registry.createBooking
   );
 
   // listBookings
   app.get('/booking/bookings',
     authMiddleware({ roles: ["client:owner", "provider:owner", "admin", "support"] }),
     zValidator('query', validators.ListBookingsQuery, validationErrorHandler),
-    async (ctx) => {
-      return registry.listBookings(ctx);
-    }
+    registry.listBookings
   );
 
   // getBooking
@@ -185,9 +159,7 @@ export function registerRoutes(app: Hono) {
     authMiddleware({ roles: ["client:owner", "provider:owner", "admin", "support"] }),
     zValidator('param', validators.GetBookingParams, validationErrorHandler),
     zValidator('query', validators.GetBookingQuery, validationErrorHandler),
-    async (ctx) => {
-      return registry.getBooking(ctx);
-    }
+    registry.getBooking
   );
 
   // cancelBooking
@@ -195,9 +167,7 @@ export function registerRoutes(app: Hono) {
     authMiddleware({ roles: ["client:owner", "provider:owner", "admin"] }),
     zValidator('param', validators.CancelBookingParams, validationErrorHandler),
     zValidator('json', validators.CancelBookingBody, validationErrorHandler),
-    async (ctx) => {
-      return registry.cancelBooking(ctx);
-    }
+    registry.cancelBooking
   );
 
   // confirmBooking
@@ -205,9 +175,7 @@ export function registerRoutes(app: Hono) {
     authMiddleware({ roles: ["provider:owner", "admin"] }),
     zValidator('param', validators.ConfirmBookingParams, validationErrorHandler),
     zValidator('json', validators.ConfirmBookingBody, validationErrorHandler),
-    async (ctx) => {
-      return registry.confirmBooking(ctx);
-    }
+    registry.confirmBooking
   );
 
   // markNoShowBooking
@@ -215,9 +183,7 @@ export function registerRoutes(app: Hono) {
     authMiddleware({ roles: ["client:owner", "provider:owner", "admin"] }),
     zValidator('param', validators.MarkNoShowBookingParams, validationErrorHandler),
     zValidator('json', validators.MarkNoShowBookingBody, validationErrorHandler),
-    async (ctx) => {
-      return registry.markNoShowBooking(ctx);
-    }
+    registry.markNoShowBooking
   );
 
   // rejectBooking
@@ -225,26 +191,20 @@ export function registerRoutes(app: Hono) {
     authMiddleware({ roles: ["provider:owner", "admin"] }),
     zValidator('param', validators.RejectBookingParams, validationErrorHandler),
     zValidator('json', validators.RejectBookingBody, validationErrorHandler),
-    async (ctx) => {
-      return registry.rejectBooking(ctx);
-    }
+    registry.rejectBooking
   );
 
   // listBookingEvents
   app.get('/booking/events',
     zValidator('query', validators.ListBookingEventsQuery, validationErrorHandler),
-    async (ctx) => {
-      return registry.listBookingEvents(ctx);
-    }
+    registry.listBookingEvents
   );
 
   // createBookingEvent
   app.post('/booking/events',
     authMiddleware({ roles: ["user"] }),
     zValidator('json', validators.CreateBookingEventBody, validationErrorHandler),
-    async (ctx) => {
-      return registry.createBookingEvent(ctx);
-    }
+    registry.createBookingEvent
   );
 
   // getBookingEvent
@@ -252,9 +212,7 @@ export function registerRoutes(app: Hono) {
     authMiddleware({ required: false }),
     zValidator('param', validators.GetBookingEventParams, validationErrorHandler),
     zValidator('query', validators.GetBookingEventQuery, validationErrorHandler),
-    async (ctx) => {
-      return registry.getBookingEvent(ctx);
-    }
+    registry.getBookingEvent
   );
 
   // updateBookingEvent
@@ -262,18 +220,14 @@ export function registerRoutes(app: Hono) {
     authMiddleware({ roles: ["event:owner", "admin"] }),
     zValidator('param', validators.UpdateBookingEventParams, validationErrorHandler),
     zValidator('json', validators.UpdateBookingEventBody, validationErrorHandler),
-    async (ctx) => {
-      return registry.updateBookingEvent(ctx);
-    }
+    registry.updateBookingEvent
   );
 
   // deleteBookingEvent
   app.delete('/booking/events/:event',
     authMiddleware({ roles: ["event:owner", "admin"] }),
     zValidator('param', validators.DeleteBookingEventParams, validationErrorHandler),
-    async (ctx) => {
-      return registry.deleteBookingEvent(ctx);
-    }
+    registry.deleteBookingEvent
   );
 
   // createScheduleException
@@ -281,9 +235,7 @@ export function registerRoutes(app: Hono) {
     authMiddleware({ roles: ["event:owner", "admin"] }),
     zValidator('param', validators.CreateScheduleExceptionParams, validationErrorHandler),
     zValidator('json', validators.CreateScheduleExceptionBody, validationErrorHandler),
-    async (ctx) => {
-      return registry.createScheduleException(ctx);
-    }
+    registry.createScheduleException
   );
 
   // listScheduleExceptions
@@ -291,63 +243,49 @@ export function registerRoutes(app: Hono) {
     authMiddleware({ roles: ["event:owner", "admin", "support"] }),
     zValidator('param', validators.ListScheduleExceptionsParams, validationErrorHandler),
     zValidator('query', validators.ListScheduleExceptionsQuery, validationErrorHandler),
-    async (ctx) => {
-      return registry.listScheduleExceptions(ctx);
-    }
+    registry.listScheduleExceptions
   );
 
   // getScheduleException
   app.get('/booking/events/:event/exceptions/:exception',
     authMiddleware({ roles: ["event:owner", "admin", "support"] }),
     zValidator('param', validators.GetScheduleExceptionParams, validationErrorHandler),
-    async (ctx) => {
-      return registry.getScheduleException(ctx);
-    }
+    registry.getScheduleException
   );
 
   // deleteScheduleException
   app.delete('/booking/events/:event/exceptions/:exception',
     authMiddleware({ roles: ["event:owner", "admin"] }),
     zValidator('param', validators.DeleteScheduleExceptionParams, validationErrorHandler),
-    async (ctx) => {
-      return registry.deleteScheduleException(ctx);
-    }
+    registry.deleteScheduleException
   );
 
   // getTimeSlot
   app.get('/booking/slots/:slotId',
     zValidator('param', validators.GetTimeSlotParams, validationErrorHandler),
     zValidator('query', validators.GetTimeSlotQuery, validationErrorHandler),
-    async (ctx) => {
-      return registry.getTimeSlot(ctx);
-    }
+    registry.getTimeSlot
   );
 
   // createChatRoom
   app.post('/comms/chat-rooms',
     authMiddleware({ roles: ["user"] }),
     zValidator('json', validators.CreateChatRoomBody, validationErrorHandler),
-    async (ctx) => {
-      return registry.createChatRoom(ctx);
-    }
+    registry.createChatRoom
   );
 
   // listChatRooms
   app.get('/comms/chat-rooms',
     authMiddleware({ roles: ["user:participant"] }),
     zValidator('query', validators.ListChatRoomsQuery, validationErrorHandler),
-    async (ctx) => {
-      return registry.listChatRooms(ctx);
-    }
+    registry.listChatRooms
   );
 
   // getChatRoom
   app.get('/comms/chat-rooms/:room',
     authMiddleware({ roles: ["user:participant"] }),
     zValidator('param', validators.GetChatRoomParams, validationErrorHandler),
-    async (ctx) => {
-      return registry.getChatRoom(ctx);
-    }
+    registry.getChatRoom
   );
 
   // getChatMessages
@@ -355,9 +293,7 @@ export function registerRoutes(app: Hono) {
     authMiddleware({ roles: ["user:participant"] }),
     zValidator('param', validators.GetChatMessagesParams, validationErrorHandler),
     zValidator('query', validators.GetChatMessagesQuery, validationErrorHandler),
-    async (ctx) => {
-      return registry.getChatMessages(ctx);
-    }
+    registry.getChatMessages
   );
 
   // sendChatMessage
@@ -365,18 +301,14 @@ export function registerRoutes(app: Hono) {
     authMiddleware({ roles: ["user:participant"] }),
     zValidator('param', validators.SendChatMessageParams, validationErrorHandler),
     zValidator('json', validators.SendChatMessageBody, validationErrorHandler),
-    async (ctx) => {
-      return registry.sendChatMessage(ctx);
-    }
+    registry.sendChatMessage
   );
 
   // endVideoCall
   app.post('/comms/chat-rooms/:room/video-call/end',
     authMiddleware({ roles: ["user:admin"] }),
     zValidator('param', validators.EndVideoCallParams, validationErrorHandler),
-    async (ctx) => {
-      return registry.endVideoCall(ctx);
-    }
+    registry.endVideoCall
   );
 
   // joinVideoCall
@@ -384,18 +316,14 @@ export function registerRoutes(app: Hono) {
     authMiddleware({ roles: ["user:participant"] }),
     zValidator('param', validators.JoinVideoCallParams, validationErrorHandler),
     zValidator('json', validators.JoinVideoCallBody, validationErrorHandler),
-    async (ctx) => {
-      return registry.joinVideoCall(ctx);
-    }
+    registry.joinVideoCall
   );
 
   // leaveVideoCall
   app.post('/comms/chat-rooms/:room/video-call/leave',
     authMiddleware({ roles: ["user:participant"] }),
     zValidator('param', validators.LeaveVideoCallParams, validationErrorHandler),
-    async (ctx) => {
-      return registry.leaveVideoCall(ctx);
-    }
+    registry.leaveVideoCall
   );
 
   // updateVideoCallParticipant
@@ -403,35 +331,27 @@ export function registerRoutes(app: Hono) {
     authMiddleware({ roles: ["user:participant"] }),
     zValidator('param', validators.UpdateVideoCallParticipantParams, validationErrorHandler),
     zValidator('json', validators.UpdateVideoCallParticipantBody, validationErrorHandler),
-    async (ctx) => {
-      return registry.updateVideoCallParticipant(ctx);
-    }
+    registry.updateVideoCallParticipant
   );
 
   // getIceServers
   app.get('/comms/ice-servers',
     authMiddleware({ roles: ["user"] }),
-    async (ctx) => {
-      return registry.getIceServers(ctx);
-    }
+    registry.getIceServers
   );
 
   // listEmailQueueItems
   app.get('/email/queue',
     authMiddleware({ roles: ["admin"] }),
     zValidator('query', validators.ListEmailQueueItemsQuery, validationErrorHandler),
-    async (ctx) => {
-      return registry.listEmailQueueItems(ctx);
-    }
+    registry.listEmailQueueItems
   );
 
   // getEmailQueueItem
   app.get('/email/queue/:queue',
     authMiddleware({ roles: ["admin"] }),
     zValidator('param', validators.GetEmailQueueItemParams, validationErrorHandler),
-    async (ctx) => {
-      return registry.getEmailQueueItem(ctx);
-    }
+    registry.getEmailQueueItem
   );
 
   // cancelEmailQueueItem
@@ -439,45 +359,35 @@ export function registerRoutes(app: Hono) {
     authMiddleware({ roles: ["admin"] }),
     zValidator('param', validators.CancelEmailQueueItemParams, validationErrorHandler),
     zValidator('json', validators.CancelEmailQueueItemBody, validationErrorHandler),
-    async (ctx) => {
-      return registry.cancelEmailQueueItem(ctx);
-    }
+    registry.cancelEmailQueueItem
   );
 
   // retryEmailQueueItem
   app.post('/email/queue/:queue/retry',
     authMiddleware({ roles: ["admin"] }),
     zValidator('param', validators.RetryEmailQueueItemParams, validationErrorHandler),
-    async (ctx) => {
-      return registry.retryEmailQueueItem(ctx);
-    }
+    registry.retryEmailQueueItem
   );
 
   // listEmailTemplates
   app.get('/email/templates',
     authMiddleware({ roles: ["admin"] }),
     zValidator('query', validators.ListEmailTemplatesQuery, validationErrorHandler),
-    async (ctx) => {
-      return registry.listEmailTemplates(ctx);
-    }
+    registry.listEmailTemplates
   );
 
   // createEmailTemplate
   app.post('/email/templates',
     authMiddleware({ roles: ["admin"] }),
     zValidator('json', validators.CreateEmailTemplateBody, validationErrorHandler),
-    async (ctx) => {
-      return registry.createEmailTemplate(ctx);
-    }
+    registry.createEmailTemplate
   );
 
   // getEmailTemplate
   app.get('/email/templates/:template',
     authMiddleware({ roles: ["admin"] }),
     zValidator('param', validators.GetEmailTemplateParams, validationErrorHandler),
-    async (ctx) => {
-      return registry.getEmailTemplate(ctx);
-    }
+    registry.getEmailTemplate
   );
 
   // updateEmailTemplate
@@ -485,9 +395,7 @@ export function registerRoutes(app: Hono) {
     authMiddleware({ roles: ["admin"] }),
     zValidator('param', validators.UpdateEmailTemplateParams, validationErrorHandler),
     zValidator('json', validators.UpdateEmailTemplateBody, validationErrorHandler),
-    async (ctx) => {
-      return registry.updateEmailTemplate(ctx);
-    }
+    registry.updateEmailTemplate
   );
 
   // testEmailTemplate
@@ -495,72 +403,56 @@ export function registerRoutes(app: Hono) {
     authMiddleware({ roles: ["admin"] }),
     zValidator('param', validators.TestEmailTemplateParams, validationErrorHandler),
     zValidator('json', validators.TestEmailTemplateBody, validationErrorHandler),
-    async (ctx) => {
-      return registry.testEmailTemplate(ctx);
-    }
+    registry.testEmailTemplate
   );
 
   // listNotifications
   app.get('/notifs',
     authMiddleware({ roles: ["user", "admin"] }),
     zValidator('query', validators.ListNotificationsQuery, validationErrorHandler),
-    async (ctx) => {
-      return registry.listNotifications(ctx);
-    }
+    registry.listNotifications
   );
 
   // markAllNotificationsAsRead
   app.post('/notifs/read-all',
     authMiddleware({ roles: ["user"] }),
     zValidator('query', validators.MarkAllNotificationsAsReadQuery, validationErrorHandler),
-    async (ctx) => {
-      return registry.markAllNotificationsAsRead(ctx);
-    }
+    registry.markAllNotificationsAsRead
   );
 
   // getNotification
   app.get('/notifs/:notif',
     authMiddleware({ roles: ["user", "admin"] }),
     zValidator('param', validators.GetNotificationParams, validationErrorHandler),
-    async (ctx) => {
-      return registry.getNotification(ctx);
-    }
+    registry.getNotification
   );
 
   // markNotificationAsRead
   app.post('/notifs/:notif/read',
     authMiddleware({ roles: ["user"] }),
     zValidator('param', validators.MarkNotificationAsReadParams, validationErrorHandler),
-    async (ctx) => {
-      return registry.markNotificationAsRead(ctx);
-    }
+    registry.markNotificationAsRead
   );
 
   // createPerson
   app.post('/persons',
     authMiddleware({ roles: ["user"] }),
     zValidator('json', validators.CreatePersonBody, validationErrorHandler),
-    async (ctx) => {
-      return registry.createPerson(ctx);
-    }
+    registry.createPerson
   );
 
   // listPersons
   app.get('/persons',
     authMiddleware({ roles: ["admin", "support"] }),
     zValidator('query', validators.ListPersonsQuery, validationErrorHandler),
-    async (ctx) => {
-      return registry.listPersons(ctx);
-    }
+    registry.listPersons
   );
 
   // getPerson
   app.get('/persons/:person',
     authMiddleware({ roles: ["admin", "support", "user:owner"] }),
     zValidator('param', validators.GetPersonParams, validationErrorHandler),
-    async (ctx) => {
-      return registry.getPerson(ctx);
-    }
+    registry.getPerson
   );
 
   // updatePerson
@@ -568,99 +460,77 @@ export function registerRoutes(app: Hono) {
     authMiddleware({ roles: ["user:owner"] }),
     zValidator('param', validators.UpdatePersonParams, validationErrorHandler),
     zValidator('json', validators.UpdatePersonBody, validationErrorHandler),
-    async (ctx) => {
-      return registry.updatePerson(ctx);
-    }
+    registry.updatePerson
   );
 
   // createReview
   app.post('/reviews/',
     authMiddleware({ roles: ["user"] }),
     zValidator('json', validators.CreateReviewBody, validationErrorHandler),
-    async (ctx) => {
-      return registry.createReview(ctx);
-    }
+    registry.createReview
   );
 
   // listReviews
   app.get('/reviews/',
     authMiddleware({ roles: ["user"] }),
     zValidator('query', validators.ListReviewsQuery, validationErrorHandler),
-    async (ctx) => {
-      return registry.listReviews(ctx);
-    }
+    registry.listReviews
   );
 
   // getReview
   app.get('/reviews/:review',
     authMiddleware({ roles: ["user"] }),
     zValidator('param', validators.GetReviewParams, validationErrorHandler),
-    async (ctx) => {
-      return registry.getReview(ctx);
-    }
+    registry.getReview
   );
 
   // deleteReview
   app.delete('/reviews/:review',
     authMiddleware({ roles: ["review:owner", "admin"] }),
     zValidator('param', validators.DeleteReviewParams, validationErrorHandler),
-    async (ctx) => {
-      return registry.deleteReview(ctx);
-    }
+    registry.deleteReview
   );
 
   // listFiles
   app.get('/storage/files',
     authMiddleware(),
     zValidator('query', validators.ListFilesQuery, validationErrorHandler),
-    async (ctx) => {
-      return registry.listFiles(ctx);
-    }
+    registry.listFiles
   );
 
   // uploadFile
   app.post('/storage/files/upload',
     authMiddleware({ roles: ["user"] }),
     zValidator('json', validators.UploadFileBody, validationErrorHandler),
-    async (ctx) => {
-      return registry.uploadFile(ctx);
-    }
+    registry.uploadFile
   );
 
   // getFile
   app.get('/storage/files/:file',
     authMiddleware({ roles: ["admin", "user:owner"] }),
     zValidator('param', validators.GetFileParams, validationErrorHandler),
-    async (ctx) => {
-      return registry.getFile(ctx);
-    }
+    registry.getFile
   );
 
   // deleteFile
   app.delete('/storage/files/:file',
     authMiddleware({ roles: ["user:owner"] }),
     zValidator('param', validators.DeleteFileParams, validationErrorHandler),
-    async (ctx) => {
-      return registry.deleteFile(ctx);
-    }
+    registry.deleteFile
   );
 
   // completeFileUpload
   app.post('/storage/files/:file/complete',
     authMiddleware({ roles: ["user:owner"] }),
     zValidator('param', validators.CompleteFileUploadParams, validationErrorHandler),
-    async (ctx) => {
-      return registry.completeFileUpload(ctx);
-    }
+    registry.completeFileUpload
   );
 
   // getFileDownload
   app.get('/storage/files/:file/download',
     authMiddleware({ roles: ["admin", "user:owner"] }),
     zValidator('param', validators.GetFileDownloadParams, validationErrorHandler),
-    async (ctx) => {
-      return registry.getFileDownload(ctx);
-    }
+    registry.getFileDownload
   );
 
 }

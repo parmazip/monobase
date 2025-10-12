@@ -173,6 +173,56 @@ function filterNonAuthPaths(paths: Record<string, PathItem>): Record<string, Pat
   return filtered;
 }
 
+/**
+ * Check if an operation's response schema supports expand
+ */
+function hasExpandableResponse(operation: OpenAPIOperation, spec: any): boolean {
+  // Get the success response schema (2xx)
+  const successResponse = Object.entries(operation.responses || {})
+    .find(([code]) => code.startsWith('2'))?.[1];
+
+  if (!successResponse?.content?.['application/json']?.schema) {
+    return false;
+  }
+
+  const schema = resolveSchema(successResponse.content['application/json'].schema, spec);
+
+  // Check if any property has x-expandable-field metadata
+  return Object.values(schema.properties || {}).some(
+    (prop: any) => prop['x-expandable-field']?.opId
+  );
+}
+
+/**
+ * Get the response schema name for an operation
+ */
+function getResponseSchemaName(operation: OpenAPIOperation, spec: any): string | null {
+  const successResponse = Object.entries(operation.responses || {})
+    .find(([code]) => code.startsWith('2'))?.[1];
+
+  const schema = successResponse?.content?.['application/json']?.schema;
+  if (!schema) return null;
+
+  // Handle $ref
+  if (schema.$ref) {
+    return schema.$ref.split('/').pop() || null;
+  }
+
+  // Handle inline schemas (less common)
+  return null;
+}
+
+/**
+ * Resolve a schema reference or return the schema itself
+ */
+function resolveSchema(schema: any, spec: any): any {
+  if (schema.$ref) {
+    const refPath = schema.$ref.replace('#/components/schemas/', '');
+    return spec.components?.schemas?.[refPath] || {};
+  }
+  return schema;
+}
+
 async function generateTypes(spec: any) {
   console.log('🔧 Using TypeScript types from workspace dependency...');
   
@@ -427,6 +477,7 @@ async function generateRoutes(paths: Record<string, PathItem>, spec: any) {
     "import { registry } from './registry';",
     "import { authMiddleware } from '@/middleware/auth';",
     "import { validationErrorHandler } from '@/middleware/validation';",
+    "import { createExpandMiddleware } from '@/middleware/expand';",
     '',
     'export function registerRoutes(app: Hono) {',
   ];
@@ -480,11 +531,18 @@ async function generateRoutes(paths: Record<string, PathItem>, spec: any) {
       if (operation.requestBody) {
         routes.push(`    zValidator('json', validators.${capitalize(operation.operationId)}Body, validationErrorHandler),`);
       }
-      
+
+      // Check if operation supports expand
+      const supportsExpand = hasExpandableResponse(operation, spec);
+      const responseSchema = getResponseSchemaName(operation, spec);
+
+      // Add expand middleware BEFORE handler if response schema supports it
+      if (supportsExpand && responseSchema) {
+        routes.push(`    createExpandMiddleware("${responseSchema}"),`);
+      }
+
       // Handler
-      routes.push('    async (ctx) => {');
-      routes.push(`      return registry.${operation.operationId}(ctx);`);
-      routes.push('    }');
+      routes.push(`    registry.${operation.operationId}`);
       routes.push('  );');
       routes.push('');
     }
