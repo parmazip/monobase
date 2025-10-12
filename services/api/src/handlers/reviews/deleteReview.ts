@@ -56,7 +56,7 @@ export async function deleteReview(ctx: Context) {
   logger?.info({
     reviewId,
     reviewer: review.reviewer,
-    deletedBy: userId,
+    deletedByUser: userId,
     action: 'delete_review'
   }, 'Review deleted');
   

@@ -183,8 +183,7 @@ export class TimeSlotRepository extends DatabaseRepository<TimeSlot, NewTimeSlot
         and(
           eq(timeSlots.owner, ownerId),
           eq(timeSlots.status, 'available'),
-          gte(timeSlots.startTime, startDate),
-          isNull(timeSlots.deletedAt)
+          gte(timeSlots.startTime, startDate)
         )
       )
       .orderBy(asc(timeSlots.startTime))
@@ -237,14 +236,13 @@ export class TimeSlotRepository extends DatabaseRepository<TimeSlot, NewTimeSlot
     this.logger?.debug({ eventId, startDate, endDate }, 'Deleting slots for event');
 
     const result = await this.db
-      .update(timeSlots)
-      .set({ deletedAt: new Date() })
-      .where(        and(
+      .delete(timeSlots)
+      .where(
+        and(
           eq(timeSlots.event, eventId),
           gte(timeSlots.date, startDate),
           lte(timeSlots.date, endDate),
-          eq(timeSlots.status, 'available'), // Only delete available slots
-          isNull(timeSlots.deletedAt)
+          eq(timeSlots.status, 'available') // Only delete available slots
         )
       );
 
@@ -255,7 +253,7 @@ export class TimeSlotRepository extends DatabaseRepository<TimeSlot, NewTimeSlot
   }
 
   /**
-   * Bulk create slots efficiently
+   * Bulk create slots efficiently with batching to avoid parameter limits
    */
   async bulkCreateSlots(slots: NewTimeSlot[]): Promise<{
     created: TimeSlot[];
@@ -268,42 +266,61 @@ export class TimeSlotRepository extends DatabaseRepository<TimeSlot, NewTimeSlot
 
     this.logger?.debug({ count: slots.length }, 'Bulk creating slots');
 
-    try {
-      // Create slots with ON CONFLICT handling
-      // Note: Foreign key constraint on owner_id will catch invalid person IDs
-      const createdSlots = await this.db
-        .insert(timeSlots)
-        .values(slots)
-        .onConflictDoNothing({
-          target: [timeSlots.owner, timeSlots.startTime]
-        })
-        .returning();
+    const created: TimeSlot[] = [];
+    let duplicates = 0;
+    let errors = 0;
+    
+    // Process slots in batches to avoid PostgreSQL parameter limit
+    // Each slot has ~8 fields, so 100 slots = 800 parameters (well under 32767 limit)
+    const batchSize = 100;
+    
+    for (let i = 0; i < slots.length; i += batchSize) {
+      const batch = slots.slice(i, i + batchSize);
+      
+      try {
+        // Create slots with ON CONFLICT handling for duplicate detection
+        // Note: Foreign key constraint on owner_id will catch invalid person IDs
+        const batchCreated = await this.db
+          .insert(timeSlots)
+          .values(batch)
+          .onConflictDoNothing({
+            target: [timeSlots.owner, timeSlots.startTime]
+          })
+          .returning();
 
-      const duplicates = slots.length - createdSlots.length;
+        created.push(...batchCreated);
+        duplicates += (batch.length - batchCreated.length);
 
-      this.logger?.info({
-        total: slots.length,
-        created: createdSlots.length,
-        duplicates
-      }, 'Slots bulk created');
+        this.logger?.debug({
+          batchIndex: Math.floor(i / batchSize) + 1,
+          batchSize: batch.length,
+          created: batchCreated.length,
+          duplicates: batch.length - batchCreated.length
+        }, 'Batch processed');
 
-      return {
-        created: createdSlots,
-        duplicates,
-        errors: 0
-      };
-    } catch (error) {
-      this.logger?.error({
-        error: error instanceof Error ? error.message : String(error),
-        slotsCount: slots.length
-      }, 'Bulk slot creation failed');
-
-      return {
-        created: [],
-        duplicates: 0,
-        errors: slots.length
-      };
+      } catch (error) {
+        this.logger?.error({
+          error: error instanceof Error ? error.message : String(error),
+          batchIndex: Math.floor(i / batchSize) + 1,
+          batchSize: batch.length
+        }, 'Batch creation failed');
+        
+        errors += batch.length;
+      }
     }
+
+    this.logger?.info({
+      total: slots.length,
+      created: created.length,
+      duplicates,
+      errors
+    }, 'Slots bulk created');
+
+    return {
+      created,
+      duplicates,
+      errors
+    };
   }
 
   /**
@@ -319,8 +336,7 @@ export class TimeSlotRepository extends DatabaseRepository<TimeSlot, NewTimeSlot
       .where(
         and(
           eq(timeSlots.status, 'available'),
-          lte(timeSlots.date, format(cutoffDate, 'yyyy-MM-dd')),
-          isNull(timeSlots.deletedAt)
+          lte(timeSlots.date, format(cutoffDate, 'yyyy-MM-dd'))
         )
       );
 

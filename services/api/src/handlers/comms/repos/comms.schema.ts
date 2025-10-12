@@ -82,7 +82,7 @@ export const chatRooms = pgTable('chat_room', {
   statusIdx: index('chat_rooms_status_idx').on(table.status),
   lastMessageAtIdx: index('chat_rooms_last_message_at_idx').on(table.lastMessageAt),
   activeVideoCallIdx: index('chat_rooms_active_video_call_idx').on(table.activeVideoCallMessage),
-  deletedAtIdx: index('chat_rooms_deleted_at_idx').on(table.deletedAt),
+
 
   // Compound indexes for common queries
   statusLastMessageIdx: index('chat_rooms_status_last_message_idx')
@@ -120,7 +120,7 @@ export const chatMessages = pgTable('chat_message', {
   senderIdx: index('chat_messages_sender_idx').on(table.sender),
   timestampIdx: index('chat_messages_timestamp_idx').on(table.timestamp),
   messageTypeIdx: index('chat_messages_type_idx').on(table.messageType),
-  deletedAtIdx: index('chat_messages_deleted_at_idx').on(table.deletedAt),
+
   
   // Compound indexes for common queries
   chatRoomTimestampIdx: index('chat_messages_room_timestamp_idx')

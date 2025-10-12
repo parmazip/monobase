@@ -244,16 +244,19 @@ describe('Booking Module E2E Tests', () => {
         // Update global eventId for other tests
         eventId = schedule!.id;
 
+        // Wait for slot generation to complete (triggered by booking event creation)
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
         // Query multiple times to verify consistency
         for (let i = 0; i < 3; i++) {
-          const { data: provider } = await getBookingEventDetails(apiClient, eventId, ['slots:7d']);
+          const { data: event } = await getBookingEventDetails(apiClient, eventId, 'slots:7d');
 
           // Assert slots exist
-          expect(provider!.slots).toBeDefined();
-          expect(provider!.slots!.length).toBeGreaterThan(0);
+          expect(event!.slots).toBeDefined();
+          expect(event!.slots!.length).toBeGreaterThan(0);
 
           // Assert all slots belong to this owner
-          provider!.slots!.forEach(slot => {
+          event!.slots!.forEach(slot => {
             expect(slot.owner).toBe(schedule!.owner);
             expect(slot.status).toBe('available');
             expect(slot.date).toBeDefined();
@@ -327,12 +330,14 @@ describe('Booking Module E2E Tests', () => {
 
         expect(response.status).toBe(204);
 
-        // Verify soft deletion (archived status)
-        const { response: getResponse, data: archivedEvent } = await getBookingEvent(providerClient, scheduleToDelete!.id);
-        expect(getResponse.status).toBe(200);
-        expect(archivedEvent?.status).toBe('archived');
+        // Verify hard deletion (event no longer exists)
+        const { response: getResponse } = await getBookingEvent(providerClient, scheduleToDelete!.id);
+        expect(getResponse.status).toBe(404);
 
-        // Don't clear eventId - it's a soft delete (archived), not hard delete
+        // Recreate event for subsequent tests
+        const newScheduleData = generateMinimalBookingEventData();
+        const { data: newSchedule } = await createBookingEvent(providerClient, newScheduleData);
+        eventId = newSchedule!.id;
       });
     });
   });
@@ -1892,8 +1897,7 @@ describe('Booking Module E2E Tests', () => {
               name: 'termsAccepted',
               label: 'I accept the terms and conditions',
               type: 'checkbox',
-              required: true,
-              order: 99
+              required: true
             }
           ]
         }
@@ -1904,7 +1908,8 @@ describe('Booking Module E2E Tests', () => {
       expect(response.status).toBe(201);
       expect(data?.formConfig).toBeDefined();
       expect(data!.formConfig!.fields[0].type).toBe('checkbox');
-      expect(data!.formConfig!.fields[0].order).toBe(99);
+      expect(data!.formConfig!.fields[0].name).toBe('termsAccepted');
+      expect(data!.formConfig!.fields[0].required).toBe(true);
     });
 
     test('should create booking event with url field in formConfig', async () => {
@@ -1965,10 +1970,11 @@ describe('Booking Module E2E Tests', () => {
       expect(response.status).toBe(201);
       expect(data?.formConfig).toBeDefined();
       expect(data!.formConfig!.fields).toHaveLength(4);
-      expect(data!.formConfig!.fields[0].order).toBe(1);
-      expect(data!.formConfig!.fields[1].order).toBe(2);
-      expect(data!.formConfig!.fields[2].order).toBe(3);
-      expect(data!.formConfig!.fields[3].order).toBe(4);
+      // Order is implicit in array position - fields are in order: fullName, email, phone, notes
+      expect(data!.formConfig!.fields[0].name).toBe('fullName');
+      expect(data!.formConfig!.fields[1].name).toBe('email');
+      expect(data!.formConfig!.fields[2].name).toBe('phone');
+      expect(data!.formConfig!.fields[3].name).toBe('notes');
     });
 
     test('should validate field order is maintained', async () => {
@@ -2002,11 +2008,11 @@ describe('Booking Module E2E Tests', () => {
       expect(response.status).toBe(201);
       expect(data?.formConfig).toBeDefined();
       
-      // Fields should be stored in order
-      const orders = data!.formConfig!.fields.map(f => f.order);
-      expect(orders).toContain(1);
-      expect(orders).toContain(2);
-      expect(orders).toContain(3);
+      // Fields should be stored in original array order (field3, field1, field2)
+      expect(data!.formConfig!.fields).toHaveLength(3);
+      expect(data!.formConfig!.fields[0].name).toBe('field3');
+      expect(data!.formConfig!.fields[1].name).toBe('field1');
+      expect(data!.formConfig!.fields[2].name).toBe('field2');
     });
 
     test('should update formConfig on booking event', async () => {
@@ -2815,7 +2821,7 @@ describe('Booking Module E2E Tests', () => {
           expect(data!.status).toBe(status);
 
           // Clean up
-          await deleteBookingEvent(apiClient, providerPersonId, data!.id);
+          await deleteBookingEvent(apiClient, data!.id);
         }
       });
 
@@ -2851,7 +2857,7 @@ describe('Booking Module E2E Tests', () => {
           expect(data!.locationTypes).toEqual(locationTypes);
 
           // Clean up
-          await deleteBookingEvent(apiClient, providerPersonId, data!.id);
+          await deleteBookingEvent(apiClient, data!.id);
         }
       });
 
@@ -3244,7 +3250,6 @@ describe('Booking Module E2E Tests', () => {
       // Clear billingConfig with null
       const { response, data: updated } = await updateBookingEvent(
         apiClient,
-        providerPersonId,
         created!.id,
         {
           billingConfig: null as any
@@ -3273,7 +3278,6 @@ describe('Booking Module E2E Tests', () => {
       // Clear effectiveTo with null
       const { response, data: updated } = await updateBookingEvent(
         apiClient,
-        providerPersonId,
         created!.id,
         {
           effectiveTo: null as any

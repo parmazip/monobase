@@ -47,7 +47,7 @@ export const reviews = pgTable('review', {
   reviewerIdx: index('reviews_reviewer_idx').on(table.reviewer),
   reviewTypeIdx: index('reviews_review_type_idx').on(table.reviewType),
   reviewedEntityIdx: index('reviews_reviewed_entity_idx').on(table.reviewedEntity),
-  deletedAtIdx: index('reviews_deleted_at_idx').on(table.deletedAt),
+
 
   // Unique constraint: one review per (context, reviewer, reviewType)
   uniqueReview: unique('reviews_context_reviewer_type_unique')

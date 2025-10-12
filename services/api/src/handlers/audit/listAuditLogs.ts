@@ -105,7 +105,7 @@ export async function listAuditLogs(ctx: Context) {
       // Ensure dates are properly serialized
       createdAt: entry.createdAt.toISOString(),
       updatedAt: entry.updatedAt.toISOString(),
-      deletedAt: entry.deletedAt?.toISOString() || null,
+
       archivedAt: entry.archivedAt?.toISOString() || null,
       purgeAfter: entry.purgeAfter?.toISOString() || null
     })),

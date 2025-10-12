@@ -83,9 +83,6 @@ export class EmailTemplateRepository extends DatabaseRepository<EmailTemplate, N
     
     const conditions = [];
     
-    // Always exclude soft-deleted records
-    conditions.push(isNull(emailTemplates.deletedAt));
-    
     if (filters.status) {
       conditions.push(eq(emailTemplates.status, filters.status));
     }
@@ -119,8 +116,7 @@ export class EmailTemplateRepository extends DatabaseRepository<EmailTemplate, N
       .where(
         and(
           eq(emailTemplates.id, id),
-          eq(emailTemplates.status, 'active'),
-          isNull(emailTemplates.deletedAt)
+          eq(emailTemplates.status, 'active')
         )
       )
       .limit(1);

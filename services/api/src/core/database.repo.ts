@@ -51,12 +51,7 @@ export abstract class DatabaseRepository<TEntity, TNewEntity, TFilters = Record<
    */
   protected abstract buildWhereConditions(filters?: TFilters): SQL<unknown> | undefined;
 
-  /**
-   * Get condition for non-deleted records (soft delete support)
-   */
-  protected getNotDeletedCondition(): SQL<unknown> | undefined {
-    return this.table.deletedAt ? isNull(this.table.deletedAt) : undefined;
-  }
+
 
   /**
    * Create a new entity record
@@ -80,16 +75,10 @@ export abstract class DatabaseRepository<TEntity, TNewEntity, TFilters = Record<
   async findOneById(id: string): Promise<TEntity | null> {
     this.logger?.debug({ id }, 'Finding record by ID');
 
-    const whereConditions = [eq(this.table.id, id)];
-    const notDeletedCondition = this.getNotDeletedCondition();
-    if (notDeletedCondition) {
-      whereConditions.push(notDeletedCondition);
-    }
-
     const [record] = await this.db
       .select()
       .from(this.table)
-      .where(and(...whereConditions))
+      .where(eq(this.table.id, id))
       .limit(1);
 
     this.logger?.debug({ id, found: !!record }, 'Record lookup completed');
@@ -103,24 +92,15 @@ export abstract class DatabaseRepository<TEntity, TNewEntity, TFilters = Record<
   async findOne(filters: TFilters): Promise<TEntity | null> {
     this.logger?.debug({ filters }, 'Finding record by filters');
 
-    const whereConditions = [];
     const filterCondition = this.buildWhereConditions(filters);
-    if (filterCondition) {
-      whereConditions.push(filterCondition);
-    }
-
-    const notDeletedCondition = this.getNotDeletedCondition();
-    if (notDeletedCondition) {
-      whereConditions.push(notDeletedCondition);
-    }
 
     const query = this.db
       .select()
       .from(this.table)
       .limit(1);
 
-    if (whereConditions.length > 0) {
-      query.where(and(...whereConditions));
+    if (filterCondition) {
+      query.where(filterCondition);
     }
 
     const [record] = await query;
@@ -141,20 +121,14 @@ export abstract class DatabaseRepository<TEntity, TNewEntity, TFilters = Record<
       updatedAt: new Date(),
     };
 
-    const whereConditions = [eq(this.table.id, id)];
-    const notDeletedCondition = this.getNotDeletedCondition();
-    if (notDeletedCondition) {
-      whereConditions.push(notDeletedCondition);
-    }
-
     const [updated] = await this.db
       .update(this.table)
       .set(updateData as any)
-      .where(and(...whereConditions))
+      .where(eq(this.table.id, id))
       .returning();
 
     if (!updated) {
-      throw new Error(`Record with id ${id} not found or already deleted`);
+      throw new Error(`Record with id ${id} not found`);
     }
 
     this.logger?.info({ id }, 'Record updated successfully');
@@ -163,52 +137,16 @@ export abstract class DatabaseRepository<TEntity, TNewEntity, TFilters = Record<
   }
 
   /**
-   * Delete a single entity by ID (soft delete if deletedAt column exists)
+   * Delete a single entity by ID (hard delete)
    */
   async deleteOneById(id: string): Promise<void> {
     this.logger?.debug({ id }, 'Deleting record by ID');
 
-    if (this.table.deletedAt) {
-      // Perform soft delete
-      await this.softDeleteById(id);
-    } else {
-      // Perform hard delete
-      await this.db
-        .delete(this.table)
-        .where(eq(this.table.id, id));
-    }
+    await this.db
+      .delete(this.table)
+      .where(eq(this.table.id, id));
 
     this.logger?.info({ id }, 'Record deleted successfully');
-  }
-
-  /**
-   * Soft delete a single entity by ID
-   */
-  async softDeleteById(id: string): Promise<TEntity> {
-    this.logger?.debug({ id }, 'Soft deleting record by ID');
-
-    const whereConditions = [eq(this.table.id, id)];
-    const notDeletedCondition = this.getNotDeletedCondition();
-    if (notDeletedCondition) {
-      whereConditions.push(notDeletedCondition);
-    }
-
-    const [deleted] = await this.db
-      .update(this.table)
-      .set({
-        deletedAt: new Date(),
-        updatedAt: new Date()
-      } as any)
-      .where(and(...whereConditions))
-      .returning();
-
-    if (!deleted) {
-      throw new Error(`Record with id ${id} not found or already deleted`);
-    }
-
-    this.logger?.info({ id }, 'Record soft deleted successfully');
-
-    return deleted as TEntity;
   }
 
   /**
@@ -221,21 +159,10 @@ export abstract class DatabaseRepository<TEntity, TNewEntity, TFilters = Record<
       .select({ count: sql<number>`count(*)` })
       .from(this.table);
 
-    const whereConditions = [];
-    if (filters) {
-      const filterCondition = this.buildWhereConditions(filters);
-      if (filterCondition) {
-        whereConditions.push(filterCondition);
-      }
-    }
+    const filterCondition = filters ? this.buildWhereConditions(filters) : undefined;
 
-    const notDeletedCondition = this.getNotDeletedCondition();
-    if (notDeletedCondition) {
-      whereConditions.push(notDeletedCondition);
-    }
-
-    if (whereConditions.length > 0) {
-      countQuery.where(and(...whereConditions));
+    if (filterCondition) {
+      countQuery.where(filterCondition);
     }
 
     const [{ count: countRaw }] = await countQuery;
@@ -264,12 +191,6 @@ export abstract class DatabaseRepository<TEntity, TNewEntity, TFilters = Record<
       if (filterCondition) {
         whereConditions.push(filterCondition);
       }
-    }
-
-    // Add soft delete filter
-    const notDeletedCondition = this.getNotDeletedCondition();
-    if (notDeletedCondition) {
-      whereConditions.push(notDeletedCondition);
     }
 
     if (whereConditions.length > 0) {

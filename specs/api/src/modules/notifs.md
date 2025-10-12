@@ -40,7 +40,7 @@ interface Notification {
   id: string;              // UUID, system-generated
   createdAt: Date;         // Automatic timestamp
   updatedAt: Date;         // Automatic timestamp
-  deletedAt?: Date;        // For soft deletion
+
   version: number;         // Optimistic locking
   createdBy: string;       // Audit trail
   updatedBy: string;       // Audit trail
@@ -842,12 +842,9 @@ CREATE INDEX notifications_scheduled_status_idx ON notifications(scheduled_at, s
 CREATE INDEX notifications_type_channel_idx ON notifications(type, channel);
 CREATE INDEX notifications_created_at_idx ON notifications(created_at);
 
--- Soft delete performance  
-CREATE INDEX notifications_deleted_at_idx ON notifications(deleted_at) WHERE deleted_at IS NULL;
-
 -- User notification retrieval
 CREATE INDEX notifications_user_unread_idx ON notifications(recipient, status, created_at) 
-  WHERE status IN ('sent', 'delivered') AND deleted_at IS NULL;
+  WHERE status IN ('sent', 'delivered');
 ```
 
 **Query Optimization**:

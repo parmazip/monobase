@@ -344,7 +344,7 @@ export async function regenerateOwnerSlots(
         )
       );
 
-    logger.info(`Deleted ${deletedSlots} existing available slots for owner ${ownerId}`);
+    logger.info(`Deleted ${deletedSlots.rowCount || 0} existing available slots for owner ${ownerId}`);
 
     // Generate new slots from all active events for this owner
     const results = {

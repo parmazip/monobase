@@ -73,7 +73,7 @@ export const notifications = pgTable('notification', {
   scheduledStatusIdx: index('notifications_scheduled_status_idx').on(table.scheduledAt, table.status),
   typeChannelIdx: index('notifications_type_channel_idx').on(table.type, table.channel),
   createdAtIdx: index('notifications_created_at_idx').on(table.createdAt),
-  deletedAtIdx: index('notifications_deleted_at_idx').on(table.deletedAt),
+
 }));
 
 // Type exports for TypeScript

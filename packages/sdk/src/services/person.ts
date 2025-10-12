@@ -25,8 +25,6 @@ export interface Person {
   createdBy: string
   updatedAt: Date
   updatedBy: string
-  deletedAt: Date | null
-  deletedBy: string | null
   firstName: string
   lastName?: string
   middleName?: string
@@ -115,8 +113,6 @@ export function mapApiPersonToFrontend(api: ApiPerson): Person {
     createdBy: api.createdBy || '',
     updatedAt: new Date(api.updatedAt),
     updatedBy: api.updatedBy || '',
-    deletedAt: api.deletedAt ? new Date(api.deletedAt) : null,
-    deletedBy: api.deletedBy ?? null,
     firstName: api.firstName,
     lastName: api.lastName,
     middleName: api.middleName,

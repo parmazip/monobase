@@ -134,7 +134,7 @@ export const bookingEvents = pgTable('booking_event', {
   activeEventsIdx: index('booking_events_active_idx')
     .on(table.owner, table.status)
     .where(sql`"booking_event"."status" = 'active'`),
-  deletedAtIdx: index('booking_events_deleted_at_idx').on(table.deletedAt),
+
   effectiveDatesIdx: index('booking_events_effective_dates_idx')
     .on(table.effectiveFrom, table.effectiveTo),
 
@@ -204,7 +204,7 @@ export const timeSlots = pgTable('time_slot', {
   eventIdx: index('time_slots_event_id_idx').on(table.event),
   contextIdx: index('time_slots_context_id_idx').on(table.context),
   bookingIdx: index('time_slots_booking_id_idx').on(table.booking),
-  deletedAtIdx: index('time_slots_deleted_at_idx').on(table.deletedAt),
+
 
   // Ensure no slot overlap for same owner
   uniqueOwnerTime: unique('time_slots_owner_time_unique')
@@ -273,7 +273,7 @@ export const bookings = pgTable('booking', {
   providerDateIdx: index('bookings_provider_date_idx')
     .on(table.provider, table.scheduledAt),
   
-  deletedAtIdx: index('bookings_deleted_at_idx').on(table.deletedAt),
+
   
   // Partial indexes for pending bookings
   pendingBookingsIdx: index('bookings_pending_idx')
@@ -321,7 +321,7 @@ export const scheduleExceptions = pgTable('schedule_exception', {
     .on(table.startDatetime, table.endDatetime),
   ownerDateRangeIdx: index('schedule_exceptions_owner_date_range_idx')
     .on(table.owner, table.startDatetime, table.endDatetime),
-  deletedAtIdx: index('schedule_exceptions_deleted_at_idx').on(table.deletedAt),
+
 
   // Check constraints
   reasonLengthCheck: check('schedule_exceptions_reason_check', sql`LENGTH(${table.reason}) <= 500`),

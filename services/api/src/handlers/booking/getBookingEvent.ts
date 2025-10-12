@@ -54,7 +54,8 @@ export async function getBookingEvent(ctx: Context) {
     });
   }
 
-  // Handle expand parameter for slots
+  // Handle custom slots expansion with time range (e.g., "slots:7d")
+  // Note: Standard expands (owner, etc.) are handled by expand middleware
   let response: any = event;
   
   if (query.expand) {
@@ -62,6 +63,8 @@ export async function getBookingEvent(ctx: Context) {
     
     for (const field of expandFields) {
       // Support slots expansion with time range (e.g., "slots:7d")
+      // This is a custom expansion that includes query parameters, so it can't use
+      // the standard expand middleware which only handles simple ID expansion
       if (field.startsWith('slots')) {
         const slotRepo = new TimeSlotRepository(db, logger);
         const match = field.match(/slots:(\d+)([dhw])/);
@@ -76,13 +79,35 @@ export async function getBookingEvent(ctx: Context) {
           const endDate = new Date();
           endDate.setDate(endDate.getDate() + days);
           
+          // Format dates as 'yyyy-MM-dd' strings for date column comparison
+          const { format } = await import('date-fns');
+          const startDateStr = format(startDate, 'yyyy-MM-dd');
+          const endDateStr = format(endDate, 'yyyy-MM-dd');
+          
           const slots = await slotRepo.findAvailableSlots(
             event.id,
-            startDate.toISOString(),
-            endDate.toISOString()
+            startDateStr,
+            endDateStr
           );
           
-          response = { ...event, slots };
+          response = { ...response, slots };
+        } else {
+          // Support simple "slots" without time range (default to 7 days)
+          const startDate = new Date();
+          const endDate = new Date();
+          endDate.setDate(endDate.getDate() + 7);
+          
+          const { format } = await import('date-fns');
+          const startDateStr = format(startDate, 'yyyy-MM-dd');
+          const endDateStr = format(endDate, 'yyyy-MM-dd');
+          
+          const slots = await slotRepo.findAvailableSlots(
+            event.id,
+            startDateStr,
+            endDateStr
+          );
+          
+          response = { ...response, slots };
         }
       }
     }

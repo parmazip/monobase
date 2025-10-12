@@ -259,8 +259,7 @@ async function submitReview(bookingId: string, reviewData: ReviewData) {
 | npsScore | int | NPS score (0-10) |
 | comment | string? | Optional feedback (max 1000 chars) |
 | createdAt | timestamp | When review was created |
-| updatedAt | timestamp | Last updated (for soft deletes) |
-| deletedAt | timestamp? | Soft delete timestamp |
+| updatedAt | timestamp | Last updated |
 
 ### Constraints
 
@@ -275,7 +274,6 @@ async function submitReview(bookingId: string, reviewData: ReviewData) {
 - reviewer_idx: For filtering by reviewer
 - reviewType_idx: For filtering by review type
 - reviewedEntity_idx: For filtering by reviewed entity
-- deletedAt_idx: For soft delete queries
 
 ## What's NOT Included
 

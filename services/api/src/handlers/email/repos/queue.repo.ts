@@ -33,9 +33,6 @@ export class EmailQueueRepository extends DatabaseRepository<EmailQueueItem, New
     
     const conditions = [];
     
-    // Always exclude soft-deleted records
-    conditions.push(isNull(emailQueue.deletedAt));
-    
     if (filters.status) {
       if (Array.isArray(filters.status)) {
         conditions.push(inArray(emailQueue.status, filters.status));
@@ -144,7 +141,6 @@ export class EmailQueueRepository extends DatabaseRepository<EmailQueueItem, New
       .from(emailQueue)
       .where(
         and(
-          isNull(emailQueue.deletedAt),
           isNull(emailQueue.cancelledAt),
           or(
             // Pending emails ready to send
@@ -321,7 +317,6 @@ export class EmailQueueRepository extends DatabaseRepository<EmailQueueItem, New
         count: count()
       })
       .from(emailQueue)
-      .where(isNull(emailQueue.deletedAt))
       .groupBy(emailQueue.status);
     
     // Convert to object
@@ -344,7 +339,6 @@ export class EmailQueueRepository extends DatabaseRepository<EmailQueueItem, New
       .from(emailQueue)
       .where(
         and(
-          isNull(emailQueue.deletedAt),
           eq(emailQueue.status, 'pending'),
           isNull(emailQueue.scheduledAt) === false,
           gte(emailQueue.scheduledAt, new Date())
@@ -358,10 +352,7 @@ export class EmailQueueRepository extends DatabaseRepository<EmailQueueItem, New
       .select({ createdAt: emailQueue.createdAt })
       .from(emailQueue)
       .where(
-        and(
-          isNull(emailQueue.deletedAt),
-          eq(emailQueue.status, 'pending')
-        )
+        eq(emailQueue.status, 'pending')
       )
       .orderBy(asc(emailQueue.createdAt))
       .limit(1);
@@ -374,7 +365,6 @@ export class EmailQueueRepository extends DatabaseRepository<EmailQueueItem, New
       .from(emailQueue)
       .where(
         and(
-          isNull(emailQueue.deletedAt),
           eq(emailQueue.status, 'sent'),
           isNull(emailQueue.sentAt) === false
         )
@@ -401,14 +391,9 @@ export class EmailQueueRepository extends DatabaseRepository<EmailQueueItem, New
     const cutoffDate = subDays(new Date(), daysOld);
     
     const result = await this.db
-      .update(emailQueue)
-      .set({
-        deletedAt: new Date(),
-        deletedBy: 'system'
-      })
+      .delete(emailQueue)
       .where(
         and(
-          isNull(emailQueue.deletedAt),
           inArray(emailQueue.status, ['sent', 'cancelled']),
           lte(emailQueue.createdAt, cutoffDate)
         )

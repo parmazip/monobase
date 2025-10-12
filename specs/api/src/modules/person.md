@@ -33,7 +33,7 @@ interface Person {
   id: string;              // Maps directly to User.id
   createdAt: Date;         // Automatic timestamp
   updatedAt: Date;         // Automatic timestamp  
-  deletedAt?: Date;        // For soft deletion
+
   version: number;         // Optimistic locking
   createdBy: string;       // Audit trail
   updatedBy: string;       // Audit trail

@@ -131,24 +131,19 @@ async function cleanupOldAvailableSlots(
           eq(timeSlots.status, 'available'),
           // Compare with DATE column using date-only string (day-level cleanup granularity)
           lte(timeSlots.date, format(cutoffDate, 'yyyy-MM-dd')),
-          isNull(timeSlots.deletedAt) // Only process slots that aren't already archived
+
         )
       )
       .limit(batchSize);
 
     if (oldSlots.length === 0) {
-      break; // No more slots to archive
+      break; // No more slots to delete
     }
 
-    // Archive the batch using soft delete
+    // Delete the batch (hard delete)
     const slotIds = oldSlots.map(s => s.id);
     const result = await db
-      .update(timeSlots)
-      .set({
-        deletedAt: new Date(),
-        deletedBy: 'system-cleanup',
-        updatedAt: new Date()
-      })
+      .delete(timeSlots)
       .where(inArray(timeSlots.id, slotIds))
       .returning({ id: timeSlots.id });
 
@@ -196,7 +191,7 @@ async function cleanupOldBlockedSlots(
           eq(timeSlots.status, 'blocked'),
           // Compare with DATE column using date-only string (day-level cleanup granularity)
           lte(timeSlots.date, format(cutoffDate, 'yyyy-MM-dd')),
-          isNull(timeSlots.deletedAt) // Only process slots that aren't already archived
+
         )
       )
       .limit(batchSize);
@@ -205,21 +200,16 @@ async function cleanupOldBlockedSlots(
       break;
     }
 
-    // Archive the batch using soft delete
+    // Delete the batch (hard delete)
     const slotIds = oldSlots.map(s => s.id);
     const result = await db
-      .update(timeSlots)
-      .set({
-        deletedAt: new Date(),
-        deletedBy: 'system-cleanup',
-        updatedAt: new Date()
-      })
+      .delete(timeSlots)
       .where(inArray(timeSlots.id, slotIds))
       .returning({ id: timeSlots.id });
 
     totalArchived += result.length;
 
-    logger.debug(`Archived batch of ${result.length} blocked slots`, {
+    logger.debug(`Deleted batch of ${result.length} blocked slots`, {
       totalArchived,
       slotIds: result.map(r => r.id)
     });
@@ -273,20 +263,15 @@ async function archiveOldBookings(
     const bookingIds = oldBookings.map(a => a.id);
 
     await db.transaction(async (tx) => {
-      // Mark bookings as soft deleted (archived) for compliance
+      // Delete bookings (hard delete)
       const result = await tx
-        .update(bookings)
-        .set({
-          deletedAt: new Date(),
-          deletedBy: 'system-cleanup',
-          updatedAt: new Date()
-        })
+        .delete(bookings)
         .where(inArray(bookings.id, bookingIds))
         .returning({ id: bookings.id });
 
       totalArchived = result.length;
 
-      logger.debug(`Archived ${result.length} bookings using soft delete`, {
+      logger.debug(`Deleted ${result.length} old bookings`, {
         bookingIds: result.map(r => r.id),
         cutoffDate: cutoffDate.toISOString()
       });
@@ -362,7 +347,7 @@ export async function getCleanupStatistics(db: any): Promise<{
         eq(timeSlots.status, 'available'),
         // Compare with DATE column using date-only string for count query
         lte(timeSlots.date, format(sevenDaysAgo, 'yyyy-MM-dd')),
-        isNull(timeSlots.deletedAt) // Only count non-archived slots
+
       )
     );
 
@@ -375,7 +360,7 @@ export async function getCleanupStatistics(db: any): Promise<{
         eq(timeSlots.status, 'blocked'),
         // Compare with DATE column using date-only string for count query
         lte(timeSlots.date, format(subDays(new Date(), 14), 'yyyy-MM-dd')),
-        isNull(timeSlots.deletedAt) // Only count non-archived slots
+
       )
     );
 
@@ -387,7 +372,7 @@ export async function getCleanupStatistics(db: any): Promise<{
       and(
         inArray(bookings.status, ['completed', 'cancelled']),
         lte(bookings.scheduledAt, ninetyDaysAgo),
-        isNull(bookings.deletedAt) // Only count non-archived bookings
+
       )
     );
   

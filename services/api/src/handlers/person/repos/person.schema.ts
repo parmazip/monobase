@@ -36,7 +36,7 @@ export const persons = pgTable('person', {
 }, (table) => ({
   // Indexes for search operations
   nameIdx: index('persons_name_idx').on(table.firstName, table.lastName),
-  deletedAtIdx: index('persons_deleted_at_idx').on(table.deletedAt),
+
 }));
 
 // Type exports for TypeScript

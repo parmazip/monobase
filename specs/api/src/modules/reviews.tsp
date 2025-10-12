@@ -20,7 +20,7 @@ using TypeSpec.OpenAPI;
  * - Application-defined review types (no hardcoded enums)
  * - Optional reviewed entity (for person reviews)
  * - NPS scoring (0-10)
- * - Immutable reviews (no updates, only soft delete)
+ * - Immutable reviews (no updates, only delete)
  * - Role-based access control
  * 
  * Sample Use Cases:
@@ -147,7 +147,7 @@ namespace ReviewsModule {
       | ApiUnauthorizedResponse
       | ApiForbiddenResponse;
 
-    @doc("Delete review (soft delete). Only review owner can delete.")
+    @doc("Delete review. Only review owner can delete.")
     @operationId("deleteReview")
     @delete
     @route("/{review}")

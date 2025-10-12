@@ -1,5 +1,5 @@
 {
-  "id": "ca31cd2b-a83a-4df9-b726-d04b8a6fb569",
+  "id": "06b33c2e-5340-49f9-aa73-88fb5b5a81d9",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -676,12 +676,6 @@
           "notNull": true,
           "default": "now()"
         },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
         "version": {
           "name": "version",
           "type": "integer",
@@ -697,12 +691,6 @@
         },
         "updated_by": {
           "name": "updated_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deleted_by": {
-          "name": "deleted_by",
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
@@ -1035,12 +1023,6 @@
           "notNull": true,
           "default": "now()"
         },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
         "version": {
           "name": "version",
           "type": "integer",
@@ -1056,12 +1038,6 @@
         },
         "updated_by": {
           "name": "updated_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deleted_by": {
-          "name": "deleted_by",
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
@@ -1119,21 +1095,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "invoice_line_items_deleted_at_idx": {
-          "name": "invoice_line_items_deleted_at_idx",
-          "columns": [
-            {
-              "expression": "deleted_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {
@@ -1182,12 +1143,6 @@
           "notNull": true,
           "default": "now()"
         },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
         "version": {
           "name": "version",
           "type": "integer",
@@ -1203,12 +1158,6 @@
         },
         "updated_by": {
           "name": "updated_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deleted_by": {
-          "name": "deleted_by",
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
@@ -1493,21 +1442,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "invoices_deleted_at_idx": {
-          "name": "invoices_deleted_at_idx",
-          "columns": [
-            {
-              "expression": "deleted_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {
@@ -1597,12 +1531,6 @@
           "notNull": true,
           "default": "now()"
         },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
         "version": {
           "name": "version",
           "type": "integer",
@@ -1618,12 +1546,6 @@
         },
         "updated_by": {
           "name": "updated_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deleted_by": {
-          "name": "deleted_by",
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
@@ -1669,21 +1591,6 @@
           "columns": [
             {
               "expression": "active",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "merchant_accounts_deleted_at_idx": {
-          "name": "merchant_accounts_deleted_at_idx",
-          "columns": [
-            {
-              "expression": "deleted_at",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -1749,12 +1656,6 @@
           "notNull": true,
           "default": "now()"
         },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
         "version": {
           "name": "version",
           "type": "integer",
@@ -1770,12 +1671,6 @@
         },
         "updated_by": {
           "name": "updated_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deleted_by": {
-          "name": "deleted_by",
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
@@ -1954,21 +1849,6 @@
           "method": "btree",
           "with": {}
         },
-        "booking_events_deleted_at_idx": {
-          "name": "booking_events_deleted_at_idx",
-          "columns": [
-            {
-              "expression": "deleted_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "booking_events_effective_dates_idx": {
           "name": "booking_events_effective_dates_idx",
           "columns": [
@@ -2091,12 +1971,6 @@
           "notNull": true,
           "default": "now()"
         },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
         "version": {
           "name": "version",
           "type": "integer",
@@ -2112,12 +1986,6 @@
         },
         "updated_by": {
           "name": "updated_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deleted_by": {
-          "name": "deleted_by",
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
@@ -2368,21 +2236,6 @@
           "method": "btree",
           "with": {}
         },
-        "bookings_deleted_at_idx": {
-          "name": "bookings_deleted_at_idx",
-          "columns": [
-            {
-              "expression": "deleted_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "bookings_pending_idx": {
           "name": "bookings_pending_idx",
           "columns": [
@@ -2487,12 +2340,6 @@
           "notNull": true,
           "default": "now()"
         },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
         "version": {
           "name": "version",
           "type": "integer",
@@ -2508,12 +2355,6 @@
         },
         "updated_by": {
           "name": "updated_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deleted_by": {
-          "name": "deleted_by",
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
@@ -2668,21 +2509,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "schedule_exceptions_deleted_at_idx": {
-          "name": "schedule_exceptions_deleted_at_idx",
-          "columns": [
-            {
-              "expression": "deleted_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {
@@ -2753,12 +2579,6 @@
           "notNull": true,
           "default": "now()"
         },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
         "version": {
           "name": "version",
           "type": "integer",
@@ -2774,12 +2594,6 @@
         },
         "updated_by": {
           "name": "updated_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deleted_by": {
-          "name": "deleted_by",
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
@@ -2956,21 +2770,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "time_slots_deleted_at_idx": {
-          "name": "time_slots_deleted_at_idx",
-          "columns": [
-            {
-              "expression": "deleted_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {
@@ -3054,12 +2853,6 @@
           "notNull": true,
           "default": "now()"
         },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
         "version": {
           "name": "version",
           "type": "integer",
@@ -3075,12 +2868,6 @@
         },
         "updated_by": {
           "name": "updated_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deleted_by": {
-          "name": "deleted_by",
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
@@ -3175,21 +2962,6 @@
           "columns": [
             {
               "expression": "message_type",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "chat_messages_deleted_at_idx": {
-          "name": "chat_messages_deleted_at_idx",
-          "columns": [
-            {
-              "expression": "deleted_at",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -3310,12 +3082,6 @@
           "notNull": true,
           "default": "now()"
         },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
         "version": {
           "name": "version",
           "type": "integer",
@@ -3331,12 +3097,6 @@
         },
         "updated_by": {
           "name": "updated_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deleted_by": {
-          "name": "deleted_by",
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
@@ -3478,21 +3238,6 @@
           "method": "btree",
           "with": {}
         },
-        "chat_rooms_deleted_at_idx": {
-          "name": "chat_rooms_deleted_at_idx",
-          "columns": [
-            {
-              "expression": "deleted_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "chat_rooms_status_last_message_idx": {
           "name": "chat_rooms_status_last_message_idx",
           "columns": [
@@ -3547,12 +3292,6 @@
           "notNull": true,
           "default": "now()"
         },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
         "version": {
           "name": "version",
           "type": "integer",
@@ -3568,12 +3307,6 @@
         },
         "updated_by": {
           "name": "updated_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deleted_by": {
-          "name": "deleted_by",
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
@@ -3863,12 +3596,6 @@
           "notNull": true,
           "default": "now()"
         },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
         "version": {
           "name": "version",
           "type": "integer",
@@ -3884,12 +3611,6 @@
         },
         "updated_by": {
           "name": "updated_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deleted_by": {
-          "name": "deleted_by",
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
@@ -4033,12 +3754,6 @@
           "notNull": true,
           "default": "now()"
         },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
         "version": {
           "name": "version",
           "type": "integer",
@@ -4054,12 +3769,6 @@
         },
         "updated_by": {
           "name": "updated_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deleted_by": {
-          "name": "deleted_by",
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
@@ -4220,21 +3929,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "notifications_deleted_at_idx": {
-          "name": "notifications_deleted_at_idx",
-          "columns": [
-            {
-              "expression": "deleted_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {},
@@ -4269,12 +3963,6 @@
           "notNull": true,
           "default": "now()"
         },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
         "version": {
           "name": "version",
           "type": "integer",
@@ -4290,12 +3978,6 @@
         },
         "updated_by": {
           "name": "updated_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deleted_by": {
-          "name": "deleted_by",
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
@@ -4383,21 +4065,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "persons_deleted_at_idx": {
-          "name": "persons_deleted_at_idx",
-          "columns": [
-            {
-              "expression": "deleted_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {},
@@ -4432,12 +4099,6 @@
           "notNull": true,
           "default": "now()"
         },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
         "version": {
           "name": "version",
           "type": "integer",
@@ -4453,12 +4114,6 @@
         },
         "updated_by": {
           "name": "updated_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deleted_by": {
-          "name": "deleted_by",
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
@@ -4560,21 +4215,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "reviews_deleted_at_idx": {
-          "name": "reviews_deleted_at_idx",
-          "columns": [
-            {
-              "expression": "deleted_at",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {
@@ -4659,12 +4299,6 @@
           "notNull": true,
           "default": "now()"
         },
-        "deleted_at": {
-          "name": "deleted_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
         "version": {
           "name": "version",
           "type": "integer",
@@ -4680,12 +4314,6 @@
         },
         "updated_by": {
           "name": "updated_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deleted_by": {
-          "name": "deleted_by",
           "type": "uuid",
           "primaryKey": false,
           "notNull": false

@@ -39,20 +39,20 @@ describe('GET /booking/slots/{slotId} - expand=event', () => {
     
     // Create booking event
     const eventData = generateTestBookingEventData();
-    const { data: createdEvent } = await createBookingEvent(providerClient, providerPersonId, eventData);
+    const { data: createdEvent } = await createBookingEvent(providerClient, eventData);
     eventId = createdEvent.id;
     
     // Wait for slot generation to complete (triggered by booking event creation)
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // Fetch provider with slots to get a slot ID
-    const providerResponse = await getBookingEventDetails(providerClient, providerPersonId, 'slots');
+    // Fetch event with slots to get a slot ID
+    const eventResponse = await getBookingEventDetails(providerClient, eventId, 'slots:7d');
     
-    if (!providerResponse.data.slots || providerResponse.data.slots.length === 0) {
-      throw new Error('No slots were generated for the provider');
+    if (!eventResponse.data.slots || eventResponse.data.slots.length === 0) {
+      throw new Error('No slots were generated for the event');
     }
     
-    slotId = providerResponse.data.slots[0].id;
+    slotId = eventResponse.data.slots[0].id;
   });
 
   afterAll(async () => {

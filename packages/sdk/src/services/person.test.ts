@@ -13,8 +13,7 @@ describe('mapApiPersonToFrontend', () => {
       createdBy: 'user-1',
       updatedAt: '2024-01-20T15:45:00Z',
       updatedBy: 'user-2',
-      deletedAt: '2024-02-01T09:00:00Z',
-      deletedBy: 'admin',
+
       firstName: 'John',
       lastName: 'Doe'
     }
@@ -27,8 +26,7 @@ describe('mapApiPersonToFrontend', () => {
     expect(result.updatedAt).toBeInstanceOf(Date)
     expect(result.updatedAt.toISOString()).toBe('2024-01-20T15:45:00.000Z')
 
-    expect(result.deletedAt).toBeInstanceOf(Date)
-    expect(result.deletedAt?.toISOString()).toBe('2024-02-01T09:00:00.000Z')
+
   })
 
   test('maps all required fields correctly', () => {
@@ -39,8 +37,7 @@ describe('mapApiPersonToFrontend', () => {
       createdBy: 'system',
       updatedAt: '2024-01-15T00:00:00Z',
       updatedBy: 'user-1',
-      deletedAt: null,
-      deletedBy: null,
+
       firstName: 'Jane',
       lastName: 'Smith'
     }
@@ -51,29 +48,9 @@ describe('mapApiPersonToFrontend', () => {
     expect(result.version).toBe(5)
     expect(result.createdBy).toBe('system')
     expect(result.updatedBy).toBe('user-1')
-    expect(result.deletedBy).toBeNull()
+
     expect(result.firstName).toBe('Jane')
     expect(result.lastName).toBe('Smith')
-  })
-
-  test('handles null deletedAt and deletedBy', () => {
-    const apiPerson: ApiPerson = {
-      id: '123',
-      version: 1,
-      createdAt: '2024-01-01T00:00:00Z',
-      createdBy: 'user-1',
-      updatedAt: '2024-01-01T00:00:00Z',
-      updatedBy: 'user-1',
-      deletedAt: null,
-      deletedBy: null,
-      firstName: 'John',
-      lastName: 'Doe'
-    }
-
-    const result = mapApiPersonToFrontend(apiPerson)
-
-    expect(result.deletedAt).toBeNull()
-    expect(result.deletedBy).toBeNull()
   })
 
   test('handles optional fields with undefined values', () => {
@@ -84,8 +61,7 @@ describe('mapApiPersonToFrontend', () => {
       createdBy: 'user-1',
       updatedAt: '2024-01-01T00:00:00Z',
       updatedBy: 'user-1',
-      deletedAt: null,
-      deletedBy: null,
+
       firstName: 'John',
       lastName: 'Doe',
       // Optional fields omitted
@@ -111,8 +87,7 @@ describe('mapApiPersonToFrontend', () => {
       createdBy: 'user-1',
       updatedAt: '2024-01-01T00:00:00Z',
       updatedBy: 'user-1',
-      deletedAt: null,
-      deletedBy: null,
+
       firstName: 'John',
       lastName: 'Doe',
       middleName: 'Robert',
@@ -135,8 +110,7 @@ describe('mapApiPersonToFrontend', () => {
       createdBy: 'user-1',
       updatedAt: '2024-01-01T00:00:00Z',
       updatedBy: 'user-1',
-      deletedAt: null,
-      deletedBy: null,
+
       firstName: 'John',
       lastName: 'Doe',
       dateOfBirth: '1990-05-15'
@@ -157,8 +131,7 @@ describe('mapApiPersonToFrontend', () => {
       createdBy: 'user-1',
       updatedAt: '2024-01-01T00:00:00Z',
       updatedBy: 'user-1',
-      deletedAt: null,
-      deletedBy: null,
+
       firstName: 'John',
       lastName: 'Doe',
       avatar: {
@@ -183,8 +156,7 @@ describe('mapApiPersonToFrontend', () => {
       createdBy: 'user-1',
       updatedAt: '2024-01-01T00:00:00Z',
       updatedBy: 'user-1',
-      deletedAt: null,
-      deletedBy: null,
+
       firstName: 'John',
       lastName: 'Doe',
       contactInfo: {
@@ -209,8 +181,7 @@ describe('mapApiPersonToFrontend', () => {
       createdBy: 'user-1',
       updatedAt: '2024-01-01T00:00:00Z',
       updatedBy: 'user-1',
-      deletedAt: null,
-      deletedBy: null,
+
       firstName: 'John',
       lastName: 'Doe',
       primaryAddress: {
@@ -243,8 +214,7 @@ describe('mapApiPersonToFrontend', () => {
       createdBy: 'user-1',
       updatedAt: '2024-01-01T00:00:00Z',
       updatedBy: 'user-1',
-      deletedAt: null,
-      deletedBy: null,
+
       firstName: 'John',
       lastName: 'Doe',
       languagesSpoken: ['en', 'es', 'fr']
@@ -264,8 +234,7 @@ describe('mapApiPersonToFrontend', () => {
       createdBy: 'onboarding-system',
       updatedAt: '2024-01-15T14:30:00Z',
       updatedBy: 'person-456',
-      deletedAt: null,
-      deletedBy: null,
+
       firstName: 'Maria',
       lastName: 'Garcia',
       middleName: 'Elena',
@@ -322,8 +291,7 @@ describe('mapApiPersonToFrontend', () => {
       createdBy: null,
       updatedAt: '2024-01-01T00:00:00Z',
       updatedBy: null,
-      deletedAt: null,
-      deletedBy: null,
+
       firstName: 'John',
       lastName: 'Doe'
     }

@@ -16,7 +16,6 @@ export const baseEntityFields = {
   // Timestamps
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-  deletedAt: timestamp('deleted_at'), // Soft delete
   
   // Optimistic locking
   version: integer('version').default(1).notNull(),
@@ -24,7 +23,6 @@ export const baseEntityFields = {
   // Audit fields - who performed the action
   createdBy: uuid('created_by'),
   updatedBy: uuid('updated_by'),
-  deletedBy: uuid('deleted_by'),
 };
 
 /**
@@ -35,9 +33,7 @@ export interface BaseEntity {
   id: string;
   createdAt: Date;
   updatedAt: Date;
-  deletedAt: Date | null;
   version: number;
   createdBy: string | null;
   updatedBy: string | null;
-  deletedBy: string | null;
 }

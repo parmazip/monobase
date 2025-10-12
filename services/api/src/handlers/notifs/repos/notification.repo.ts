@@ -51,9 +51,6 @@ export class NotificationRepository extends DatabaseRepository<Notification, New
 
     const conditions = [];
 
-    // Always exclude soft-deleted records
-    conditions.push(isNull(notifications.deletedAt));
-
     if (filters.recipient) {
       conditions.push(eq(notifications.recipient, filters.recipient));
     }
@@ -192,8 +189,7 @@ export class NotificationRepository extends DatabaseRepository<Notification, New
       .where(
         and(
           eq(notifications.id, notificationId),
-          eq(notifications.recipient, recipientId),
-          isNull(notifications.deletedAt)
+          eq(notifications.recipient, recipientId)
         )
       )
       .limit(1);
@@ -245,8 +241,7 @@ export class NotificationRepository extends DatabaseRepository<Notification, New
     const conditions = [
       eq(notifications.recipient, recipientId),
       // Only mark sent/delivered notifications (exclude queued/scheduled ones)
-      inArray(notifications.status, ['sent', 'delivered']),
-      isNull(notifications.deletedAt)
+      inArray(notifications.status, ['sent', 'delivered'])
     ];
 
     if (type) {
@@ -282,8 +277,7 @@ export class NotificationRepository extends DatabaseRepository<Notification, New
       .where(
         and(
           eq(notifications.recipient, recipientId),
-          inArray(notifications.status, ['sent', 'delivered']),
-          isNull(notifications.deletedAt)
+          inArray(notifications.status, ['sent', 'delivered'])
         )
       );
     
@@ -305,8 +299,7 @@ export class NotificationRepository extends DatabaseRepository<Notification, New
       .where(
         and(
           eq(notifications.status, 'queued'),
-          lte(notifications.scheduledAt, now),
-          isNull(notifications.deletedAt)
+          lte(notifications.scheduledAt, now)
         )
       )
       .limit(100); // Process in batches
@@ -515,16 +508,9 @@ export class NotificationRepository extends DatabaseRepository<Notification, New
     const cutoffDate = subDays(new Date(), daysOld);
     
     const result = await this.db
-      .update(notifications)
-      .set({
-        deletedAt: new Date(),
-        deletedBy: SYSTEM_USER_ID
-      })
+      .delete(notifications)
       .where(
-        and(
-          lte(notifications.createdAt, cutoffDate),
-          isNull(notifications.deletedAt)
-        )
+        lte(notifications.createdAt, cutoffDate)
       );
     
     const count = result.rowCount || 0;

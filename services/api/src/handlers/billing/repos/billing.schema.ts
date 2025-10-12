@@ -124,7 +124,6 @@ export const invoices = pgTable('invoice', {
   merchantStatusIdx: index('invoices_merchant_status_idx')
     .on(table.merchant, table.status),
 
-  deletedAtIdx: index('invoices_deleted_at_idx').on(table.deletedAt),
 }));
 
 // Merchant Accounts - Person payment account management (TypeSpec-aligned)
@@ -151,7 +150,6 @@ export const merchantAccounts = pgTable('merchant_account', {
   // Unique constraints
   uniquePerson: unique('merchant_accounts_person_unique').on(table.person),
 
-  deletedAtIdx: index('merchant_accounts_deleted_at_idx').on(table.deletedAt),
 }));
 
 // Invoice Line Items - TypeSpec InvoiceLineItem model
@@ -182,8 +180,6 @@ export const invoiceLineItems = pgTable('invoice_line_item', {
 }, (table) => ({
   // Performance indexes
   invoiceIdx: index('invoice_line_items_invoice_idx').on(table.invoice),
-
-  deletedAtIdx: index('invoice_line_items_deleted_at_idx').on(table.deletedAt),
 }));
 
 // Type exports for TypeScript

@@ -44,8 +44,8 @@ export async function deleteBookingEvent(ctx: Context) {
     throw new ForbiddenError('You can only delete your own booking events');
   }
 
-  // Archive the event (soft delete)
-  await repo.archiveEvent(eventId, 'User requested deletion');
+  // Hard delete the event (cascade will delete associated slots and exceptions)
+  await repo.deleteOneById(eventId);
 
   // Log audit trail
   logger?.info({

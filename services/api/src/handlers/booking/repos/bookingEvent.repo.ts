@@ -123,6 +123,8 @@ export interface BookingEventFilters {
     return conditions.length > 0 ? and(...conditions) : undefined;
   }
 
+
+
   /**
    * Create a booking event with smart defaults applied
    */
@@ -144,8 +146,8 @@ export interface BookingEventFilters {
       context: request.context,
       timezone: request.timezone || 'America/New_York',
       locationTypes: request.locationTypes || ['video', 'phone', 'in-person'],
-      maxBookingDays: request.maxBookingDays || 30,
-      minBookingMinutes: request.minBookingMinutes || 1440,
+      maxBookingDays: request.maxBookingDays !== undefined ? request.maxBookingDays : 30,
+      minBookingMinutes: request.minBookingMinutes !== undefined ? request.minBookingMinutes : 1440,
       formConfig: request.formConfig,
       billingConfig: request.billingConfig,
       status: request.status || 'active',
@@ -216,7 +218,8 @@ export interface BookingEventFilters {
     const processedUpdates: any = { ...updates };
     if (updates.dailyConfigs) {
       processedUpdates.dailyConfigs = this.processAndValidateDailyConfigs(updates.dailyConfigs);
-    }    if (updates.effectiveFrom !== undefined && updates.effectiveFrom) {
+    }
+    if (updates.effectiveFrom !== undefined && updates.effectiveFrom) {
       processedUpdates.effectiveFrom = new Date(updates.effectiveFrom);
     }
     if (updates.effectiveTo !== undefined) {
@@ -415,11 +418,11 @@ export interface BookingEventFilters {
   validateEventConfig(config: BookingEventCreateRequest | BookingEventUpdateRequest): string[] {
     const errors: string[] = [];
 
-    if (config.maxBookingDays && (config.maxBookingDays < 0 || config.maxBookingDays > 365)) {
+    if (config.maxBookingDays !== undefined && (config.maxBookingDays < 0 || config.maxBookingDays > 365)) {
       errors.push('maxBookingDays must be between 0-365 days');
     }
 
-    if (config.minBookingMinutes && (config.minBookingMinutes < 0 || config.minBookingMinutes > 4320)) {
+    if (config.minBookingMinutes !== undefined && (config.minBookingMinutes < 0 || config.minBookingMinutes > 4320)) {
       errors.push('minBookingMinutes must be between 0-4320 minutes (72 hours)');
     }
 
@@ -480,10 +483,7 @@ export interface BookingEventFilters {
       })
       .from(bookingEvents)
       .innerJoin(persons, eq(bookingEvents.owner, persons.id))
-      .where(and(
-        eq(bookingEvents.id, eventId),
-        isNull(bookingEvents.deletedAt)
-      ))
+      .where(eq(bookingEvents.id, eventId))
       .limit(1);
 
     if (result.length === 0) {
@@ -516,7 +516,7 @@ export interface BookingEventFilters {
       })
       .from(bookingEvents)
       .innerJoin(persons, eq(bookingEvents.owner, persons.id))
-      .where(and(whereConditions, isNull(bookingEvents.deletedAt)));
+      .where(whereConditions);
 
     if (options?.limit) {
       query.limit(options.limit);

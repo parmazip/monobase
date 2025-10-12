@@ -74,14 +74,14 @@ export async function deleteInvoice(ctx: Context) {
     );
   }
 
-  // Perform soft delete (sets deletedAt timestamp)
+  // Perform hard delete
   await invoiceRepo.deleteOneById(invoiceId);
 
   logger.info({
     invoiceId,
     invoiceNumber: invoice.invoiceNumber,
     merchantId: invoice.merchant,
-    deletedBy: user.id
+    deletedByUser: user.id
   }, 'Invoice deleted successfully');
 
   // Return 204 No Content as specified in TypeSpec

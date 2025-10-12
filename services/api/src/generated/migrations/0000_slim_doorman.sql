@@ -128,11 +128,9 @@ CREATE TABLE IF NOT EXISTS "audit_log_entry" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
-	"deleted_at" timestamp,
 	"version" integer DEFAULT 1 NOT NULL,
 	"created_by" uuid,
 	"updated_by" uuid,
-	"deleted_by" uuid,
 	"event_type" "audit_event_type" NOT NULL,
 	"category" "audit_category" NOT NULL,
 	"action" "audit_action" NOT NULL,
@@ -158,11 +156,9 @@ CREATE TABLE IF NOT EXISTS "invoice_line_item" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
-	"deleted_at" timestamp,
 	"version" integer DEFAULT 1 NOT NULL,
 	"created_by" uuid,
 	"updated_by" uuid,
-	"deleted_by" uuid,
 	"invoice" uuid NOT NULL,
 	"description" varchar(500) NOT NULL,
 	"quantity" integer DEFAULT 1 NOT NULL,
@@ -175,11 +171,9 @@ CREATE TABLE IF NOT EXISTS "invoice" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
-	"deleted_at" timestamp,
 	"version" integer DEFAULT 1 NOT NULL,
 	"created_by" uuid,
 	"updated_by" uuid,
-	"deleted_by" uuid,
 	"invoice_number" varchar(50) NOT NULL,
 	"customer" uuid NOT NULL,
 	"merchant" uuid NOT NULL,
@@ -209,11 +203,9 @@ CREATE TABLE IF NOT EXISTS "merchant_account" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
-	"deleted_at" timestamp,
 	"version" integer DEFAULT 1 NOT NULL,
 	"created_by" uuid,
 	"updated_by" uuid,
-	"deleted_by" uuid,
 	"person" uuid NOT NULL,
 	"active" boolean DEFAULT true NOT NULL,
 	"metadata" jsonb NOT NULL,
@@ -224,11 +216,9 @@ CREATE TABLE IF NOT EXISTS "booking_event" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
-	"deleted_at" timestamp,
 	"version" integer DEFAULT 1 NOT NULL,
 	"created_by" uuid,
 	"updated_by" uuid,
-	"deleted_by" uuid,
 	"owner_id" uuid NOT NULL,
 	"context_id" text,
 	"title" text NOT NULL,
@@ -253,11 +243,9 @@ CREATE TABLE IF NOT EXISTS "booking" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
-	"deleted_at" timestamp,
 	"version" integer DEFAULT 1 NOT NULL,
 	"created_by" uuid,
 	"updated_by" uuid,
-	"deleted_by" uuid,
 	"client_id" uuid NOT NULL,
 	"provider_id" uuid NOT NULL,
 	"slot_id" uuid NOT NULL,
@@ -283,11 +271,9 @@ CREATE TABLE IF NOT EXISTS "schedule_exception" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
-	"deleted_at" timestamp,
 	"version" integer DEFAULT 1 NOT NULL,
 	"created_by" uuid,
 	"updated_by" uuid,
-	"deleted_by" uuid,
 	"event_id" uuid NOT NULL,
 	"owner_id" uuid NOT NULL,
 	"context_id" text,
@@ -305,11 +291,9 @@ CREATE TABLE IF NOT EXISTS "time_slot" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
-	"deleted_at" timestamp,
 	"version" integer DEFAULT 1 NOT NULL,
 	"created_by" uuid,
 	"updated_by" uuid,
-	"deleted_by" uuid,
 	"owner_id" uuid NOT NULL,
 	"event_id" uuid NOT NULL,
 	"context_id" text,
@@ -327,11 +311,9 @@ CREATE TABLE IF NOT EXISTS "chat_message" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
-	"deleted_at" timestamp,
 	"version" integer DEFAULT 1 NOT NULL,
 	"created_by" uuid,
 	"updated_by" uuid,
-	"deleted_by" uuid,
 	"chat_room_id" uuid NOT NULL,
 	"sender_id" uuid NOT NULL,
 	"timestamp" timestamp DEFAULT now() NOT NULL,
@@ -344,11 +326,9 @@ CREATE TABLE IF NOT EXISTS "chat_room" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
-	"deleted_at" timestamp,
 	"version" integer DEFAULT 1 NOT NULL,
 	"created_by" uuid,
 	"updated_by" uuid,
-	"deleted_by" uuid,
 	"participants" jsonb NOT NULL,
 	"admins" jsonb NOT NULL,
 	"context_id" text,
@@ -362,11 +342,9 @@ CREATE TABLE IF NOT EXISTS "email_queue" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
-	"deleted_at" timestamp,
 	"version" integer DEFAULT 1 NOT NULL,
 	"created_by" uuid,
 	"updated_by" uuid,
-	"deleted_by" uuid,
 	"template" uuid,
 	"template_tags" jsonb,
 	"recipient_email" varchar(255) NOT NULL,
@@ -392,11 +370,9 @@ CREATE TABLE IF NOT EXISTS "email_template" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
-	"deleted_at" timestamp,
 	"version" integer DEFAULT 1 NOT NULL,
 	"created_by" uuid,
 	"updated_by" uuid,
-	"deleted_by" uuid,
 	"name" varchar(255) NOT NULL,
 	"description" text,
 	"subject" varchar(500) NOT NULL,
@@ -415,11 +391,9 @@ CREATE TABLE IF NOT EXISTS "notification" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
-	"deleted_at" timestamp,
 	"version" integer DEFAULT 1 NOT NULL,
 	"created_by" uuid,
 	"updated_by" uuid,
-	"deleted_by" uuid,
 	"recipient_id" uuid NOT NULL,
 	"type" "notification_type" NOT NULL,
 	"channel" "notification_channel" NOT NULL,
@@ -438,11 +412,9 @@ CREATE TABLE IF NOT EXISTS "person" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
-	"deleted_at" timestamp,
 	"version" integer DEFAULT 1 NOT NULL,
 	"created_by" uuid,
 	"updated_by" uuid,
-	"deleted_by" uuid,
 	"first_name" varchar(50) NOT NULL,
 	"last_name" varchar(50),
 	"middle_name" varchar(50),
@@ -459,11 +431,9 @@ CREATE TABLE IF NOT EXISTS "review" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
-	"deleted_at" timestamp,
 	"version" integer DEFAULT 1 NOT NULL,
 	"created_by" uuid,
 	"updated_by" uuid,
-	"deleted_by" uuid,
 	"context_id" uuid NOT NULL,
 	"reviewer_id" uuid NOT NULL,
 	"review_type" varchar(50) NOT NULL,
@@ -480,11 +450,9 @@ CREATE TABLE IF NOT EXISTS "stored_file" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
-	"deleted_at" timestamp,
 	"version" integer DEFAULT 1 NOT NULL,
 	"created_by" uuid,
 	"updated_by" uuid,
-	"deleted_by" uuid,
 	"filename" varchar(255) NOT NULL,
 	"mime_type" varchar(100) NOT NULL,
 	"size" bigint NOT NULL,
@@ -647,7 +615,6 @@ CREATE INDEX IF NOT EXISTS "audit_user_event_idx" ON "audit_log_entry" USING btr
 CREATE INDEX IF NOT EXISTS "audit_resource_type_event_idx" ON "audit_log_entry" USING btree ("resource_type","event_type");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "audit_date_range_idx" ON "audit_log_entry" USING btree ("created_at","retention_status");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "invoice_line_items_invoice_idx" ON "invoice_line_item" USING btree ("invoice");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "invoice_line_items_deleted_at_idx" ON "invoice_line_item" USING btree ("deleted_at");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "invoices_customer_idx" ON "invoice" USING btree ("customer");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "invoices_merchant_idx" ON "invoice" USING btree ("merchant");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "invoices_merchant_account_idx" ON "invoice" USING btree ("merchant_account");--> statement-breakpoint
@@ -657,15 +624,12 @@ CREATE INDEX IF NOT EXISTS "invoices_context_idx" ON "invoice" USING btree ("con
 CREATE INDEX IF NOT EXISTS "invoices_payment_due_at_idx" ON "invoice" USING btree ("payment_due_at");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "invoices_customer_status_idx" ON "invoice" USING btree ("customer","status");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "invoices_merchant_status_idx" ON "invoice" USING btree ("merchant","status");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "invoices_deleted_at_idx" ON "invoice" USING btree ("deleted_at");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "merchant_accounts_person_idx" ON "merchant_account" USING btree ("person");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "merchant_accounts_active_idx" ON "merchant_account" USING btree ("active");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "merchant_accounts_deleted_at_idx" ON "merchant_account" USING btree ("deleted_at");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "booking_events_owner_id_idx" ON "booking_event" USING btree ("owner_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "booking_events_context_id_idx" ON "booking_event" USING btree ("context_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "booking_events_status_idx" ON "booking_event" USING btree ("status");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "booking_events_active_idx" ON "booking_event" USING btree ("owner_id","status") WHERE "booking_event"."status" = 'active';--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "booking_events_deleted_at_idx" ON "booking_event" USING btree ("deleted_at");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "booking_events_effective_dates_idx" ON "booking_event" USING btree ("effective_from","effective_to");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "booking_events_search_idx" ON "booking_event" USING gin (to_tsvector('english', "title" || ' ' || COALESCE("description", '')));--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "booking_events_keywords_idx" ON "booking_event" USING gin ("keywords");--> statement-breakpoint
@@ -678,26 +642,22 @@ CREATE INDEX IF NOT EXISTS "bookings_slot_id_idx" ON "booking" USING btree ("slo
 CREATE INDEX IF NOT EXISTS "bookings_client_status_idx" ON "booking" USING btree ("client_id","status");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "bookings_provider_status_idx" ON "booking" USING btree ("provider_id","status");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "bookings_provider_date_idx" ON "booking" USING btree ("provider_id","scheduled_at");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "bookings_deleted_at_idx" ON "booking" USING btree ("deleted_at");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "bookings_pending_idx" ON "booking" USING btree ("status","booked_at") WHERE "booking"."status" = 'pending';--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "schedule_exceptions_event_id_idx" ON "schedule_exception" USING btree ("event_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "schedule_exceptions_owner_id_idx" ON "schedule_exception" USING btree ("owner_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "schedule_exceptions_context_id_idx" ON "schedule_exception" USING btree ("context_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "schedule_exceptions_date_range_idx" ON "schedule_exception" USING btree ("start_datetime","end_datetime");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "schedule_exceptions_owner_date_range_idx" ON "schedule_exception" USING btree ("owner_id","start_datetime","end_datetime");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "schedule_exceptions_deleted_at_idx" ON "schedule_exception" USING btree ("deleted_at");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "time_slots_owner_date_idx" ON "time_slot" USING btree ("owner_id","date");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "time_slots_status_idx" ON "time_slot" USING btree ("status");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "time_slots_bookable_idx" ON "time_slot" USING btree ("owner_id","date","start_time") WHERE "time_slot"."status" = 'available';--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "time_slots_event_id_idx" ON "time_slot" USING btree ("event_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "time_slots_context_id_idx" ON "time_slot" USING btree ("context_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "time_slots_booking_id_idx" ON "time_slot" USING btree ("booking_id");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "time_slots_deleted_at_idx" ON "time_slot" USING btree ("deleted_at");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "chat_messages_chat_room_idx" ON "chat_message" USING btree ("chat_room_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "chat_messages_sender_idx" ON "chat_message" USING btree ("sender_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "chat_messages_timestamp_idx" ON "chat_message" USING btree ("timestamp");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "chat_messages_type_idx" ON "chat_message" USING btree ("message_type");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "chat_messages_deleted_at_idx" ON "chat_message" USING btree ("deleted_at");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "chat_messages_room_timestamp_idx" ON "chat_message" USING btree ("chat_room_id","timestamp");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "chat_messages_room_type_idx" ON "chat_message" USING btree ("chat_room_id","message_type");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "chat_messages_sender_timestamp_idx" ON "chat_message" USING btree ("sender_id","timestamp");--> statement-breakpoint
@@ -707,7 +667,6 @@ CREATE INDEX IF NOT EXISTS "chat_rooms_context_idx" ON "chat_room" USING btree (
 CREATE INDEX IF NOT EXISTS "chat_rooms_status_idx" ON "chat_room" USING btree ("status");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "chat_rooms_last_message_at_idx" ON "chat_room" USING btree ("last_message_at");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "chat_rooms_active_video_call_idx" ON "chat_room" USING btree ("active_video_call_message_id");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "chat_rooms_deleted_at_idx" ON "chat_room" USING btree ("deleted_at");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "chat_rooms_status_last_message_idx" ON "chat_room" USING btree ("status","last_message_at");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "email_queue_status_idx" ON "email_queue" USING btree ("status");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "email_queue_priority_idx" ON "email_queue" USING btree ("priority");--> statement-breakpoint
@@ -722,11 +681,8 @@ CREATE INDEX IF NOT EXISTS "notifications_recipient_status_idx" ON "notification
 CREATE INDEX IF NOT EXISTS "notifications_scheduled_status_idx" ON "notification" USING btree ("scheduled_at","status");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "notifications_type_channel_idx" ON "notification" USING btree ("type","channel");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "notifications_created_at_idx" ON "notification" USING btree ("created_at");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "notifications_deleted_at_idx" ON "notification" USING btree ("deleted_at");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "persons_name_idx" ON "person" USING btree ("first_name","last_name");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "persons_deleted_at_idx" ON "person" USING btree ("deleted_at");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "reviews_context_idx" ON "review" USING btree ("context_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "reviews_reviewer_idx" ON "review" USING btree ("reviewer_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "reviews_review_type_idx" ON "review" USING btree ("review_type");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "reviews_reviewed_entity_idx" ON "review" USING btree ("reviewed_entity_id");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "reviews_deleted_at_idx" ON "review" USING btree ("deleted_at");
+CREATE INDEX IF NOT EXISTS "reviews_reviewed_entity_idx" ON "review" USING btree ("reviewed_entity_id");

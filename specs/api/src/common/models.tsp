@@ -147,12 +147,6 @@ model BaseEntity {
 
   @doc("User who last updated the entity")
   updatedBy?: UUID;
-
-  @doc("Soft deletion timestamp")
-  deletedAt?: utcDateTime;
-
-  @doc("User who soft deleted the entity")
-  deletedBy?: UUID;
 }
 
 /**
