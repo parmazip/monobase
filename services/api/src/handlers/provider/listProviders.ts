@@ -8,7 +8,8 @@ import {
   BusinessLogicError
 } from '@/core/errors';
 import { ProviderRepository } from './repos/provider.repo';
-import { shouldExpand, parsePagination, buildPaginationMeta, parseFilters } from '@/utils/query';
+import { parsePagination, buildPaginationMeta, parseFilters } from '@/utils/query';
+// Auto-expand via middleware - no manual expand logic needed
 
 /**
  * listProviders
@@ -37,9 +38,6 @@ export async function listProviders(ctx: Context) {
   // Parse filters with utilities
   const filters = parseFilters(query, ['q', 'minorAilmentsSpecialty', 'minorAilmentsPracticeLocation', 'languageSpoken']);
   
-  // Check if person field should be expanded
-  const expandPerson = shouldExpand(query, 'person');
-  
   // Get dependencies from context
   const db = ctx.get('database') as DatabaseInstance;
   const logger = ctx.get('logger');
@@ -47,10 +45,8 @@ export async function listProviders(ctx: Context) {
   // Instantiate repository
   const repo = new ProviderRepository(db, logger);
   
-  // Call the appropriate repository method
-  const providers = expandPerson
-    ? await repo.findManyWithPerson(filters, { pagination: { limit, offset } })
-    : await repo.findMany(filters, { pagination: { limit, offset } });
+  // Fetch providers (expansion handled automatically by auto-expand middleware)
+  const providers = await repo.findMany(filters, { pagination: { limit, offset } });
   
   // Get total count for proper pagination metadata
   const totalCount = await repo.count(filters);
@@ -63,7 +59,6 @@ export async function listProviders(ctx: Context) {
     action: 'list',
     filters,
     pagination: { limit, offset },
-    expandPerson,
     resultCount: providers.length,
     totalCount,
     isPublic: true
