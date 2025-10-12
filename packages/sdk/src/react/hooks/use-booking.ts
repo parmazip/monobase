@@ -4,11 +4,11 @@ import {
   searchProviders,
   getProviderWithSlots,
   type SearchProvidersParams,
+  type ProviderWithSlots,
+  type BookingTimeSlot,
 } from '../../services/booking'
-import type { ProviderWithSlots, BookingTimeSlot } from '../../services/booking'
 import { queryKeys } from '../query-keys'
-import { ApiError, apiGet } from '../../api'
-import type { components } from '@monobase/api-spec/types'
+import { ApiError } from '../../api'
 
 // ============================================================================
 // Provider Search Hooks
@@ -59,26 +59,6 @@ export function useProviderWithSlots(providerId: string, options?: {
         }
         options?.onError?.(error)
       },
-    },
-  })
-}
-
-/**
- * Hook to get a single time slot by ID
- */
-export function useTimeSlot(slotId: string, options?: { enabled?: boolean }) {
-  return useQuery({
-    queryKey: ['booking', 'slots', slotId],
-    queryFn: async () => {
-      const slot = await apiGet<components["schemas"]["TimeSlot"]>(`/booking/slots/${slotId}`, { expand: 'event' })
-      return slot
-    },
-    enabled: options?.enabled !== false && !!slotId,
-    retry: (failureCount, error) => {
-      if (error instanceof ApiError && error.status === 404) {
-        return false
-      }
-      return failureCount < 3
     },
   })
 }
@@ -324,7 +304,7 @@ export function useCancelBooking() {
  */
 export function useMarkBookingNoShow() {
   const queryClient = useQueryClient()
-  
+
   return useMutation({
     mutationFn: (bookingId: string) => markBookingNoShow(bookingId),
     onSuccess: () => {
@@ -352,7 +332,7 @@ export function useCreateBooking(options?: {
   onError?: (error: Error) => void
 }) {
   const queryClient = useQueryClient()
-  
+
   return useMutation({
     mutationFn: createBooking,
     onSuccess: (data) => {

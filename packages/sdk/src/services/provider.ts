@@ -147,3 +147,47 @@ export async function deleteProvider(id: string): Promise<void> {
     method: 'DELETE',
   })
 }
+
+// ============================================================================
+// "My" Provider Functions (Current User)
+// ============================================================================
+
+/**
+ * Get current user's provider profile
+ */
+export async function getMyProvider(): Promise<Provider | null> {
+  try {
+    return await getProvider('me')
+  } catch (error) {
+    // Return null if provider doesn't exist (404)
+    if ((error as any)?.status === 404) {
+      return null
+    }
+    throw error
+  }
+}
+
+/**
+ * Create provider profile for current user
+ */
+export async function createMyProvider(
+  data: Omit<ProviderCreateRequest, 'person'>
+): Promise<Provider> {
+  return createProvider(data as ProviderCreateRequest)
+}
+
+/**
+ * Update current user's provider profile
+ */
+export async function updateMyProvider(
+  updates: ProviderUpdateRequest
+): Promise<Provider> {
+  return updateProvider('me', updates)
+}
+
+/**
+ * Delete current user's provider profile
+ */
+export async function deleteMyProvider(): Promise<void> {
+  return deleteProvider('me')
+}
