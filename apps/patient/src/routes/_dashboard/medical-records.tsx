@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { Search, Filter, Loader2 } from 'lucide-react'
-import { requireAuthWithProfile } from '@/services/guards'
+import { requireAuthWithProfile } from '@/utils/guards'
 import { Button } from '@monobase/ui/components/button'
 import { Input } from '@monobase/ui/components/input'
 import {
@@ -11,9 +11,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@monobase/ui/components/select'
-import { useConsultations } from '@/hooks/use-consultations'
+import { useConsultations } from '@monobase/sdk/react/hooks/use-emr'
 import { ConsultationCard } from '@/components/consultations/consultation-card'
-import type { ConsultationStatus } from '@/api/consultations'
+import type { ConsultationStatus } from '@monobase/sdk/types'
 
 export const Route = createFileRoute('/_dashboard/medical-records')({
   beforeLoad: requireAuthWithProfile(),

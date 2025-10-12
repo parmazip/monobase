@@ -18,13 +18,13 @@ import {
   Loader2,
   AlertCircle,
 } from 'lucide-react'
-import { requireAuthWithProfile } from '@/services/guards'
-import { useSession, useToken } from '@/hooks/use-auth'
-import { useAppointment } from '@/hooks/use-appointments'
+import { requireAuthWithProfile } from '@/utils/guards'
+import { useSession, useToken } from '@monobase/sdk/react/hooks/use-auth'
+import { useBooking } from '@monobase/sdk/react/hooks/use-booking'
 import { useVideoCall } from '@monobase/ui/comms/hooks/use-video-call'
 import { VideoTile } from '@monobase/ui/comms/components/video-tile'
 import { Button } from '@monobase/ui/components/button'
-import * as commsApi from '@/api/comms'
+import * as commsApi from '@monobase/sdk/services/comms'
 import {
   Card,
   CardContent,
@@ -77,7 +77,7 @@ function ConsultationPage() {
     data: appointmentData,
     isLoading: isLoadingAppointment,
     error: appointmentError,
-  } = useAppointment(id, 'provider,provider.person')
+  } = useBooking(id, 'provider,provider.person')
 
   // Chat states
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])

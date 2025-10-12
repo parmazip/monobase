@@ -8,7 +8,8 @@ import {
   type BookingTimeSlot,
 } from '../../services/booking'
 import { queryKeys } from '../query-keys'
-import { ApiError } from '../../api'
+import { ApiError, apiGet } from '../../api'
+import type { components } from '@monobase/api-spec/types'
 
 // ============================================================================
 // Provider Search Hooks
@@ -59,6 +60,26 @@ export function useProviderWithSlots(providerId: string, options?: {
         }
         options?.onError?.(error)
       },
+    },
+  })
+}
+
+/**
+ * Hook to get a single time slot by ID
+ */
+export function useTimeSlot(slotId: string, options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: ['booking', 'slots', slotId],
+    queryFn: async () => {
+      const slot = await apiGet<components["schemas"]["TimeSlot"]>(`/booking/slots/${slotId}`, { expand: 'event' })
+      return slot
+    },
+    enabled: options?.enabled !== false && !!slotId,
+    retry: (failureCount, error) => {
+      if (error instanceof ApiError && error.status === 404) {
+        return false
+      }
+      return failureCount < 3
     },
   })
 }

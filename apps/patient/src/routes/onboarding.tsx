@@ -5,21 +5,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@mono
 import { Progress } from '@monobase/ui/components/progress'
 import { ChevronLeft, ChevronRight, UserCheck, MapPin, Stethoscope, Pill } from 'lucide-react'
 import { Logo } from '@/components/logo'
-import { requireAuthWithoutProfile } from '@/services/guards'
+import { requireAuthWithoutProfile } from '@/utils/guards'
 import { useDetectTimezone } from '@monobase/ui/hooks/use-detect-timezone'
 import { useDetectCountry } from '@monobase/ui/hooks/use-detect-country'
 import { toast } from 'sonner'
 import { formatDate } from '@monobase/ui/lib/format-date'
 
 // Import hooks
-import { useCreatePerson } from '@/hooks/use-person'
-import { useCreatePatient } from '@/hooks/use-patient'
+import { useCreateMyPerson } from '@monobase/sdk/react/hooks/use-person'
+import { useCreatePatient } from '@monobase/sdk/react/hooks/use-patient'
 
 // Import types
-import { type PersonCreateRequest } from '@/api/person'
+import { type PersonCreateRequest } from '@monobase/sdk/services/person'
 import type { PersonalInfo, OptionalAddress } from '@monobase/ui/person/schemas'
 import type { PrimaryProviderData, PrimaryPharmacyData } from '@monobase/ui/patient/schemas'
-import { ApiError } from '@/api/client'
+import { ApiError } from '@monobase/sdk/api'
 
 // Import form components
 import { PersonalInfoForm } from '@monobase/ui/person/components/personal-info-form'
@@ -40,7 +40,7 @@ function OnboardingPage() {
   const detectedCountry = useDetectCountry()
 
   // Use both person and patient creation hooks
-  const createPersonMutation = useCreatePerson({
+  const createPersonMutation = useCreateMyPerson({
     onError: (error) => {
       // Suppress toast for "already exists" error - we handle it gracefully
       if (error instanceof ApiError && error.message?.includes('already has a person profile')) {

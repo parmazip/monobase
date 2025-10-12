@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@monobase/ui/components/card'
 import { Badge } from '@monobase/ui/components/badge'
-import type { SymptomsData } from '@/api/consultations'
+import type { SymptomsData } from '@monobase/sdk/types'
 
 interface SymptomsDisplayProps {
   symptoms: SymptomsData

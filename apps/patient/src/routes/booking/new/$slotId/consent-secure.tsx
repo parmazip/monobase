@@ -5,10 +5,10 @@ import { BookingFlowLayout } from '@/components/layouts/booking-flow-layout'
 import { Button } from '@monobase/ui/components/button'
 import { Checkbox } from '@monobase/ui/components/checkbox'
 import { Card, CardContent, CardHeader, CardTitle } from '@monobase/ui/components/card'
-import { useSlot, useBookingProvider } from '@/hooks/use-booking-slots'
+import { useTimeSlot, useProviderWithSlots } from '@monobase/sdk/react/hooks/use-booking'
 import { Skeleton } from '@monobase/ui/components/skeleton'
 import { ErrorBoundary } from '@/components/error-boundary'
-import { apiPost } from '@/api/client'
+import { apiPost } from '@monobase/sdk/api'
 import { toast } from 'sonner'
 import { formatDate } from '@monobase/ui/lib/format-date'
 
@@ -67,10 +67,10 @@ function SecureConsentPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Load slot data using real API hook
-  const { data: slot, isLoading: slotLoading, error: slotError } = useSlot(slotId)
+  const { data: slot, isLoading: slotLoading, error: slotError } = useTimeSlot(slotId)
 
   // Load provider data using slot.owner (provider ID from slot)
-  const { data: provider, isLoading: providerLoading } = useBookingProvider(
+  const { data: provider, isLoading: providerLoading } = useProviderWithSlots(
     slot?.owner || '',
     { enabled: !!slot?.owner }
   )

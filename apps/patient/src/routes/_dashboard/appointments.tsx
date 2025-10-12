@@ -1,7 +1,7 @@
 import { createFileRoute, Link, Outlet, useMatchRoute } from '@tanstack/react-router'
 import { Calendar } from 'lucide-react'
-import { requireAuthWithProfile } from '@/services/guards'
-import { useAppointments } from '@/hooks/use-appointments'
+import { requireAuthWithProfile } from '@/utils/guards'
+import { useListBookings } from '@monobase/sdk/react/hooks/use-booking'
 import { Button } from '@monobase/ui/components/button'
 import { Tabs, TabsList, TabsTrigger } from '@monobase/ui/components/tabs'
 import { Badge } from '@monobase/ui/components/badge'
@@ -15,8 +15,8 @@ function AppointmentsLayout() {
   const matchRoute = useMatchRoute()
 
   // Fetch counts for each tab badge (lightweight queries - limit: 1)
-  const { data: confirmedData } = useAppointments({ status: 'confirmed', limit: 1 })
-  const { data: pendingData } = useAppointments({ status: 'pending', limit: 1 })
+  const { data: confirmedData } = useListBookings({ status: 'confirmed', limit: 1 })
+  const { data: pendingData } = useListBookings({ status: 'pending', limit: 1 })
 
   const confirmedCount = confirmedData?.pagination?.totalCount || 0
   const pendingCount = pendingData?.pagination?.totalCount || 0

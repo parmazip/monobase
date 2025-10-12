@@ -6,9 +6,9 @@ import { Card, CardContent } from '@monobase/ui/components/card'
 import { Alert, AlertDescription } from '@monobase/ui/components/alert'
 import { ActiveBookingCard } from '@monobase/ui/booking/components/active-booking-card'
 import type { ActiveBooking, BookingUser } from '@monobase/ui/booking/types'
-import { useAppointmentWithDetails, useCancelAppointment, useConfirmAppointment } from '@/hooks/use-booking-slots'
-import { useSession } from '@/hooks/use-auth'
-import { useInitiatePayment } from '@/hooks/use-invoices'
+import { useBooking, useCancelBooking, useConfirmBooking } from '@monobase/sdk/react/hooks/use-booking'
+import { useSession } from '@monobase/sdk/react/hooks/use-auth'
+import { useInitiatePayment } from '@monobase/sdk/react/hooks/use-billing'
 import { formatDate } from '@monobase/ui/lib/format-date'
 
 export const Route = createFileRoute('/booking/$appointmentId/details')({
@@ -25,10 +25,10 @@ function BookingDetailsPage() {
     data: appointment,
     isLoading: isLoadingAppointment,
     error: appointmentError
-  } = useAppointmentWithDetails(appointmentId)
+  } = useBooking(appointmentId)
 
-  const cancelAppointmentMutation = useCancelAppointment()
-  const confirmAppointmentMutation = useConfirmAppointment()
+  const cancelAppointmentMutation = useCancelBooking()
+  const confirmAppointmentMutation = useConfirmBooking()
   const initiatePaymentMutation = useInitiatePayment()
 
   const handlePaymentClick = async () => {

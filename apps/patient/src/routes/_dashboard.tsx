@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet } from '@tanstack/react-router'
-import { requireAuthWithProfile } from '@/services/guards'
+import { requireAuthWithProfile } from '@/utils/guards'
 import { AppSidebar, type NavGroup } from '@/components/app-sidebar'
 import {
   SidebarProvider,
@@ -20,11 +20,11 @@ import {
   Video,
 } from 'lucide-react'
 import { UserButton } from '@daveyplate/better-auth-ui'
-import { useUnreadNotifications } from '@/hooks/use-notifications'
-import { useAppointments } from '@/hooks/use-appointments'
+import { useUnreadNotifications } from '@monobase/sdk/react/hooks/use-notifications'
+import { useListBookings } from '@monobase/sdk/react/hooks/use-booking'
 
 export const Route = createFileRoute('/_dashboard')({
-  beforeLoad: requireAuthWithProfile(),
+  beforeLoad: composeGuards(requireAuth, requirePerson),
   component: DashboardLayout,
 })
 
@@ -34,7 +34,7 @@ function DashboardLayout() {
   const unreadCount = unreadData?.pagination?.totalCount || 0
 
   // Fetch confirmed appointments count for badge
-  const { data: confirmedAppointmentsData } = useAppointments({ 
+  const { data: confirmedAppointmentsData } = useListBookings({ 
     status: 'confirmed', 
     limit: 1 
   })
@@ -106,7 +106,7 @@ function DashboardLayout() {
     <SidebarProvider>
       <AppSidebar
         navGroups={navGroups}
-        headerTitle="PARMAZIP"
+        headerTitle="MONOBASE"
         headerSubtitle="Patient Portal"
       />
       <SidebarInset>

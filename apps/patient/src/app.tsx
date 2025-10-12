@@ -5,6 +5,7 @@ import { createRouter } from './router'
 import { initializeOneSignal } from '@/services/onesignal'
 import { useSession } from '@monobase/sdk/react/hooks/use-auth'
 import { useMyPerson } from '@monobase/sdk/react/hooks/use-person'
+import { useMyPatient } from '@monobase/sdk/react/hooks/use-patient'
 import { useOneSignal } from '@/hooks/use-onesignal'
 import { apiBaseUrl } from '@/utils/config'
 import { Loading } from '@/components/loading'
@@ -30,9 +31,10 @@ function InnerApp() {
   // Use isPending (not isLoading) to avoid blocking during retries/refetches
   const { data: session, isPending: sessionPending } = useSession()
   const { data: person, isPending: personPending } = useMyPerson()
+  const { data: patient, isPending: patientPending } = useMyPatient()
 
   // Show loading only on very first fetch before any data/error is received
-  if (sessionPending || personPending) {
+  if (sessionPending || personPending || patientPending) {
     return <Loading />
   }
 
@@ -49,6 +51,7 @@ function InnerApp() {
       session: session?.session || null,
       user: session?.user || null,
       person: person || null,
+      patient: patient || null,
     }
   }
   return <RouterProvider router={router} context={context} />
@@ -62,7 +65,6 @@ function App() {
     <ApiProvider apiBaseUrl={apiBaseUrl}>
       <InnerApp />
       <TanStackDevtools
-        position="bottom-right"
         plugins={[
           {
             name: 'TanStack Query',

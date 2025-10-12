@@ -10,9 +10,9 @@ import {
   Loader2,
   type LucideIcon,
 } from 'lucide-react'
-import { requireAuthWithProfile } from '@/services/guards'
+import { requireAuthWithProfile } from '@/utils/guards'
 import { formatRelativeDate } from '@monobase/ui/lib/format-date'
-import { useNotifications, useMarkNotificationAsRead, useMarkAllNotificationsAsRead } from '@/hooks/use-notifications'
+import { useNotifications, useMarkNotificationAsRead, useMarkAllNotificationsAsRead } from '@monobase/sdk/react/hooks/use-notifications'
 import type { Notification, NotificationType } from '@/api/notifications'
 import { Button } from '@monobase/ui/components/button'
 import {

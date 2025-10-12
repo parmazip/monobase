@@ -5,7 +5,7 @@ import { VitalsDisplay } from './vitals-display'
 import { PrescriptionsList } from './prescriptions-list'
 import { SymptomsDisplay } from './symptoms-display'
 import { FollowUpDisplay } from './follow-up-display'
-import type { ConsultationNote } from '@/api/consultations'
+import type { ConsultationNote } from '@monobase/sdk/types'
 import { formatDate } from '@monobase/ui/lib/format-date'
 
 interface ConsultationCardProps {

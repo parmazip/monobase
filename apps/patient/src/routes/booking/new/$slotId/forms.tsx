@@ -13,9 +13,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@monobase/ui/components/checkbox'
 import { Separator } from '@monobase/ui/components/separator'
 import { BookingFlowLayout } from '@/components/layouts/booking-flow-layout'
-import { useSession } from '@/hooks/use-auth'
+import { useSession } from '@monobase/sdk/react/hooks/use-auth'
 import { ErrorBoundary } from '@/components/error-boundary'
-import { useSlot } from '@/hooks/use-booking-slots'
+import { useTimeSlot } from '@monobase/sdk/react/hooks/use-booking'
 import { Skeleton } from '@monobase/ui/components/skeleton'
 
 // Booking form configuration types (temporarily defined here until API provides them)
@@ -60,7 +60,7 @@ function BookingFormsPage() {
   const { data: session } = useSession()
 
   // Use real API hook to fetch slot data
-  const { data: slot, isLoading: isLoadingSlot, error: slotError } = useSlot(slotId)
+  const { data: slot, isLoading: isLoadingSlot, error: slotError } = useTimeSlot(slotId)
 
   // Form responses state - key is field ID, value is the response
   const [formResponses, setFormResponses] = useState<Record<string, any>>({})

@@ -10,8 +10,8 @@ import {
   XCircle,
 } from 'lucide-react'
 import { differenceInMinutes } from 'date-fns'
-import { requireAuthWithProfile } from '@/services/guards'
-import { useAppointments } from '@/hooks/use-appointments'
+import { requireAuthWithProfile } from '@/utils/guards'
+import { useListBookings } from '@monobase/sdk/react/hooks/use-booking'
 import { Button } from '@monobase/ui/components/button'
 import {
   Card,
@@ -37,7 +37,7 @@ function ConsultationsPage() {
     data: upcomingData,
     isLoading: upcomingLoading,
     error: upcomingError,
-  } = useAppointments({
+  } = useListBookings({
     status: 'confirmed',
     expand: 'provider,provider.person',
     sort: 'scheduledAt',
@@ -47,7 +47,7 @@ function ConsultationsPage() {
     data: pastData,
     isLoading: pastLoading,
     error: pastError,
-  } = useAppointments({
+  } = useListBookings({
     status: 'completed',
     expand: 'provider,provider.person',
     sort: '-scheduledAt',

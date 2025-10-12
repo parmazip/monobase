@@ -8,7 +8,7 @@ import {
   SessionsCard,
   // DeleteAccountCard,
 } from '@daveyplate/better-auth-ui'
-import { requireAuthWithProfile } from '@/services/guards'
+import { requireAuthWithProfile } from '@/utils/guards'
 
 export const Route = createFileRoute('/_dashboard/settings/security')({
   beforeLoad: requireAuthWithProfile(),

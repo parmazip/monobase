@@ -1,7 +1,7 @@
 import { describe, test, expect } from 'bun:test'
 import { render, screen } from '@testing-library/react'
 import { ConsultationCard } from './consultation-card'
-import type { ConsultationNote } from '@/api/consultations'
+import type { ConsultationNote } from '@monobase/sdk/types'
 
 // Mock child components to simplify testing
 const mockVitalsDisplay = () => <div data-testid="vitals-display">Vitals</div>
