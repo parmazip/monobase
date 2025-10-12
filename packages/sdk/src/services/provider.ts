@@ -1,4 +1,5 @@
-import { apiRequest, type PaginatedResponse } from '../api'
+import { apiGet, apiPost, apiPatch, apiDelete, ApiError, type PaginatedResponse } from '../api'
+import { sanitizeObject } from '../utils/api'
 import type { components } from '@monobase/api-spec/types'
 
 // ============================================================================
@@ -94,10 +95,7 @@ export interface ProviderQueryParams {
 export async function listProviders(
   params?: ProviderQueryParams
 ): Promise<PaginatedResponse<Provider>> {
-  return apiRequest<PaginatedResponse<Provider>>('/providers', {
-    method: 'GET',
-    params,
-  })
+  return apiGet<PaginatedResponse<Provider>>('/providers', params)
 }
 
 /**
@@ -108,10 +106,7 @@ export async function getProvider(
   id: string,
   expand?: string
 ): Promise<Provider> {
-  return apiRequest<Provider>(`/providers/${id}`, {
-    method: 'GET',
-    params: expand ? { expand } : undefined,
-  })
+  return apiGet<Provider>(`/providers/${id}`, expand ? { expand } : undefined)
 }
 
 /**
@@ -120,10 +115,7 @@ export async function getProvider(
 export async function createProvider(
   data: ProviderCreateRequest
 ): Promise<Provider> {
-  return apiRequest<Provider>('/providers', {
-    method: 'POST',
-    body: data,
-  })
+  return apiPost<Provider>('/providers', sanitizeObject(data, { nullable: [] }))
 }
 
 /**
@@ -133,19 +125,16 @@ export async function updateProvider(
   id: string,
   updates: ProviderUpdateRequest
 ): Promise<Provider> {
-  return apiRequest<Provider>(`/providers/${id}`, {
-    method: 'PATCH',
-    body: updates,
-  })
+  return apiPatch<Provider>(`/providers/${id}`, sanitizeObject(updates, { 
+    nullable: ['yearsOfExperience', 'biography', 'minorAilmentsSpecialties', 'minorAilmentsPracticeLocations']
+  }))
 }
 
 /**
  * Delete a provider profile (soft delete)
  */
 export async function deleteProvider(id: string): Promise<void> {
-  return apiRequest<void>(`/providers/${id}`, {
-    method: 'DELETE',
-  })
+  return apiDelete<void>(`/providers/${id}`)
 }
 
 // ============================================================================
@@ -160,7 +149,7 @@ export async function getMyProvider(): Promise<Provider | null> {
     return await getProvider('me')
   } catch (error) {
     // Return null if provider doesn't exist (404)
-    if ((error as any)?.status === 404) {
+    if (error instanceof ApiError && error.status === 404) {
       return null
     }
     throw error

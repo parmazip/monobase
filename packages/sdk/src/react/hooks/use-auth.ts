@@ -136,7 +136,7 @@ export function useAuthMutation(...args: Parameters<ReturnType<typeof createAuth
 export function useSignOut() {
   const authClient = useAuthClient()
   const queryClient = useQueryClient()
-  
+
   return useMutation({
     mutationFn: async () => {
       return authClient.signOut()
