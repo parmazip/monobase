@@ -1,65 +1,101 @@
-/**
- * Consultation Card Component
- * 
- * Displays consultation information in a card format
- */
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@monobase/ui/components/card'
+import { Badge } from '@monobase/ui/components/badge'
+import { Separator } from '@monobase/ui/components/separator'
+import { VitalsDisplay } from './vitals-display'
+import { PrescriptionsList } from './prescriptions-list'
+import { SymptomsDisplay } from './symptoms-display'
+import { FollowUpDisplay } from './follow-up-display'
+import type { ConsultationNote } from '@monobase/sdk/types'
+import { formatDate } from '@monobase/ui/lib/format-date'
 
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/card'
-import { Badge } from '../../components/badge'
-import { Calendar, Clock, Video, Phone, MapPin } from 'lucide-react'
-import type { ConsultationDisplay } from '../types'
-
-export interface ConsultationCardProps {
-  consultation: ConsultationDisplay
-  onClick?: () => void
-  className?: string
+interface ConsultationCardProps {
+  consultation: ConsultationNote
 }
 
-const consultationTypeIcons = {
-  video: Video,
-  phone: Phone,
-  'in-person': MapPin,
-}
+export function ConsultationCard({ consultation }: ConsultationCardProps) {
+  // Extract provider name if expanded
+  const providerName =
+    typeof consultation.provider === 'object'
+      ? `${consultation.provider.person.firstName} ${consultation.provider.person.lastName}`
+      : 'Provider'
 
-const statusColors = {
-  scheduled: 'default',
-  completed: 'secondary',
-  cancelled: 'destructive',
-  no_show: 'outline',
-} as const
+  // Format date
+  const consultationDate = formatDate(consultation.createdAt, { format: 'long' })
 
-export function ConsultationCard({ consultation, onClick, className }: ConsultationCardProps) {
-  const TypeIcon = consultationTypeIcons[consultation.type]
-  
+  // Status badge variant
+  const statusVariant =
+    consultation.status === 'finalized'
+      ? 'default'
+      : consultation.status === 'draft'
+        ? 'secondary'
+        : 'outline'
+
   return (
-    <Card 
-      className={`cursor-pointer hover:shadow-md transition-shadow ${className || ''}`}
-      onClick={onClick}
-    >
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between">
-          <CardTitle className="text-lg">{consultation.patientName}</CardTitle>
-          <Badge variant={statusColors[consultation.status]}>
-            {consultation.status.replace('_', ' ')}
-          </Badge>
+    <Card className="mb-4">
+      <CardHeader>
+        <div className="flex justify-between items-start">
+          <div className="space-y-1">
+            <CardTitle className="text-lg">
+              {consultation.chiefComplaint || 'Consultation'}
+            </CardTitle>
+            <CardDescription>
+              {providerName} • {consultationDate}
+            </CardDescription>
+          </div>
+          <Badge variant={statusVariant}>{consultation.status}</Badge>
         </div>
       </CardHeader>
-      <CardContent className="space-y-2">
-        <div className="flex items-center gap-2 text-sm">
-          <Calendar className="h-4 w-4 text-muted-foreground" />
-          <span>{consultation.date}</span>
-        </div>
-        <div className="flex items-center gap-2 text-sm">
-          <Clock className="h-4 w-4 text-muted-foreground" />
-          <span>{consultation.duration} minutes</span>
-        </div>
-        <div className="flex items-center gap-2 text-sm">
-          <TypeIcon className="h-4 w-4 text-muted-foreground" />
-          <span className="capitalize">{consultation.type}</span>
-        </div>
-        {consultation.chiefComplaint && (
-          <div className="pt-2 text-sm text-muted-foreground">
-            <span className="font-medium">Chief complaint:</span> {consultation.chiefComplaint}
+
+      <CardContent className="space-y-4">
+        {/* Vitals */}
+        {consultation.vitals && <VitalsDisplay vitals={consultation.vitals} />}
+
+        {/* Symptoms */}
+        {consultation.symptoms && <SymptomsDisplay symptoms={consultation.symptoms} />}
+
+        {/* Assessment */}
+        {consultation.assessment && (
+          <div className="space-y-2">
+            <h4 className="text-sm font-semibold">Assessment</h4>
+            <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+              {consultation.assessment}
+            </p>
+          </div>
+        )}
+
+        {/* Treatment Plan */}
+        {consultation.plan && (
+          <>
+            <Separator />
+            <div className="space-y-2">
+              <h4 className="text-sm font-semibold">Treatment Plan</h4>
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                {consultation.plan}
+              </p>
+            </div>
+          </>
+        )}
+
+        {/* Prescriptions */}
+        {consultation.prescriptions && consultation.prescriptions.length > 0 && (
+          <>
+            <Separator />
+            <PrescriptionsList prescriptions={consultation.prescriptions} />
+          </>
+        )}
+
+        {/* Follow-Up */}
+        {consultation.followUp && (
+          <>
+            <Separator />
+            <FollowUpDisplay followUp={consultation.followUp} />
+          </>
+        )}
+
+        {/* Finalized info */}
+        {consultation.finalizedAt && (
+          <div className="text-xs text-muted-foreground mt-4 pt-4 border-t">
+            Finalized on {formatDate(consultation.finalizedAt, { format: 'datetime' })}
           </div>
         )}
       </CardContent>
