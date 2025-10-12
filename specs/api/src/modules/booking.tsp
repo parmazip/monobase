@@ -40,8 +40,14 @@ enum FormFieldType {
   @doc("Number input")
   number: "number",
 
+  @doc("Date picker")
+  date: "date",
+
   @doc("Date and time picker")
   datetime: "datetime",
+
+  @doc("URL input")
+  url: "url",
 
   @doc("Single-select dropdown")
   select: "select",
@@ -79,11 +85,11 @@ model FormFieldValidation {
   @doc("Maximum string length")
   maxLength?: int32;
 
-  @doc("Minimum numeric value")
-  min?: float64;
+  @doc("Minimum value (numeric for number fields, date string for date fields)")
+  min?: float64 | string;
 
-  @doc("Maximum numeric value")
-  max?: float64;
+  @doc("Maximum value (numeric for number fields, date string for date fields)")
+  max?: float64 | string;
 
   @doc("Regex pattern for validation")
   pattern?: string;
@@ -103,8 +109,8 @@ model FormConfig {
  */
 @doc("Form field configuration")
 model FormFieldConfig {
-  @doc("Field identifier")
-  id: string;
+  @doc("Field name/identifier")
+  name: string;
 
   @doc("Field type")
   type: FormFieldType;
@@ -158,7 +164,7 @@ model BookingEvent extends BaseEntity {
   owner: UUID;
 
   @doc("Optional context for domain associations")
-  context?: UUID;
+  context?: string;
 
   @doc("Event title")
   title: string;
@@ -249,7 +255,7 @@ model TimeSlot extends BaseEntity {
   event: UUID;
 
   @doc("Optional context (inherited from event)")
-  context?: UUID;
+  context?: string;
 
   @doc("Slot date")
   date: plainDate;
@@ -339,7 +345,7 @@ model ScheduleException extends BaseEntity {
   owner: UUID;
 
   @doc("Optional context (inherited from event)")
-  context?: UUID;
+  context?: string;
 
   @doc("Exception timezone (can differ from event timezone)")
   timezone: string;
@@ -380,6 +386,11 @@ model RecurrencePattern {
   @minValue(1)
   @maxValue(31)
   dayOfMonth?: int32;
+
+  @doc("Month of year for yearly recurrence (1-12)")
+  @minValue(1)
+  @maxValue(12)
+  monthOfYear?: int32;
 
   @doc("End date for recurrence")
   endDate?: plainDate;
@@ -491,7 +502,7 @@ model BookingEventCreateRequest {
   tags?: string[];
 
   @doc("Optional context for domain associations")
-  context?: UUID;
+  context?: string;
 
   @doc("Event timezone (default: 'America/New_York')")
   timezone?: string;
@@ -661,7 +672,7 @@ namespace BookingModule {
       @doc("Filter by event owner (person ID)")
       @query owner?: UUID,
       @doc("Filter by context")
-      @query context?: UUID,
+      @query context?: string,
       @doc("Filter by location type")
       @query locationType?: LocationType,
       @doc("Filter by event status")

@@ -6,7 +6,7 @@
 import { Context } from 'hono';
 import type { DatabaseInstance } from '@/core/database';
 import { BookingEventRepository } from './repos/bookingEvent.repo';
-import { parsePagination } from '@/utils/query';
+import { parsePagination, shouldExpand } from '@/utils/query';
 
 export async function listBookingEvents(c: Context) {
   const db = c.get('database') as DatabaseInstance;
@@ -58,8 +58,19 @@ export async function listBookingEvents(c: Context) {
       tagsAnd
     };
 
+    // Check if owner should be expanded
+    const expandOwner = shouldExpand(query, 'owner');
+
     // Get events with pagination
-    const result = await repo.findManyWithPagination(filters, { pagination: { limit, offset } });
+    let result;
+    if (expandOwner) {
+      // Get events with owner person data
+      const events = await repo.findManyWithOwner(filters, { limit, offset });
+      const totalCount = await repo.count(filters);
+      result = { data: events, totalCount };
+    } else {
+      result = await repo.findManyWithPagination(filters, { pagination: { limit, offset } });
+    }
 
     return c.json(result);
   } catch (error) {

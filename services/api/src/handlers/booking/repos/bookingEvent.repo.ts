@@ -20,6 +20,7 @@ import {
   type BillingConfig,
   DayOfWeek
 } from './booking.schema';
+import { persons } from '../../person/repos/person.schema';
 
 export interface BookingEventFilters {
   owner?: string;
@@ -464,5 +465,74 @@ export interface BookingEventFilters {
     }, 'Active events in date range retrieved');
 
     return events;
+  }
+
+  /**
+   * Find booking event by ID with owner (person) data joined
+   */
+  async findOneByIdWithOwner(eventId: string): Promise<any | null> {
+    this.logger?.debug({ eventId }, 'Finding booking event with owner data');
+
+    const result = await this.db
+      .select({
+        event: bookingEvents,
+        owner: persons
+      })
+      .from(bookingEvents)
+      .innerJoin(persons, eq(bookingEvents.owner, persons.id))
+      .where(and(
+        eq(bookingEvents.id, eventId),
+        isNull(bookingEvents.deletedAt)
+      ))
+      .limit(1);
+
+    if (result.length === 0) {
+      return null;
+    }
+
+    const { event, owner } = result[0];
+
+    this.logger?.debug({
+      eventId,
+      ownerId: owner.id
+    }, 'Booking event with owner retrieved');
+
+    // Return event with owner as Person object instead of UUID
+    return { ...event, owner };
+  }
+
+  /**
+   * Find many booking events with owner (person) data joined
+   */
+  async findManyWithOwner(filters?: BookingEventFilters, options?: PaginationOptions): Promise<any[]> {
+    this.logger?.debug({ filters, options }, 'Finding booking events with owner data');
+
+    const whereConditions = this.buildWhereConditions(filters);
+
+    const query = this.db
+      .select({
+        event: bookingEvents,
+        owner: persons
+      })
+      .from(bookingEvents)
+      .innerJoin(persons, eq(bookingEvents.owner, persons.id))
+      .where(and(whereConditions, isNull(bookingEvents.deletedAt)));
+
+    if (options?.limit) {
+      query.limit(options.limit);
+    }
+    if (options?.offset) {
+      query.offset(options.offset);
+    }
+
+    const results = await query;
+
+    this.logger?.debug({
+      filters,
+      resultCount: results.length
+    }, 'Booking events with owner retrieved');
+
+    // Return events with owner as Person object
+    return results.map(({ event, owner }) => ({ ...event, owner }));
   }
 }

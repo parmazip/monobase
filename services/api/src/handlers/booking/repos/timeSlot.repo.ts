@@ -269,28 +269,8 @@ export class TimeSlotRepository extends DatabaseRepository<TimeSlot, NewTimeSlot
     this.logger?.debug({ count: slots.length }, 'Bulk creating slots');
 
     try {
-      // Verify all slot owners (person IDs) exist before creating slots
-      const uniqueOwners = [...new Set(slots.map(slot => slot.owner))];
-      const existingPersons = await this.db
-        .select({ id: persons.id })
-        .from(persons)
-        .where(inArray(persons.id, uniqueOwners));
-
-      const existingPersonIds = new Set(existingPersons.map(p => p.id));
-      const missingPersons = uniqueOwners.filter(id => !existingPersonIds.has(id));
-
-      if (missingPersons.length > 0) {
-        this.logger?.error({
-          missingPersons,
-          totalSlots: slots.length,
-          action: 'slot_creation_blocked'
-        }, 'Cannot create slots: some persons (owners) do not exist');
-
-        // Return without creating any slots to prevent foreign key violations
-        return { created: [], duplicates: 0, errors: slots.length };
-      }
-
       // Create slots with ON CONFLICT handling
+      // Note: Foreign key constraint on owner_id will catch invalid person IDs
       const createdSlots = await this.db
         .insert(timeSlots)
         .values(slots)

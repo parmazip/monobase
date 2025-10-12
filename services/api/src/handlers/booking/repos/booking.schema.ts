@@ -75,7 +75,7 @@ export const bookingEvents = pgTable('booking_event', {
     .notNull()
     .references(() => persons.id, { onDelete: 'cascade' }), // Person who owns the event
 
-  context: uuid('context_id'), // Optional domain associations
+  context: text('context_id'), // Optional domain associations
 
   // Event metadata
   title: text('title').notNull(), // Event title
@@ -163,7 +163,7 @@ export const timeSlots = pgTable('time_slot', {
     .notNull()
     .references(() => bookingEvents.id, { onDelete: 'cascade' }),
 
-  context: uuid('context_id'), // Optional context (inherited from event)
+  context: text('context_id'), // Optional context (inherited from event)
 
   // Slot timing
   // IMPORTANT: Denormalized date/timestamp design
@@ -297,7 +297,7 @@ export const scheduleExceptions = pgTable('schedule_exception', {
     .notNull()
     .references(() => persons.id, { onDelete: 'cascade' }), // Exception owner (person)
 
-  context: uuid('context_id'), // Optional context (inherited from event)
+  context: text('context_id'), // Optional context (inherited from event)
 
   timezone: text('timezone')
     .notNull()
@@ -363,7 +363,7 @@ export interface DailyConfig {
 }
 
 // Form field type enum - matches TypeSpec
-export type FormFieldType = 'text' | 'textarea' | 'email' | 'phone' | 'number' | 'datetime' | 'select' | 'multiselect' | 'checkbox' | 'display';
+export type FormFieldType = 'text' | 'textarea' | 'email' | 'phone' | 'number' | 'date' | 'datetime' | 'url' | 'select' | 'multiselect' | 'checkbox' | 'display';
 
 // Form field option for select/multiselect - matches TypeSpec
 export interface FormFieldOption {
@@ -375,8 +375,8 @@ export interface FormFieldOption {
 export interface FormFieldValidation {
   minLength?: number;
   maxLength?: number;
-  min?: number;
-  max?: number;
+  min?: number | string; // Number for numeric fields, string for date fields
+  max?: number | string; // Number for numeric fields, string for date fields
   pattern?: string;
 }
 
@@ -386,7 +386,8 @@ export interface FormConfig {
 }
 
 export interface FormFieldConfig {
-  id: string;  type: FormFieldType;
+  name: string;
+  type: FormFieldType;
   label: string;
   required?: boolean;
   options?: FormFieldOption[];
@@ -412,6 +413,7 @@ export interface RecurrencePattern {
   interval?: number; // Default: 1
   daysOfWeek?: number[]; // For weekly (0=Sunday, 6=Saturday)
   dayOfMonth?: number; // For monthly (1-31)
+  monthOfYear?: number; // For yearly (1-12)
   endDate?: string; // End date for recurrence (plainDate format)
   maxOccurrences?: number; // Maximum number of occurrences
 }// Form response data for booking creation - matches TypeSpec

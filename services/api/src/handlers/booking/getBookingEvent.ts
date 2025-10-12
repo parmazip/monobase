@@ -1,32 +1,56 @@
 import { Context } from 'hono';
 import type { DatabaseInstance } from '@/core/database';
+import type { User } from '@/types/auth';
 import {
-  NotFoundError
+  NotFoundError,
+  UnauthorizedError
 } from '@/core/errors';
 import { BookingEventRepository } from './repos/bookingEvent.repo';
 import { TimeSlotRepository } from './repos/timeSlot.repo';
+import { shouldExpand } from '@/utils/query';
 
 /**
  * getBookingEvent
- * 
+ *
  * Path: GET /booking/events/{event}
  * OperationId: getBookingEvent
- * Security: Public endpoint (no authentication required)
+ * Security: Optional authentication (supports "me" parameter)
  */
 export async function getBookingEvent(ctx: Context) {
   // Get validated parameters
   const params = ctx.req.valid('param') as { event: string };
   const query = ctx.req.valid('query') as { expand?: string };
-  
+
   // Get dependencies from context
   const db = ctx.get('database') as DatabaseInstance;
   const logger = ctx.get('logger');
-  
+
   // Instantiate repository
   const repo = new BookingEventRepository(db, logger);
-  
-  // Find booking event (public access - no ownership check)
-  const event = await repo.findOneById(params.event);
+
+  // Resolve "me" parameter
+  let eventId = params.event;
+  if (eventId === 'me') {
+    const user = ctx.get('user') as User | undefined;
+    if (!user) {
+      throw new UnauthorizedError('Authentication required for "me" parameter');
+    }
+
+    // Find user's first event by owner
+    const userEvents = await repo.findMany({ owner: user.id }, { limit: 1 });
+    if (!userEvents.length) {
+      throw new NotFoundError('No booking events found for current user');
+    }
+    eventId = userEvents[0].id;
+  }
+
+  // Check if owner should be expanded
+  const expandOwner = shouldExpand(query, 'owner');
+
+  // Find booking event with or without owner expansion
+  const event = expandOwner
+    ? await repo.findOneByIdWithOwner(eventId)
+    : await repo.findOneById(eventId);
   
   if (!event) {
     throw new NotFoundError('Booking event not found', {

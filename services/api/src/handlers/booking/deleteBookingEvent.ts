@@ -19,17 +19,17 @@ import { BookingEventRepository } from './repos/bookingEvent.repo';
 export async function deleteBookingEvent(ctx: Context) {
   // Get authenticated user (guaranteed by auth middleware)
   const user = ctx.get('user') as User;
-  
+
   // Get validated parameters
   const { event: eventId } = ctx.req.param();
-  
+
   // Get dependencies from context
   const db = ctx.get('database') as DatabaseInstance;
   const logger = ctx.get('logger');
-  
+
   // Instantiate repository
   const repo = new BookingEventRepository(db, logger);
-  
+
   // Check ownership
   const event = await repo.findOneById(eventId);
   if (!event) {

@@ -10,7 +10,7 @@ CREATE TYPE "public"."booking_event_status" AS ENUM('draft', 'active', 'paused',
 CREATE TYPE "public"."booking_status" AS ENUM('pending', 'confirmed', 'rejected', 'cancelled', 'completed', 'no_show_client', 'no_show_provider');--> statement-breakpoint
 CREATE TYPE "public"."consultation_mode" AS ENUM('video', 'phone', 'in-person');--> statement-breakpoint
 CREATE TYPE "public"."location_type" AS ENUM('video', 'phone', 'in-person');--> statement-breakpoint
-CREATE TYPE "public"."recurrence_type" AS ENUM('daily', 'weekly', 'monthly');--> statement-breakpoint
+CREATE TYPE "public"."recurrence_type" AS ENUM('daily', 'weekly', 'monthly', 'yearly');--> statement-breakpoint
 CREATE TYPE "public"."slot_status" AS ENUM('available', 'booked', 'blocked');--> statement-breakpoint
 CREATE TYPE "public"."chat_room_status" AS ENUM('active', 'archived');--> statement-breakpoint
 CREATE TYPE "public"."message_type" AS ENUM('text', 'system', 'video_call');--> statement-breakpoint
@@ -230,9 +230,11 @@ CREATE TABLE IF NOT EXISTS "booking_event" (
 	"updated_by" uuid,
 	"deleted_by" uuid,
 	"owner_id" uuid NOT NULL,
-	"context_id" uuid,
+	"context_id" text,
 	"title" text NOT NULL,
 	"description" text,
+	"keywords" jsonb DEFAULT '[]'::jsonb,
+	"tags" jsonb DEFAULT '[]'::jsonb,
 	"timezone" text DEFAULT 'America/New_York' NOT NULL,
 	"location_types" jsonb DEFAULT '["video","phone","in-person"]'::jsonb NOT NULL,
 	"max_booking_days" integer DEFAULT 30 NOT NULL,
@@ -288,7 +290,7 @@ CREATE TABLE IF NOT EXISTS "schedule_exception" (
 	"deleted_by" uuid,
 	"event_id" uuid NOT NULL,
 	"owner_id" uuid NOT NULL,
-	"context_id" uuid,
+	"context_id" text,
 	"timezone" text DEFAULT 'America/New_York' NOT NULL,
 	"start_datetime" timestamp NOT NULL,
 	"end_datetime" timestamp NOT NULL,
@@ -310,7 +312,7 @@ CREATE TABLE IF NOT EXISTS "time_slot" (
 	"deleted_by" uuid,
 	"owner_id" uuid NOT NULL,
 	"event_id" uuid NOT NULL,
-	"context_id" uuid,
+	"context_id" text,
 	"date" date NOT NULL,
 	"start_time" timestamp NOT NULL,
 	"end_time" timestamp NOT NULL,
@@ -349,7 +351,7 @@ CREATE TABLE IF NOT EXISTS "chat_room" (
 	"deleted_by" uuid,
 	"participants" jsonb NOT NULL,
 	"admins" jsonb NOT NULL,
-	"context_id" uuid,
+	"context_id" text,
 	"status" "chat_room_status" DEFAULT 'active' NOT NULL,
 	"last_message_at" timestamp,
 	"message_count" integer DEFAULT 0 NOT NULL,
@@ -632,6 +634,8 @@ CREATE INDEX IF NOT EXISTS "booking_events_status_idx" ON "booking_event" USING 
 CREATE INDEX IF NOT EXISTS "booking_events_active_idx" ON "booking_event" USING btree ("owner_id","status") WHERE "booking_event"."status" = 'active';--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "booking_events_deleted_at_idx" ON "booking_event" USING btree ("deleted_at");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "booking_events_effective_dates_idx" ON "booking_event" USING btree ("effective_from","effective_to");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "booking_events_keywords_idx" ON "booking_event" USING gin ("keywords");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "booking_events_tags_idx" ON "booking_event" USING gin ("tags");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "bookings_client_id_idx" ON "booking" USING btree ("client_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "bookings_provider_id_idx" ON "booking" USING btree ("provider_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "bookings_status_idx" ON "booking" USING btree ("status");--> statement-breakpoint

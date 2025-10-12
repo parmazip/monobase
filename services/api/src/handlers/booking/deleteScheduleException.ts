@@ -21,21 +21,21 @@ export async function deleteScheduleException(ctx: Context) {
   const user = ctx.get('user') as User;
   
   // Get validated parameters
-  const params = ctx.req.valid('param') as { exceptionId: string };
-  
+  const params = ctx.req.valid('param') as { event: string; exception: string };
+
   // Get dependencies from context
   const db = ctx.get('database') as DatabaseInstance;
   const logger = ctx.get('logger');
-  
+
   // Instantiate repository
   const repo = new ScheduleExceptionRepository(db, logger);
-  
+
   // Check ownership
-  const exception = await repo.findOneById(params.exceptionId);
+  const exception = await repo.findOneById(params.exception);
   if (!exception) {
     throw new NotFoundError('Schedule exception not found', {
       resourceType: 'schedule_exception',
-      resource: params.exceptionId,
+      resource: params.exception,
       suggestions: ['Check exception ID', 'Verify exception exists']
     });
   }
@@ -45,16 +45,16 @@ export async function deleteScheduleException(ctx: Context) {
   }
 
   // Delete the exception
-  await repo.deleteOneById(params.exceptionId);
+  await repo.deleteOneById(params.exception);
 
   // Log audit trail
   logger?.info({
-    exceptionId: params.exceptionId,
+    exceptionId: params.exception,
     userId: user.id,
     action: 'delete_schedule_exception',
     ipAddress: ctx.req.header('x-forwarded-for') || ctx.req.header('x-real-ip'),
     userAgent: ctx.req.header('user-agent')
   }, 'Schedule exception deleted');
 
-  return ctx.json({ message: 'Schedule exception deleted successfully' }, 200);
+  return new Response(null, { status: 204 });
 }

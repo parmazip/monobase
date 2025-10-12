@@ -135,9 +135,8 @@ export async function runMigrationsInSchema(connection: Sql, schemaName: string)
       let sql = await readFile(sqlPath, 'utf-8');
 
       // Replace "public" schema references with our test schema
-      // This handles CREATE TYPE "public".xxx, REFERENCES "public"."table", and other schema-qualified objects
+      // This handles CREATE TYPE "public".xxx and other schema-qualified objects
       sql = sql.replace(/"public"\./g, `"${schemaName}".`);
-      sql = sql.replace(/REFERENCES "public"\./g, `REFERENCES "${schemaName}".`);
 
       // Split by statement breakpoint and execute each statement
       const statements = sql.split('--> statement-breakpoint').filter(s => s.trim());

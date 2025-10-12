@@ -58,7 +58,7 @@ export const chatRooms = pgTable('chat_room', {
     .notNull(),
 
   // Generic context linking (bookings, billing sessions, etc.)
-  context: uuid('context_id'),
+  context: text('context_id'),
     // Note: Generic reference - can link to bookings, billing, etc.
   
   // Room status and metadata

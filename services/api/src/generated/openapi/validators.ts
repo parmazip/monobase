@@ -223,7 +223,7 @@ export const BookingCreateRequestSchema = z.object({
   formResponses: FormResponseDataSchema.optional()
 });
 
-export const FormFieldTypeSchema = z.enum(["text", "textarea", "email", "phone", "number", "datetime", "select", "multiselect", "checkbox", "display"]);
+export const FormFieldTypeSchema = z.enum(["text", "textarea", "email", "phone", "number", "date", "datetime", "url", "select", "multiselect", "checkbox", "display"]);
 
 export const FormFieldOptionSchema = z.object({
   label: z.string(),
@@ -233,13 +233,13 @@ export const FormFieldOptionSchema = z.object({
 export const FormFieldValidationSchema = z.object({
   minLength: z.number().int().optional(),
   maxLength: z.number().int().optional(),
-  min: z.number().optional(),
-  max: z.number().optional(),
+  min: z.union([z.number(), z.string()]).optional(),
+  max: z.union([z.number(), z.string()]).optional(),
   pattern: z.string().optional()
 });
 
 export const FormFieldConfigSchema = z.object({
-  id: z.string(),
+  name: z.string(),
   type: FormFieldTypeSchema,
   label: z.string(),
   required: z.boolean().optional(),
@@ -269,7 +269,7 @@ export const DailyConfigSchema = z.object({
 
 export const BookingEventSchema = z.intersection(BaseEntitySchema, z.object({
   owner: UUIDSchema,
-  context: UUIDSchema.optional(),
+  context: z.string().optional(),
   title: z.string(),
   description: z.string().optional(),
   keywords: z.array(z.string()).optional(),
@@ -291,7 +291,7 @@ export const BookingEventCreateRequestSchema = z.object({
   description: z.string().optional(),
   keywords: z.array(z.string()).optional(),
   tags: z.array(z.string()).optional(),
-  context: UUIDSchema.optional(),
+  context: z.string().optional(),
   timezone: z.string().optional(),
   locationTypes: z.array(LocationTypeSchema).optional(),
   maxBookingDays: z.number().int().gte(0).lte(365).optional(),
@@ -752,6 +752,7 @@ export const RecurrencePatternSchema = z.object({
   interval: z.number().int().gte(1).optional(),
   daysOfWeek: z.array(z.number().int()).optional(),
   dayOfMonth: z.number().int().gte(1).lte(31).optional(),
+  monthOfYear: z.number().int().gte(1).lte(12).optional(),
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(val => { const parsed = new Date(val + "T00:00:00Z"); return !isNaN(parsed.getTime()) && parsed.toISOString().split("T")[0] === val; }, { message: "Invalid calendar date" }).optional(),
   maxOccurrences: z.number().int().gte(1).optional()
 });
@@ -779,7 +780,7 @@ export const ReviewSchema = z.intersection(BaseEntitySchema, z.object({
 export const ScheduleExceptionSchema = z.intersection(BaseEntitySchema, z.object({
   event: UUIDSchema,
   owner: UUIDSchema,
-  context: UUIDSchema.optional(),
+  context: z.string().optional(),
   timezone: z.string(),
   startDatetime: z.string().datetime().transform((str) => new Date(str)),
   endDatetime: z.string().datetime().transform((str) => new Date(str)),
@@ -828,7 +829,7 @@ export const TimeSlotSchema = z.intersection(BaseEntitySchema, z.object({
   id: UUIDSchema,
   owner: UUIDSchema,
   event: UUIDSchema,
-  context: UUIDSchema.optional(),
+  context: z.string().optional(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(val => { const parsed = new Date(val + "T00:00:00Z"); return !isNaN(parsed.getTime()) && parsed.toISOString().split("T")[0] === val; }, { message: "Invalid calendar date" }),
   startTime: z.string().datetime().transform((str) => new Date(str)),
   endTime: z.string().datetime().transform((str) => new Date(str)),
@@ -1081,7 +1082,7 @@ export const RejectBookingResponse = BookingSchema;
 
 export const ListBookingEventsQuery = z.object({
   owner: UUIDSchema.optional(),
-  context: UUIDSchema.optional(),
+  context: z.string().optional(),
   locationType: LocationTypeSchema.optional(),
   status: BookingEventStatusSchema.optional(),
   availableFrom: z.string().datetime().transform((str) => new Date(str)).optional(),

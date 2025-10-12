@@ -418,3 +418,22 @@ export async function authorizeInvoicePayment(
     })
     .where(eq(invoices.id, invoiceId));
 }
+
+/**
+ * Get invoice for a booking by context
+ * Used to retrieve invoices associated with bookings
+ */
+export async function getInvoiceForBooking(
+  testApp: TestApp,
+  bookingId: string
+): Promise<any | null> {
+  const db = testApp.app.database;
+  
+  const result = await db
+    .select()
+    .from(invoices)
+    .where(eq(invoices.context, `booking:${bookingId}`))
+    .limit(1);
+
+  return result.length > 0 ? result[0] : null;
+}

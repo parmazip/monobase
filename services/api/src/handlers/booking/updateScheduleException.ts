@@ -3,10 +3,13 @@
  */
 
 import { Context } from 'hono';
+import type { DatabaseInstance } from '@/core/database';
+import type { User } from '@/types/auth';
 import { ScheduleExceptionRepository } from './repos/scheduleException.repo';
 
 export async function updateScheduleException(c: Context) {
-  const { db, user } = c.var;
+  const db = c.get('database') as DatabaseInstance;
+  const user = c.get('user') as User;
   const exceptionId = c.req.param('exceptionId');
   const body = await c.req.json();
 

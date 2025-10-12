@@ -13,11 +13,11 @@ import { regenerateOwnerSlots } from './jobs/slotGenerator';
 export async function updateBookingEvent(ctx: Context) {
   // Get authenticated user
   const user = ctx.get('user') as User;
-  
+
   // Get path parameters and validated body
   const { event: eventId } = ctx.req.param();
   const body = ctx.req.valid('json') as BookingEventUpdateRequest;
-  
+
   // Get dependencies from context
   const db = ctx.get('database') as DatabaseInstance;
   const logger = ctx.get('logger');

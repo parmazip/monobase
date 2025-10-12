@@ -23,23 +23,23 @@ export async function createScheduleException(ctx: Context) {
   const user = ctx.get('user') as User;
   
   // Get validated parameters
-  const params = ctx.req.valid('param') as { eventId: string };
+  const params = ctx.req.valid('param') as { event: string };
   const body = ctx.req.valid('json') as ScheduleExceptionCreateRequest;
-  
+
   // Get dependencies from context
   const db = ctx.get('database') as DatabaseInstance;
   const logger = ctx.get('logger');
-  
+
   // Instantiate repositories
   const eventRepo = new BookingEventRepository(db, logger);
   const exceptionRepo = new ScheduleExceptionRepository(db, logger);
-  
+
   // Verify event ownership
-  const event = await eventRepo.findOneById(params.eventId);
+  const event = await eventRepo.findOneById(params.event);
   if (!event) {
     throw new NotFoundError('Booking event not found', {
       resourceType: 'booking_event',
-      resource: params.eventId,
+      resource: params.event,
       suggestions: ['Check event ID', 'Verify event exists']
     });
   }
@@ -49,12 +49,12 @@ export async function createScheduleException(ctx: Context) {
   }
 
   // Create exception
-  const exception = await exceptionRepo.createExceptionForEvent(params.eventId, user.id, body);
+  const exception = await exceptionRepo.createExceptionForEvent(params.event, user.id, body);
 
   // Log audit trail
   logger?.info({
     exceptionId: exception.id,
-    eventId: params.eventId,
+    eventId: params.event,
     ownerId: user.id,
     startDatetime: exception.startDatetime,
     endDatetime: exception.endDatetime,
