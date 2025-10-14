@@ -20,8 +20,6 @@ describe('ConsultationCard Component', () => {
     createdBy: 'provider-1',
     updatedAt: '2025-09-01T10:00:00Z',
     updatedBy: 'provider-1',
-    deletedAt: null,
-    deletedBy: null,
     patient: 'patient-1',
     provider: {
       id: 'provider-1',
@@ -36,8 +34,6 @@ describe('ConsultationCard Component', () => {
       createdBy: 'system',
       updatedAt: '2025-01-01T00:00:00Z',
       updatedBy: 'system',
-      deletedAt: null,
-      deletedBy: null,
       providerType: 'pharmacist' as const,
     },
     chiefComplaint: 'Cold and flu symptoms',

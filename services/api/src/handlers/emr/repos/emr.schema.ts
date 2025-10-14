@@ -115,7 +115,6 @@ export const consultationNotes = pgTable('consultation_note', {
   finalizedAtIdx: index('consultation_notes_finalized_at_idx').on(table.finalizedAt),
   finalizedByIdx: index('consultation_notes_finalized_by_idx').on(table.finalizedBy),
   contextIdx: index('consultation_notes_context_idx').on(table.context),
-  deletedAtIdx: index('consultation_notes_deleted_at_idx').on(table.deletedAt),
 
   // Compound indexes for common queries
   patientStatusIdx: index('consultation_notes_patient_status_idx')

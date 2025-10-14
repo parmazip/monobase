@@ -10,6 +10,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import type { UseQueryOptions, UseMutationOptions } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import {
   listEmrPatients,
   getEmrPatient,
@@ -32,8 +33,8 @@ import {
   type Consultation,
   type EmrDocument,
 } from '../../services/emr'
-import type { PaginatedResponse, ApiResponse } from '../../services/emr'
-import { emrKeys } from '../query-keys'
+import type { PaginatedResponse } from '../../api'
+import { queryKeys } from '../query-keys'
 
 // ============================================================================
 // EMR Patient Hooks
@@ -47,7 +48,7 @@ export function useEmrPatients(
   options?: Omit<UseQueryOptions<PaginatedResponse<EmrPatient>>, 'queryKey' | 'queryFn'>
 ) {
   return useQuery({
-    queryKey: emrKeys.patients(params),
+    queryKey: queryKeys.emrPatients(params),
     queryFn: () => listEmrPatients(params),
     ...options,
   })
@@ -58,10 +59,10 @@ export function useEmrPatients(
  */
 export function useEmrPatient(
   id: string,
-  options?: Omit<UseQueryOptions<ApiResponse<EmrPatient>>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<EmrPatient>, 'queryKey' | 'queryFn'>
 ) {
   return useQuery({
-    queryKey: emrKeys.patient(id),
+    queryKey: queryKeys.emrPatient(id),
     queryFn: () => getEmrPatient(id),
     enabled: !!id,
     ...options,
@@ -72,14 +73,14 @@ export function useEmrPatient(
  * Create EMR patient
  */
 export function useCreateEmrPatient(
-  options?: UseMutationOptions<ApiResponse<EmrPatient>, Error, Partial<EmrPatient>>
+  options?: UseMutationOptions<EmrPatient, Error, Partial<EmrPatient>>
 ) {
   const queryClient = useQueryClient()
   
   return useMutation({
     mutationFn: createEmrPatient,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: emrKeys.patients() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.emrPatients() })
     },
     ...options,
   })
@@ -89,15 +90,15 @@ export function useCreateEmrPatient(
  * Update EMR patient
  */
 export function useUpdateEmrPatient(
-  options?: UseMutationOptions<ApiResponse<EmrPatient>, Error, { id: string; data: Partial<EmrPatient> }>
+  options?: UseMutationOptions<EmrPatient, Error, { id: string; data: Partial<EmrPatient> }>
 ) {
   const queryClient = useQueryClient()
   
   return useMutation({
     mutationFn: ({ id, data }) => updateEmrPatient(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: emrKeys.patient(variables.id) })
-      queryClient.invalidateQueries({ queryKey: emrKeys.patients() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.emrPatient(variables.id) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.emrPatients() })
     },
     ...options,
   })
@@ -115,7 +116,7 @@ export function useMedicalRecords(
   options?: Omit<UseQueryOptions<PaginatedResponse<MedicalRecord>>, 'queryKey' | 'queryFn'>
 ) {
   return useQuery({
-    queryKey: emrKeys.records(params),
+    queryKey: queryKeys.emrRecords(params),
     queryFn: () => listMedicalRecords(params),
     enabled: !!params.emrPatientId,
     ...options,
@@ -127,10 +128,10 @@ export function useMedicalRecords(
  */
 export function useMedicalRecord(
   id: string,
-  options?: Omit<UseQueryOptions<ApiResponse<MedicalRecord>>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<MedicalRecord>, 'queryKey' | 'queryFn'>
 ) {
   return useQuery({
-    queryKey: emrKeys.record(id),
+    queryKey: queryKeys.emrRecord(id),
     queryFn: () => getMedicalRecord(id),
     enabled: !!id,
     ...options,
@@ -141,14 +142,14 @@ export function useMedicalRecord(
  * Create medical record
  */
 export function useCreateMedicalRecord(
-  options?: UseMutationOptions<ApiResponse<MedicalRecord>, Error, Partial<MedicalRecord>>
+  options?: UseMutationOptions<MedicalRecord, Error, Partial<MedicalRecord>>
 ) {
   const queryClient = useQueryClient()
   
   return useMutation({
     mutationFn: createMedicalRecord,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: emrKeys.records() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.emrRecords() })
     },
     ...options,
   })
@@ -158,15 +159,15 @@ export function useCreateMedicalRecord(
  * Update medical record
  */
 export function useUpdateMedicalRecord(
-  options?: UseMutationOptions<ApiResponse<MedicalRecord>, Error, { id: string; data: Partial<MedicalRecord> }>
+  options?: UseMutationOptions<MedicalRecord, Error, { id: string; data: Partial<MedicalRecord> }>
 ) {
   const queryClient = useQueryClient()
   
   return useMutation({
     mutationFn: ({ id, data }) => updateMedicalRecord(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: emrKeys.record(variables.id) })
-      queryClient.invalidateQueries({ queryKey: emrKeys.records() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.emrRecord(variables.id) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.emrRecords() })
     },
     ...options,
   })
@@ -184,7 +185,7 @@ export function useConsultations(
   options?: Omit<UseQueryOptions<PaginatedResponse<Consultation>>, 'queryKey' | 'queryFn'>
 ) {
   return useQuery({
-    queryKey: emrKeys.consultations(params),
+    queryKey: queryKeys.emrConsultations(params),
     queryFn: () => listConsultations(params),
     ...options,
   })
@@ -195,10 +196,10 @@ export function useConsultations(
  */
 export function useConsultation(
   id: string,
-  options?: Omit<UseQueryOptions<ApiResponse<Consultation>>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<Consultation>, 'queryKey' | 'queryFn'>
 ) {
   return useQuery({
-    queryKey: emrKeys.consultation(id),
+    queryKey: queryKeys.emrConsultation(id),
     queryFn: () => getConsultation(id),
     enabled: !!id,
     ...options,
@@ -209,14 +210,14 @@ export function useConsultation(
  * Create consultation
  */
 export function useCreateConsultation(
-  options?: UseMutationOptions<ApiResponse<Consultation>, Error, Partial<Consultation>>
+  options?: UseMutationOptions<Consultation, Error, Partial<Consultation>>
 ) {
   const queryClient = useQueryClient()
   
   return useMutation({
     mutationFn: createConsultation,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: emrKeys.consultations() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.emrConsultations() })
     },
     ...options,
   })
@@ -235,10 +236,10 @@ export function useFinalizeConsultation(
   
   return useMutation({
     mutationFn: async (consultationId: string) => {
-      return await emrService.updateConsultation(consultationId, { status: 'completed' as any })
+      return await updateConsultation(consultationId, { status: 'completed' })
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: emrKeys.consultations() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.emrConsultations() })
       toast.success('Consultation finalized successfully')
       options?.onSuccess?.()
     },
@@ -253,15 +254,15 @@ export function useFinalizeConsultation(
  * Update consultation
  */
 export function useUpdateConsultation(
-  options?: UseMutationOptions<ApiResponse<Consultation>, Error, { id: string; data: Partial<Consultation> }>
+  options?: UseMutationOptions<Consultation, Error, { id: string; data: Partial<Consultation> }>
 ) {
   const queryClient = useQueryClient()
   
   return useMutation({
     mutationFn: ({ id, data }) => updateConsultation(id, data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: emrKeys.consultation(variables.id) })
-      queryClient.invalidateQueries({ queryKey: emrKeys.consultations() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.emrConsultation(variables.id) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.emrConsultations() })
     },
     ...options,
   })
@@ -279,7 +280,7 @@ export function useEmrDocuments(
   options?: Omit<UseQueryOptions<PaginatedResponse<EmrDocument>>, 'queryKey' | 'queryFn'>
 ) {
   return useQuery({
-    queryKey: emrKeys.documents(params),
+    queryKey: queryKeys.emrDocuments(params),
     queryFn: () => listEmrDocuments(params),
     ...options,
   })
@@ -290,10 +291,10 @@ export function useEmrDocuments(
  */
 export function useEmrDocument(
   id: string,
-  options?: Omit<UseQueryOptions<ApiResponse<EmrDocument>>, 'queryKey' | 'queryFn'>
+  options?: Omit<UseQueryOptions<EmrDocument>, 'queryKey' | 'queryFn'>
 ) {
   return useQuery({
-    queryKey: emrKeys.document(id),
+    queryKey: queryKeys.emrDocument(id),
     queryFn: () => getEmrDocument(id),
     enabled: !!id,
     ...options,
@@ -304,14 +305,14 @@ export function useEmrDocument(
  * Upload EMR document
  */
 export function useUploadEmrDocument(
-  options?: UseMutationOptions<ApiResponse<EmrDocument>, Error, FormData>
+  options?: UseMutationOptions<EmrDocument, Error, FormData>
 ) {
   const queryClient = useQueryClient()
   
   return useMutation({
     mutationFn: uploadEmrDocument,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: emrKeys.documents() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.emrDocuments() })
     },
     ...options,
   })
@@ -321,14 +322,14 @@ export function useUploadEmrDocument(
  * Delete EMR document
  */
 export function useDeleteEmrDocument(
-  options?: UseMutationOptions<ApiResponse<void>, Error, string>
+  options?: UseMutationOptions<void, Error, string>
 ) {
   const queryClient = useQueryClient()
   
   return useMutation({
     mutationFn: deleteEmrDocument,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: emrKeys.documents() })
+      queryClient.invalidateQueries({ queryKey: queryKeys.emrDocuments() })
     },
     ...options,
   })

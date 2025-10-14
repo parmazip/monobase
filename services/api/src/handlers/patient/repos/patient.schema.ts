@@ -26,9 +26,8 @@ export const patients = pgTable('patient', {
 }, (table) => ({
   // Indexes for search and performance
   personIdx: index('patients_person_id_idx').on(table.person),
-  deletedAtIdx: index('patients_deleted_at_idx').on(table.deletedAt),
-  // Ensure one patient per person (partial unique index excludes soft-deleted records)
-  uniquePersonId: uniqueIndex('patients_person_id_unique').on(table.person).where(sql`deleted_at IS NULL`),
+  // Ensure one patient per person
+  uniquePersonId: uniqueIndex('patients_person_id_unique').on(table.person),
 }));
 
 // Type exports for TypeScript
@@ -81,7 +80,6 @@ export interface PersonData {
   timezone?: string;
   createdAt: Date;
   updatedAt: Date;
-  deletedAt?: Date;
   version: number;
 }
 
