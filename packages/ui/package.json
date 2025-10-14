@@ -9,11 +9,9 @@
     "./hooks/*": "./src/hooks/*",
     "./components/*": "./src/components/*",
     "./person/*": "./src/person/*",
-    "./comms": "./src/comms/index.ts",
     "./comms/*": "./src/comms/*",
-    "./comms/lib/*": "./src/comms/lib/*",
-    "./comms/hooks/*": "./src/comms/hooks/*",
-    "./comms/components/*": "./src/comms/components/*"
+    "./booking/*": "./src/booking/*",
+    "./billing/*": "./src/billing/*"
   },
   "files": ["src"],
   "sideEffects": ["**/*.css"],
