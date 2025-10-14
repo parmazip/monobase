@@ -32,6 +32,7 @@ function RootComponent() {
         // Invalidate session and person queries to trigger refetch after auth state changes
         await queryClient.invalidateQueries({ queryKey: ['session'] })
         await queryClient.invalidateQueries({ queryKey: queryKeys.personProfile('me') })
+        await queryClient.invalidateQueries({ queryKey: queryKeys.providerProfile('me') })
         
         // Force router to re-evaluate guards after auth state changes
         router.invalidate()

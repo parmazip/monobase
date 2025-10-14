@@ -1,25 +1,40 @@
-/**
- * Logo Component
- * Monobase Provider Portal branding
- */
+import { cn } from '@monobase/ui/lib/utils'
+import { useTheme } from "next-themes"
 
 interface LogoProps {
   variant?: 'horizontal' | 'vertical'
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'sm' | 'md' | 'lg' | 'xl'
   className?: string
 }
 
-export function Logo({ variant = 'horizontal', size = 'md', className = '' }: LogoProps) {
+export function Logo({
+  variant = 'horizontal',
+  size = 'md',
+  className
+}: LogoProps) {
+  const { theme } = useTheme()
+
   const sizeClasses = {
-    sm: 'text-lg',
-    md: 'text-xl',
-    lg: 'text-2xl',
+    sm: 'h-6',
+    md: 'h-8',
+    lg: 'h-10',
+    xl: 'h-12'
   }
 
+  // Use white logo for dark theme, regular for light theme
+  const logoSrc = theme === 'dark'
+    ? '/images/logos/logo-horizontal-white.png'
+    : '/images/logos/logo-horizontal.png'
+
   return (
-    <div className={`font-bold ${sizeClasses[size]} ${className}`}>
-      <span className="text-primary">MONOBASE</span>
-      {variant === 'vertical' && <div className="text-xs text-muted-foreground">Provider Portal</div>}
-    </div>
+    <img
+      src={logoSrc}
+      alt="Parmazip"
+      className={cn(
+        'object-contain',
+        sizeClasses[size],
+        className
+      )}
+    />
   )
 }

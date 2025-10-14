@@ -14,15 +14,10 @@ import {
   DollarSign,
   FileText
 } from "lucide-react"
-import type { RouterContext } from '@/router'
+import { requireGuest } from '@/utils/guards'
 
 export const Route = createFileRoute('/')({
-  beforeLoad: ({ context }) => {
-    // If user is authenticated, redirect to dashboard
-    if (context.auth?.user) {
-      throw redirect({ to: '/dashboard' })
-    }
-  },
+  beforeLoad: requireGuest,
   component: HomePage,
 })
 

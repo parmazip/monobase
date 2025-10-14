@@ -14,7 +14,7 @@ import {
 import { requireGuest } from '@/utils/guards'
 
 export const Route = createFileRoute('/')({
-  beforeLoad: requireGuest(),
+  beforeLoad: requireGuest,
   component: HomePage,
 })
 

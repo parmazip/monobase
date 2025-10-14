@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight, UserCheck, MapPin, Stethoscope, Pill } from 
 import { Logo } from '@/components/logo'
 import { requireAuth, requireEmailVerified, requireNoPerson, requireNoPatientProfile, composeGuards } from '@/utils/guards'
 import { useDetectTimezone } from '@monobase/ui/hooks/use-detect-timezone'
+import { useDetectLanguage } from '@monobase/ui/hooks/use-detect-language'
 import { useDetectCountry } from '@monobase/ui/hooks/use-detect-country'
 import { toast } from 'sonner'
 import { formatDate } from '@monobase/ui/lib/format-date'
@@ -16,7 +17,6 @@ import { useCreateMyPerson } from '@monobase/sdk/react/hooks/use-person'
 import { useCreatePatient } from '@monobase/sdk/react/hooks/use-patient'
 
 // Import types
-import { type PersonCreateRequest } from '@monobase/sdk/services/person'
 import type { PersonalInfo, OptionalAddress } from '@monobase/ui/person/schemas'
 import type { PrimaryProviderData, PrimaryPharmacyData } from '@monobase/ui/patient/schemas'
 import { ApiError } from '@monobase/sdk/api'
@@ -36,11 +36,13 @@ function OnboardingPage() {
   const navigate = useNavigate()
   const { user } = Route.useRouteContext()
   const [currentStep, setCurrentStep] = useState(1)
+  const detectedLanguage = useDetectLanguage()
   const detectedTimezone = useDetectTimezone()
   const detectedCountry = useDetectCountry()
 
   // Use both person and patient creation hooks
   const createPersonMutation = useCreateMyPerson({
+    toastError: false,
     onError: (error) => {
       // Suppress toast for "already exists" error - we handle it gracefully
       if (error instanceof ApiError && error.message?.includes('already has a person profile')) {
@@ -93,40 +95,19 @@ function OnboardingPage() {
       return
     }
 
-    // Build address if provided
-    let primaryAddress: PersonCreateRequest['primaryAddress'] | undefined
-    if (formData.address?.street1 && formData.address?.city &&
-        formData.address?.state && formData.address?.postalCode && formData.address?.country) {
-      primaryAddress = {
-        street1: formData.address.street1,
-        street2: formData.address.street2,
-        city: formData.address.city,
-        state: formData.address.state,
-        postalCode: formData.address.postalCode,
-        country: formData.address.country,
-      }
-    }
-
-    // Create person data
-    const personData: PersonCreateRequest = {
-      firstName: formData.personal.firstName,
-      lastName: formData.personal.lastName,
-      middleName: formData.personal.middleName || undefined,
-      dateOfBirth: formatDate(formData.personal.dateOfBirth, { format: 'date' }),
-      gender: formData.personal.gender || undefined,
-      primaryAddress,
-      contactInfo: {
-        email: user.email,
-      },
-      languagesSpoken: ['en'],
-      timezone: detectedTimezone,
-    }
-
     try {
-      // Try to create person profile first
-      try {
-        await createPersonMutation.mutateAsync(personData)
-      } catch (error) {
+      // Create person profile
+      await createPersonMutation.mutateAsync({
+        firstName: formData.personal.firstName,
+        lastName: formData.personal.lastName,
+        middleName: formData.personal.middleName,
+        dateOfBirth: formData.personal.dateOfBirth,
+        gender: formData.personal.gender,
+        avatar: formData.personal.avatar,
+        primaryAddress: formData.address,
+        languagesSpoken: [detectedLanguage],
+        timezone: detectedTimezone,
+      }).catch(error => {
         // If person already exists, that's okay - continue to create patient
         if (error instanceof ApiError && error.message?.includes('already has a person profile')) {
           console.log('Person profile already exists, proceeding with patient creation')
@@ -134,10 +115,10 @@ function OnboardingPage() {
           // If it's a different error, rethrow it
           throw error
         }
-      }
+      })
 
       // Then create patient profile with provider and pharmacy info
-      const patientData = {
+      await createPatientMutation.mutateAsync({
         primaryCareProvider: formData.provider?.hasProvider ? {
           name: formData.provider.name,
           specialty: formData.provider.specialty || null,
@@ -150,9 +131,7 @@ function OnboardingPage() {
           phone: data.phone || null,
           fax: data.fax || null,
         } : null,
-      }
-
-      await createPatientMutation.mutateAsync(patientData)
+      })
 
       // Navigate to dashboard on success
       navigate({ to: '/dashboard' })
