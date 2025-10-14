@@ -27,13 +27,14 @@ export function useMyPatient() {
     queryKey: queryKeys.patientProfile('me'),
     queryFn: getMyPatientProfile,
     retry: (failureCount, error) => {
-      // Don't retry if the patient doesn't have a profile (404)
-      if (error instanceof ApiError && error.status === 404) {
+      // Don't retry if:
+      // - User is not authenticated (401) - retrying won't help
+      // - Profile doesn't exist (404) - expected for onboarding flow
+      if (error instanceof ApiError && (error.status === 401 || error.status === 404)) {
         return false
       }
       return failureCount < 3
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
   })
 }
 

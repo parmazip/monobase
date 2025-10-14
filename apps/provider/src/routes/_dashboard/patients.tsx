@@ -28,7 +28,7 @@ import {
   Stethoscope,
   Loader2
 } from 'lucide-react'
-import { useEmrPatients } from '@monobase/sdk/react/hooks/use-emr'
+import { useEMRPatients } from '@monobase/sdk/react/hooks/use-emr'
 import { Button } from "@monobase/ui/components/button"
 import { 
   Card, 
@@ -96,7 +96,7 @@ function PatientsPage() {
   const [selectedPatients, setSelectedPatients] = useState<string[]>([])
 
   // Fetch real patient data using EMR endpoint (provider-scoped)
-  const { data: patientsData, isLoading, error } = useEmrPatients({
+  const { data: patientsData, isLoading, error } = useEMRPatients({
     limit: 100,
   })
 

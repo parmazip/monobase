@@ -41,7 +41,7 @@ function RouteComponent() {
 
   return (
     <main className="h-screen overflow-y-auto flex items-center justify-center bg-background py-6 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full">
+      <div className="max-w-md w-full mx-auto">
         {headerContent && (
           <div className="text-center mb-6">
             <div className="flex justify-center mb-3">

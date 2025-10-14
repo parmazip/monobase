@@ -8,6 +8,7 @@ import type {
   ProviderUpdateRequest,
 } from '../../services/provider'
 import type { Person } from '../../services/person'
+import { ApiError } from '../../api'
 
 /**
  * Provider Hooks
@@ -138,8 +139,12 @@ export function useMyProvider() {
     queryKey: ['provider', 'me'],
     queryFn: providerService.getMyProvider,
     retry: (failureCount, error: any) => {
-      // Don't retry 404 (no provider profile)
-      if (error?.status === 404) return false
+      // Don't retry if:
+      // - User is not authenticated (401) - retrying won't help
+      // - Profile doesn't exist (404) - expected for onboarding flow
+      if (error instanceof ApiError && (error.status === 401 || error.status === 404)) {
+        return false
+      }
       return failureCount < 3
     },
   })

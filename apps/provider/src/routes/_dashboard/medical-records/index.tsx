@@ -19,7 +19,7 @@ import {
   ClipboardCheck,
 } from 'lucide-react'
 import { subDays } from 'date-fns'
-import { useConsultations, useMedicalRecords } from '@monobase/sdk/react/hooks/use-emr'
+import { useConsultations } from '@monobase/sdk/react/hooks/use-emr'
 import { Button } from "@monobase/ui/components/button"
 import {
   Card,
@@ -49,20 +49,13 @@ function MedicalRecordsPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Fetch consultation notes and medical records from API
-  const { data: consultationsData, isLoading: consultationsLoading, error: consultationsError } = useConsultations({
-    limit: 100,
-  })
-  const { data: recordsData, isLoading: recordsLoading, error: recordsError } = useMedicalRecords({
+  // Fetch consultation notes from API (medical records = consultation notes for now)
+  const { data: consultationsData, isLoading, error } = useConsultations({
     limit: 100,
   })
 
-  const isLoading = consultationsLoading || recordsLoading
-  const error = consultationsError || recordsError
-
-  // Get notes from API
+  // Get consultation notes from API
   const allNotes = consultationsData?.data || []
-  const medicalRecords = recordsData?.data || []
   
   const draftNotes = useMemo(
     () => allNotes.filter((note) => note.status === 'draft'),
@@ -251,7 +244,7 @@ function MedicalRecordsPage() {
         </CardContent>
       </Card>
 
-      {/* Notes List */}
+      {/* Consultation Notes List (Medical Records) */}
       <div className="grid gap-4">
         {filteredNotes.map((note) => (
           <MedicalRecordCard
@@ -272,26 +265,9 @@ function MedicalRecordsPage() {
             }}
           />
         ))}
-
-        {medicalRecords.map((record) => (
-          <MedicalRecordCard
-            key={record.id}
-            record={{
-              id: record.id,
-              patientId: record.patientId,
-              patientName: 'Patient Name', // This would be fetched from patient data
-              date: record.date,
-              type: record.type,
-              title: record.title,
-              description: record.description,
-              status: 'finalized',
-              attachments: record.attachments,
-            }}
-          />
-        ))}
       </div>
 
-      {filteredNotes.length === 0 && medicalRecords.length === 0 && (
+      {filteredNotes.length === 0 && (
         <Card>
           <CardContent className="p-12 text-center">
             <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />

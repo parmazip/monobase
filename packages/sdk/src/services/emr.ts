@@ -9,7 +9,7 @@
  */
 
 import { apiGet, apiPost, apiPatch, type PaginatedResponse } from '../api'
-import { mapPaginatedResponse } from '../utils/api'
+import { mapPaginatedResponse, sanitizeObject } from '../utils/api'
 import type { components } from '@monobase/api-spec/types'
 import { mapApiPatientToFrontend, type Patient } from './patient'
 
@@ -204,7 +204,10 @@ export async function getConsultation(id: string): Promise<ConsultationNote> {
  * Create consultation note
  */
 export async function createConsultation(data: CreateConsultationRequest): Promise<ConsultationNote> {
-  const apiConsultation = await apiPost<ApiConsultationNote>('/emr/consultations', data)
+  const sanitized = sanitizeObject(data, {
+    nullable: []  // CREATE operation: empty fields omitted, not sent as null
+  })
+  const apiConsultation = await apiPost<ApiConsultationNote>('/emr/consultations', sanitized)
   return mapApiConsultationNoteToFrontend(apiConsultation)
 }
 
@@ -212,7 +215,10 @@ export async function createConsultation(data: CreateConsultationRequest): Promi
  * Update consultation note
  */
 export async function updateConsultation(id: string, data: UpdateConsultationRequest): Promise<ConsultationNote> {
-  const apiConsultation = await apiPatch<ApiConsultationNote>(`/emr/consultations/${id}`, data)
+  const sanitized = sanitizeObject(data, {
+    nullable: ['chiefComplaint', 'assessment', 'plan', 'vitals', 'symptoms', 'prescriptions', 'followUp', 'externalDocumentation']
+  })
+  const apiConsultation = await apiPatch<ApiConsultationNote>(`/emr/consultations/${id}`, sanitized)
   return mapApiConsultationNoteToFrontend(apiConsultation)
 }
 

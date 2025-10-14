@@ -38,7 +38,7 @@ import {
  * @returns Earnings overview with stats for each period
  */
 export function useEarningsOverview() {
-  const { data: invoicesData, isLoading, error } = useMyInvoices({ limit: 1000 })
+  const { data: invoicesData, isLoading, error } = useMyInvoices({ limit: 100 })
   const invoices = invoicesData?.items || []
 
   const overview = useMemo(() => {
@@ -132,7 +132,7 @@ export function useEarningsOverview() {
  * @returns Earnings statistics
  */
 export function useEarningsStats() {
-  const { data: invoicesData, isLoading, error } = useMyInvoices({ limit: 1000 })
+  const { data: invoicesData, isLoading, error } = useMyInvoices({ limit: 100 })
   const invoices = invoicesData?.items || []
 
   const stats = useMemo(() => {

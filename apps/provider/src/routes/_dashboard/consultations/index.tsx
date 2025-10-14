@@ -18,7 +18,7 @@ import {
   ClipboardCheck,
 } from 'lucide-react'
 import { subDays } from 'date-fns'
-import { useConsultations, useEmrPatients } from '@monobase/sdk/react/hooks/use-emr'
+import { useConsultations, useEMRPatients } from '@monobase/sdk/react/hooks/use-emr'
 import { ConsultationCard } from '@monobase/ui/emr/components/consultation-card'
 import { Button } from "@monobase/ui/components/button"
 import {
@@ -53,7 +53,7 @@ function ConsultationsPage() {
   })
   
   // Fetch patients to map patient IDs to names
-  const { data: patientsData } = useEmrPatients({ limit: 100 })
+  const { data: patientsData } = useEMRPatients({ limit: 100 })
   
   const isLoading = consultationsLoading
   // Create patient map for quick lookups
