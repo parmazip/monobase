@@ -6,7 +6,6 @@
     "./api": "./src/api.ts",
     "./utils/*": "./src/utils/*.ts",
     "./services/*": "./src/services/*.ts",
-    "./lib/*": "./src/lib/*.ts",
     "./react/*": "./src/react/*"
   },
   "files": ["src"],

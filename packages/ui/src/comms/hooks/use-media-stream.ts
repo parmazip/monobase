@@ -10,7 +10,7 @@ import {
   toggleVideo,
   getDisplayMediaStream,
   stopDisplayStream
-} from '../media-devices'
+} from '../lib/media-devices'
 
 interface UseMediaStreamReturn {
   stream: MediaStream | null

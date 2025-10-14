@@ -55,6 +55,39 @@ export interface ProviderWithSlots {
   event?: BookingEventData
 }
 
+export interface Booking {
+  id: string
+  version: number
+  createdAt: Date
+  createdBy?: string
+  updatedAt: Date
+  updatedBy?: string
+  client: string
+  provider: string
+  slot: string
+  locationType: 'video' | 'phone' | 'in-person'
+  reason: string
+  status: 'pending' | 'confirmed' | 'rejected' | 'cancelled' | 'completed' | 'no_show_client' | 'no_show_provider'
+  bookedAt: Date
+  confirmationTimestamp?: Date
+  scheduledAt: Date
+  durationMinutes: number
+  cancellationReason?: string
+  cancelledBy?: string
+  cancelledAt?: Date
+  noShowMarkedBy?: string
+  noShowMarkedAt?: Date
+  formResponses?: {
+    data: Record<string, any>
+    metadata?: {
+      submittedAt?: Date
+      completionTimeSeconds?: number
+      ipAddress?: string
+    }
+  }
+  invoice?: string
+}
+
 // ============================================================================
 // API Type Aliases
 // ============================================================================
@@ -120,6 +153,44 @@ function mapApiEventToFrontend(apiEvent: ApiBookingEvent): BookingEventData {
     timezone: apiEvent.timezone,
     locationTypes: apiEvent.locationTypes as ('video' | 'phone' | 'in-person')[],
     billingConfig: apiEvent.billingConfig,
+  }
+}
+
+/**
+ * Convert API Booking to Frontend Booking with Date objects
+ */
+function mapApiBookingToFrontend(apiBooking: ApiBooking): Booking {
+  return {
+    id: apiBooking.id,
+    version: apiBooking.version,
+    createdAt: new Date(apiBooking.createdAt),
+    createdBy: apiBooking.createdBy,
+    updatedAt: new Date(apiBooking.updatedAt),
+    updatedBy: apiBooking.updatedBy,
+    client: typeof apiBooking.client === 'string' ? apiBooking.client : apiBooking.client.id,
+    provider: typeof apiBooking.provider === 'string' ? apiBooking.provider : apiBooking.provider.id,
+    slot: typeof apiBooking.slot === 'string' ? apiBooking.slot : apiBooking.slot.id,
+    locationType: apiBooking.locationType,
+    reason: apiBooking.reason,
+    status: apiBooking.status,
+    bookedAt: new Date(apiBooking.bookedAt),
+    confirmationTimestamp: apiBooking.confirmationTimestamp ? new Date(apiBooking.confirmationTimestamp) : undefined,
+    scheduledAt: new Date(apiBooking.scheduledAt),
+    durationMinutes: apiBooking.durationMinutes,
+    cancellationReason: apiBooking.cancellationReason,
+    cancelledBy: apiBooking.cancelledBy,
+    cancelledAt: apiBooking.cancelledAt ? new Date(apiBooking.cancelledAt) : undefined,
+    noShowMarkedBy: apiBooking.noShowMarkedBy,
+    noShowMarkedAt: apiBooking.noShowMarkedAt ? new Date(apiBooking.noShowMarkedAt) : undefined,
+    formResponses: apiBooking.formResponses ? {
+      data: apiBooking.formResponses.data,
+      metadata: apiBooking.formResponses.metadata ? {
+        submittedAt: apiBooking.formResponses.metadata.submittedAt ? new Date(apiBooking.formResponses.metadata.submittedAt) : undefined,
+        completionTimeSeconds: apiBooking.formResponses.metadata.completionTimeSeconds,
+        ipAddress: apiBooking.formResponses.metadata.ipAddress,
+      } : undefined,
+    } : undefined,
+    invoice: apiBooking.invoice,
   }
 }
 
@@ -334,7 +405,7 @@ export interface ListBookingsParams {
 /**
  * List bookings for provider
  */
-export async function listBookings(params?: ListBookingsParams) {
+export async function listBookings(params?: ListBookingsParams): Promise<PaginatedResponse<Booking>> {
   const queryParams = sanitizeObject({
     status: params?.status,
     startDate: params?.startDate ? formatDate(params.startDate, { format: 'iso' }) : undefined,
@@ -343,42 +414,52 @@ export async function listBookings(params?: ListBookingsParams) {
     offset: params?.offset,
   }, { nullable: [] })
 
-  return await apiGet('/booking/bookings', queryParams)
+  const response = await apiGet<PaginatedResponse<ApiBooking>>('/booking/bookings', queryParams)
+  
+  return {
+    data: response.data.map(mapApiBookingToFrontend),
+    pagination: response.pagination,
+  }
 }
 
 /**
  * Get single booking by ID
  */
-export async function getBooking(bookingId: string) {
-  return await apiGet(`/booking/bookings/${bookingId}`)
+export async function getBooking(bookingId: string): Promise<Booking> {
+  const response = await apiGet<ApiBooking>(`/booking/bookings/${bookingId}`)
+  return mapApiBookingToFrontend(response)
 }
 
 /**
  * Confirm a booking request (provider action)
  */
-export async function confirmBooking(bookingId: string, reason?: string) {
-  return await apiPost(`/booking/bookings/${bookingId}/confirm`, { reason })
+export async function confirmBooking(bookingId: string, reason?: string): Promise<Booking> {
+  const response = await apiPost<ApiBooking>(`/booking/bookings/${bookingId}/confirm`, { reason })
+  return mapApiBookingToFrontend(response)
 }
 
 /**
  * Reject a booking request (provider action)
  */
-export async function rejectBooking(bookingId: string, reason?: string) {
-  return await apiPost(`/booking/bookings/${bookingId}/reject`, { reason })
+export async function rejectBooking(bookingId: string, reason?: string): Promise<Booking> {
+  const response = await apiPost<ApiBooking>(`/booking/bookings/${bookingId}/reject`, { reason })
+  return mapApiBookingToFrontend(response)
 }
 
 /**
  * Cancel a booking
  */
-export async function cancelBooking(bookingId: string, reason?: string) {
-  return await apiPost(`/booking/bookings/${bookingId}/cancel`, { reason })
+export async function cancelBooking(bookingId: string, reason?: string): Promise<Booking> {
+  const response = await apiPost<ApiBooking>(`/booking/bookings/${bookingId}/cancel`, { reason })
+  return mapApiBookingToFrontend(response)
 }
 
 /**
  * Mark booking as no-show (provider action)
  */
-export async function markBookingNoShow(bookingId: string) {
-  return await apiPost(`/booking/bookings/${bookingId}/no-show`, {})
+export async function markBookingNoShow(bookingId: string): Promise<Booking> {
+  const response = await apiPost<ApiBooking>(`/booking/bookings/${bookingId}/no-show`, {})
+  return mapApiBookingToFrontend(response)
 }
 
 // ============================================================================
@@ -395,11 +476,12 @@ export interface CreateBookingData {
 /**
  * Create a new booking (patient action)
  */
-export async function createBooking(data: CreateBookingData) {
-  return await apiPost('/booking/bookings', {
+export async function createBooking(data: CreateBookingData): Promise<Booking> {
+  const response = await apiPost<ApiBooking>('/booking/bookings', {
     slot: data.slot,
     locationType: data.locationType,
     reason: data.reason,
     formResponses: data.formResponses ? { data: data.formResponses } : undefined,
   })
+  return mapApiBookingToFrontend(response)
 }

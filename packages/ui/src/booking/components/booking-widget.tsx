@@ -9,7 +9,7 @@ import { Button } from '../../components/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/card'
 import { Separator } from '../../components/separator'
 import { Alert, AlertDescription } from '../../components/alert'
-import type { BookingTimeSlot, BookingProvider, BookingEventData } from '../types'
+import type { BookingTimeSlot, BookingProvider, BookingEventData } from '@monobase/sdk/services/booking'
 
 export type { BookingTimeSlot, BookingProvider, BookingEventData }
 
@@ -186,11 +186,12 @@ export function BookingWidget({
 // Helper function to group slots by date
 function groupSlotsByDate(slots: BookingTimeSlot[]): Record<string, BookingTimeSlot[]> {
   return slots.reduce((grouped, slot) => {
-    const date = slot.date
-    if (!grouped[date]) {
-      grouped[date] = []
+    // Convert Date object to YYYY-MM-DD string for grouping
+    const dateStr = formatDate(slot.date, { format: 'yyyy-MM-dd' })
+    if (!grouped[dateStr]) {
+      grouped[dateStr] = []
     }
-    grouped[date].push(slot)
+    grouped[dateStr].push(slot)
     return grouped
   }, {} as Record<string, BookingTimeSlot[]>)
 }

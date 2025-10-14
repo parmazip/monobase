@@ -73,24 +73,9 @@ export interface PaymentMethodDisplay {
 }
 
 /**
- * Invoice list item for UI display
- */
-export interface InvoiceListItem {
-  id: string
-  invoiceNumber: string
-  customerName: string
-  amount: number
-  currency: string
-  status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled'
-  dueDate: Date
-  issuedDate: Date
-  paidDate?: Date
-}
-
-/**
  * Props for invoice status badge component
  */
 export interface InvoiceStatusBadgeProps {
-  status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled'
+  status: 'draft' | 'open' | 'paid' | 'void' | 'uncollectible'
   className?: string
 }

@@ -17,11 +17,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../../components/alert-dialog'
-import type { ActiveBooking, BookingUser } from '../types'
+import type { Booking } from '@monobase/sdk/services/booking'
+import type { User } from '@monobase/sdk/services/auth'
 
 export interface ActiveBookingCardProps {
-  booking: ActiveBooking
-  user?: BookingUser
+  booking: Booking
+  providerId: string
+  providerName: string
+  user?: User
   onPaymentClick: () => void
   onCancelClick: () => void
   onProfileClick: () => void
@@ -34,7 +37,7 @@ export interface ActiveBookingCardProps {
  * Check if user needs to complete their profile
  * Uses standard better-auth role checking with CSV roles
  */
-function userNeedsProfile(user: BookingUser | null | undefined): boolean {
+function userNeedsProfile(user: User | null | undefined): boolean {
   if (!user) return false
 
   // Check if user has 'client' role in CSV format
@@ -53,6 +56,8 @@ function formatTimeRemaining(seconds: number): string {
 
 export function ActiveBookingCard({
   booking,
+  providerId,
+  providerName,
   user,
   onPaymentClick,
   onCancelClick,
@@ -66,10 +71,10 @@ export function ActiveBookingCard({
 
   // Calculate remaining time for booking confirmation (15 minutes)
   useEffect(() => {
-    const elapsed = Date.now() - booking.bookingTimestamp
+    const elapsed = Date.now() - booking.bookedAt.getTime()
     const remaining = Math.max(0, 15 * 60 * 1000 - elapsed) // 15 minutes in ms
     setTimeRemaining(Math.floor(remaining / 1000)) // Convert to seconds
-  }, [booking.bookingTimestamp])
+  }, [booking.bookedAt])
 
   // Countdown timer
   useEffect(() => {
@@ -84,9 +89,10 @@ export function ActiveBookingCard({
 
   const needsProfile = userNeedsProfile(user)
   const isConfirmed = booking.status === 'confirmed'
-  const needsPayment = !needsProfile && booking.paymentStatus === 'unpaid' && booking.invoice && (booking.status === 'pending' || booking.status === 'confirmed')
+  // Check if payment is needed: has invoice but status is still pending/confirmed
+  const needsPayment = !needsProfile && booking.invoice && (booking.status === 'pending' || booking.status === 'confirmed')
   const isConfirmedButUnpaid = isConfirmed && needsPayment
-  const isComplete = !needsProfile && booking.paymentStatus === 'paid'
+  const isComplete = !needsProfile && !booking.invoice // No invoice means no payment required, or already paid
   
   const handleCancelClick = () => {
     setShowCancelDialog(true)
@@ -114,18 +120,9 @@ export function ActiveBookingCard({
             </div>
             <h3 className="font-semibold text-lg">Booking Request Rejected</h3>
             <p className="text-sm text-muted-foreground mt-2">
-              {booking.providerName} • {formatDate(booking.date, { format: 'medium' })} • {formatDate(booking.startTime, { format: 'time' })}
+              {providerName} • {formatDate(booking.scheduledAt, { format: 'medium' })} • {formatDate(booking.scheduledAt, { format: 'time' })}
             </p>
           </div>
-
-          {booking.rejectionReason && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Reason:</strong> {booking.rejectionReason}
-              </AlertDescription>
-            </Alert>
-          )}
 
           <Alert>
             <AlertDescription>
@@ -176,7 +173,7 @@ export function ActiveBookingCard({
             </div>
             <h3 className="font-semibold text-lg">Appointment Cancelled</h3>
             <p className="text-sm text-muted-foreground mt-2">
-              {booking.providerName} • {formatDate(booking.date, { format: 'medium' })} • {formatDate(booking.startTime, { format: 'time' })}
+              {providerName} • {formatDate(booking.scheduledAt, { format: 'medium' })} • {formatDate(booking.scheduledAt, { format: 'time' })}
             </p>
           </div>
 
@@ -232,7 +229,7 @@ export function ActiveBookingCard({
             </div>
             <h3 className="font-semibold text-lg">Session Completed</h3>
             <p className="text-sm text-muted-foreground mt-2">
-              {booking.providerName} • {formatDate(booking.date, { format: 'medium' })} • {formatDate(booking.startTime, { format: 'time' })}
+              {providerName} • {formatDate(booking.scheduledAt, { format: 'medium' })} • {formatDate(booking.scheduledAt, { format: 'time' })}
             </p>
           </div>
 
@@ -282,7 +279,7 @@ export function ActiveBookingCard({
             {isConfirmed ? 'Appointment Confirmed!' : 'Booking Request Submitted!'}
           </h3>
           <p className="text-sm text-muted-foreground mt-2">
-            {booking.providerName} • {formatDate(booking.date, { format: 'medium' })} • {formatDate(booking.startTime, { format: 'time' })}
+            {providerName} • {formatDate(booking.scheduledAt, { format: 'medium' })} • {formatDate(booking.scheduledAt, { format: 'time' })}
           </p>
 
           {/* Countdown Timer - only show for pending appointments */}

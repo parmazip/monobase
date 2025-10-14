@@ -622,7 +622,7 @@ await endVideoCall(roomId) // Host only
 #### WebSocket Signaling Client
 
 ```typescript
-import { SignalingClient } from "@monobase/sdk/lib/signaling-client"
+import { SignalingClient } from "@monobase/sdk/utils/webrtc/signaling-client"
 
 const signalingClient = new SignalingClient(
   'http://localhost:7213',
@@ -658,7 +658,7 @@ signalingClient.disconnect()
 #### WebRTC Peer Connection
 
 ```typescript
-import { VideoPeerConnection } from "@monobase/sdk/lib/peer-connection"
+import { VideoPeerConnection } from "@monobase/sdk/utils/webrtc/peer-connection"
 
 const peerConnection = new VideoPeerConnection(
   signalingClient,

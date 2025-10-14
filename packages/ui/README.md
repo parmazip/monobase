@@ -124,14 +124,16 @@ import { BookingWidget } from "@monobase/ui/booking/components/booking-widget"
 import { BookingWidgetSkeleton } from "@monobase/ui/booking/components/booking-widget-skeleton"
 import { ActiveBookingCard } from "@monobase/ui/booking/components/active-booking-card"
 
-// Booking types
+// For booking domain data, use SDK types
 import type {
+  Booking,
   BookingTimeSlot,
   BookingProvider,
   BookingEventData,
-  ActiveBooking,
-  BookingUser,
-} from "@monobase/ui/booking/types"
+} from "@monobase/sdk/services/booking"
+
+// For user data, use SDK auth types
+import type { User } from "@monobase/sdk/services/auth"
 ```
 
 ### Domain: Billing
@@ -145,9 +147,11 @@ import type {
   MerchantAccountFormProps,
   InvoiceStatusVariant,
   PaymentMethodDisplay,
-  InvoiceListItem,
   InvoiceStatusBadgeProps,
 } from "@monobase/ui/billing/types"
+
+// For invoice data, use SDK types
+import type { Invoice } from "@monobase/sdk/services/billing"
 ```
 
 ## Usage Examples
@@ -178,7 +182,7 @@ import "@monobase/ui/styles"
 import { VideoCallUI } from "@monobase/ui/comms/components/video-call-ui"
 import { useMediaStream } from "@monobase/ui/comms/hooks/use-media-stream"
 import { useVideoCall } from "@monobase/ui/comms/hooks/use-video-call"
-import { VideoPeerConnection } from "@monobase/sdk/lib/peer-connection"
+import { VideoPeerConnection } from "@monobase/sdk/utils/webrtc/peer-connection"
 
 export function VideoCallPage({ roomId }: { roomId: string }) {
   // Get local media (camera/mic)
@@ -263,11 +267,25 @@ export function BookingPage({ providerId }: { providerId: string }) {
 
 ```tsx
 import { ActiveBookingCard } from "@monobase/ui/booking/components/active-booking-card"
+import type { Booking } from "@monobase/sdk/services/booking"
+import type { User } from "@monobase/sdk/services/auth"
 
-export function BookingStatusPage({ booking, user }) {
+export function BookingStatusPage({ 
+  booking,
+  providerId,
+  providerName,
+  user 
+}: {
+  booking: Booking
+  providerId: string
+  providerName: string
+  user: User
+}) {
   return (
     <ActiveBookingCard
       booking={booking}
+      providerId={providerId}
+      providerName={providerName}
       user={user}
       onPaymentClick={() => router.push('/payment')}
       onCancelClick={() => handleCancel()}
@@ -327,7 +345,7 @@ The UI package provides browser-based media device access and presentation compo
 - **`hooks/use-video-call.ts`** - React hook for orchestrating video calls (accepts peer connection as prop)
 - **`components/`** - Pure presentation components for video call UI
 
-**Important**: The UI package handles only browser APIs and presentation. For network layer (REST API, WebSocket, WebRTC peer connections), use `@monobase/sdk/services/comms` and `@monobase/sdk/lib/`.
+**Important**: The UI package handles only browser APIs and presentation. For network layer (REST API, WebSocket, WebRTC peer connections), use `@monobase/sdk/services/comms` and `@monobase/sdk/utils/webrtc/`.
 
 ### Browser Media APIs
 
@@ -399,7 +417,7 @@ The `useVideoCall` hook orchestrates video calls by coordinating with a peer con
 
 ```typescript
 import { useVideoCall } from "@monobase/ui/comms/hooks/use-video-call"
-import { VideoPeerConnection } from "@monobase/sdk/lib/peer-connection"
+import { VideoPeerConnection } from "@monobase/sdk/utils/webrtc/peer-connection"
 
 function VideoCall({ roomId, peerConnection }: {
   roomId: string
@@ -502,8 +520,8 @@ import { VideoCallUI } from "@monobase/ui/comms/components/video-call-ui"
 import { VideoCallUI } from "@monobase/ui/comms/components/video-call-ui"
 import { useMediaStream } from "@monobase/ui/comms/hooks/use-media-stream"
 import { useVideoCall } from "@monobase/ui/comms/hooks/use-video-call"
-import { VideoPeerConnection } from "@monobase/sdk/lib/peer-connection"
-import { SignalingClient } from "@monobase/sdk/lib/signaling-client"
+import { VideoPeerConnection } from "@monobase/sdk/utils/webrtc/peer-connection"
+import { SignalingClient } from "@monobase/sdk/utils/webrtc/signaling-client"
 import { getIceServers } from "@monobase/sdk/services/comms"
 
 export function VideoCallPage({ roomId, authToken }: {
