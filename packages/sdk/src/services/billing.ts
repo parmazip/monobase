@@ -312,3 +312,40 @@ export function getAccountSetupStatus(
   if (!isOnboardingComplete(account)) return 'incomplete'
   return 'complete'
 }
+
+// ============================================================================
+// Earnings Helper Functions
+// ============================================================================
+
+/**
+ * Calculate total earnings from paid invoices
+ */
+export function calculateTotalEarnings(invoices: Invoice[]): number {
+  return invoices
+    .filter((inv) => inv.status === 'paid')
+    .reduce((sum, inv) => sum + inv.total, 0) / 100
+}
+
+/**
+ * Calculate earnings for a specific time period
+ */
+export function calculatePeriodEarnings(
+  invoices: Invoice[],
+  startDate: Date,
+  endDate: Date
+): number {
+  return invoices
+    .filter((inv) => {
+      if (inv.status !== 'paid' || !inv.paidAt) return false
+      const paidDate = new Date(inv.paidAt)
+      return paidDate >= startDate && paidDate <= endDate
+    })
+    .reduce((sum, inv) => sum + inv.total, 0) / 100
+}
+
+/**
+ * Count invoices by status
+ */
+export function countInvoicesByStatus(invoices: Invoice[], status: Invoice['status']): number {
+  return invoices.filter((inv) => inv.status === status).length
+}

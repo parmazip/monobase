@@ -10,6 +10,7 @@
  * @see https://github.com/daveyplate/better-auth-tanstack
  */
 import { createAuthHooks } from '@daveyplate/better-auth-tanstack'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthClient } from '../auth-client'
 import type { AuthClient } from '../../auth'
 
@@ -132,7 +133,22 @@ export function useAuthMutation(...args: Parameters<ReturnType<typeof createAuth
   return hooks.useAuthMutation(...args)
 }
 
-// Custom email verification hook
+// Custom hooks
+export function useSignOut() {
+  const authClient = useAuthClient()
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async () => {
+      return authClient.signOut()
+    },
+    onSuccess: () => {
+      // Invalidate session after sign out
+      queryClient.invalidateQueries({ queryKey: ['session'] })
+    },
+  })
+}
+
 export function useEmailVerification() {
   const authClient = useAuthClient()
 

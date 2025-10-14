@@ -245,3 +245,11 @@ export function useInitiatePayment() {
     },
   })
 }
+
+// ============================================================================
+// Earnings Query Hooks
+// ============================================================================
+
+/**
+ * Get earnings overview statistics for different periods
+ */

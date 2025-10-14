@@ -16,8 +16,25 @@ using TypeSpec.OpenAPI;
 model bearerAuth is Http.BearerAuth;
 
 /**
+ * No authentication required (optional authentication)
+ * 
+ * Using TypeSpec.Http.NoAuth for optional authentication pattern:
+ * - Endpoint is accessible without authentication
+ * - User context IS extracted if Bearer token is provided
+ * - Handlers can check user context for personalization or enhanced features
+ * - Use for public endpoints that benefit from optional user context
+ */
+alias NoAuth = Http.NoAuth;
+
+/**
  * Bearer authentication is used for all authenticated endpoints
  * Role requirements are specified per operation using x-security-required-roles
+ * 
+ * Optional authentication (bearerAuth | NoAuth):
+ * - Endpoint is accessible without authentication
+ * - User context IS extracted if Bearer token is provided
+ * - Handlers can check user context for personalization or enhanced features
+ * - Use for public endpoints that benefit from optional user context
  * 
  * Role Syntax:
  * - ["admin"] - Requires admin role only
