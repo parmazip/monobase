@@ -24,9 +24,6 @@
     "@rollup/rollup-linux-x64-gnu": "^4.52.3",
     "pg-cloudflare": "^1.2.7"
   },
-  "resolutions": {
-    "zod": "^3.24.1"
-  },
   "dependencies": {
     "@tanstack/router-plugin": "^1.132.51"
   }
