@@ -49,7 +49,12 @@ export function useUnreadNotifications() {
  *
  * @returns Mutation for marking notification as read
  */
-export function useMarkNotificationAsRead() {
+export function useMarkNotificationAsRead(options?: {
+  toastSuccess?: boolean,
+  onSuccess?: (data: any) => void
+  toastError?: boolean,
+  onError?: (error: Error) => void
+}) {
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -78,6 +83,9 @@ export function useMarkNotificationAsRead() {
 
       return { previousNotification }
     },
+    onSuccess: (data) => {
+      options?.onSuccess?.(data)
+    },
     onError: (error, notificationId, context) => {
       // Rollback on error
       if (context?.previousNotification) {
@@ -86,7 +94,12 @@ export function useMarkNotificationAsRead() {
           context.previousNotification
         )
       }
-      toast.error('Failed to mark notification as read')
+      
+      if (options?.toastError !== false) {
+        toast.error('Failed to mark notification as read')
+      }
+      
+      options?.onError?.(error)
     },
     onSettled: () => {
       // Refetch all notification queries
@@ -100,16 +113,29 @@ export function useMarkNotificationAsRead() {
  *
  * @returns Mutation for marking all notifications as read
  */
-export function useMarkAllNotificationsAsRead() {
+export function useMarkAllNotificationsAsRead(options?: {
+  toastSuccess?: boolean,
+  onSuccess?: (data: any) => void
+  toastError?: boolean,
+  onError?: (error: Error) => void
+}) {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: () => notificationsApi.markAllNotificationsAsRead(),
     onSuccess: (data) => {
-      toast.success(`${data.markedCount} notifications marked as read`)
+      if (options?.toastSuccess !== false) {
+        toast.success(`${data.markedCount} notifications marked as read`)
+      }
+      
+      options?.onSuccess?.(data)
     },
-    onError: () => {
-      toast.error('Failed to mark all notifications as read')
+    onError: (error) => {
+      if (options?.toastError !== false) {
+        toast.error('Failed to mark all notifications as read')
+      }
+      
+      options?.onError?.(error)
     },
     onSettled: () => {
       // Refetch all notification queries

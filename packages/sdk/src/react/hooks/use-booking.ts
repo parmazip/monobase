@@ -119,18 +119,33 @@ export function useMyBookingEvent() {
 /**
  * Hook to create/update booking event
  */
-export function useUpsertBookingEvent() {
+export function useUpsertBookingEvent(options?: {
+  toastSuccess?: boolean,
+  onSuccess?: (data: any) => void
+  toastError?: boolean,
+  onError?: (error: Error) => void
+}) {
   const queryClient = useQueryClient()
   
   return useMutation({
     mutationFn: upsertMyBookingEvent,
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['booking', 'event', 'me'] })
-      toast.success('Booking settings updated successfully')
+      
+      if (options?.toastSuccess !== false) {
+        toast.success('Booking settings updated successfully')
+      }
+      
+      options?.onSuccess?.(data)
     },
     onError: (error: Error) => {
       console.error('Failed to update booking settings:', error)
-      toast.error('Failed to update booking settings')
+      
+      if (options?.toastError !== false) {
+        toast.error('Failed to update booking settings')
+      }
+      
+      options?.onError?.(error)
     },
   })
 }
@@ -149,18 +164,33 @@ export function useMyAvailability(params?: GetAvailabilityParams) {
 /**
  * Hook to create availability slot
  */
-export function useCreateAvailabilitySlot() {
+export function useCreateAvailabilitySlot(options?: {
+  toastSuccess?: boolean,
+  onSuccess?: (data: any) => void
+  toastError?: boolean,
+  onError?: (error: Error) => void
+}) {
   const queryClient = useQueryClient()
   
   return useMutation({
     mutationFn: createAvailabilitySlot,
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['booking', 'availability', 'me'] })
-      toast.success('Availability slot created')
+      
+      if (options?.toastSuccess !== false) {
+        toast.success('Availability slot created')
+      }
+      
+      options?.onSuccess?.(data)
     },
     onError: (error: Error) => {
       console.error('Failed to create availability slot:', error)
-      toast.error('Failed to create availability slot')
+      
+      if (options?.toastError !== false) {
+        toast.error('Failed to create availability slot')
+      }
+      
+      options?.onError?.(error)
     },
   })
 }
@@ -168,19 +198,34 @@ export function useCreateAvailabilitySlot() {
 /**
  * Hook to update availability slot
  */
-export function useUpdateAvailabilitySlot() {
+export function useUpdateAvailabilitySlot(options?: {
+  toastSuccess?: boolean,
+  onSuccess?: (data: any) => void
+  toastError?: boolean,
+  onError?: (error: Error) => void
+}) {
   const queryClient = useQueryClient()
   
   return useMutation({
     mutationFn: ({ slotId, data }: { slotId: string; data: Parameters<typeof updateAvailabilitySlot>[1] }) => 
       updateAvailabilitySlot(slotId, data),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['booking', 'availability', 'me'] })
-      toast.success('Availability slot updated')
+      
+      if (options?.toastSuccess !== false) {
+        toast.success('Availability slot updated')
+      }
+      
+      options?.onSuccess?.(data)
     },
     onError: (error: Error) => {
       console.error('Failed to update availability slot:', error)
-      toast.error('Failed to update availability slot')
+      
+      if (options?.toastError !== false) {
+        toast.error('Failed to update availability slot')
+      }
+      
+      options?.onError?.(error)
     },
   })
 }
@@ -188,18 +233,33 @@ export function useUpdateAvailabilitySlot() {
 /**
  * Hook to delete availability slot
  */
-export function useDeleteAvailabilitySlot() {
+export function useDeleteAvailabilitySlot(options?: {
+  toastSuccess?: boolean,
+  onSuccess?: (data: any) => void
+  toastError?: boolean,
+  onError?: (error: Error) => void
+}) {
   const queryClient = useQueryClient()
   
   return useMutation({
     mutationFn: deleteAvailabilitySlot,
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['booking', 'availability', 'me'] })
-      toast.success('Availability slot deleted')
+      
+      if (options?.toastSuccess !== false) {
+        toast.success('Availability slot deleted')
+      }
+      
+      options?.onSuccess?.(data)
     },
     onError: (error: Error) => {
       console.error('Failed to delete availability slot:', error)
-      toast.error('Failed to delete availability slot')
+      
+      if (options?.toastError !== false) {
+        toast.error('Failed to delete availability slot')
+      }
+      
+      options?.onError?.(error)
     },
   })
 }
@@ -207,18 +267,33 @@ export function useDeleteAvailabilitySlot() {
 /**
  * Hook to create recurring availability
  */
-export function useCreateRecurringAvailability() {
+export function useCreateRecurringAvailability(options?: {
+  toastSuccess?: boolean,
+  onSuccess?: (data: any) => void
+  toastError?: boolean,
+  onError?: (error: Error) => void
+}) {
   const queryClient = useQueryClient()
   
   return useMutation({
     mutationFn: createRecurringAvailability,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['booking', 'availability', 'me'] })
-      toast.success(`Created ${data.created} availability slots`)
+      
+      if (options?.toastSuccess !== false) {
+        toast.success(`Created ${data.created} availability slots`)
+      }
+      
+      options?.onSuccess?.(data)
     },
     onError: (error: Error) => {
       console.error('Failed to create recurring availability:', error)
-      toast.error('Failed to create recurring availability')
+      
+      if (options?.toastError !== false) {
+        toast.error('Failed to create recurring availability')
+      }
+      
+      options?.onError?.(error)
     },
   })
 }
@@ -263,19 +338,34 @@ export function useBooking(bookingId: string) {
 /**
  * Confirm a booking request
  */
-export function useConfirmBooking() {
+export function useConfirmBooking(options?: {
+  toastSuccess?: boolean,
+  onSuccess?: (data: any) => void
+  toastError?: boolean,
+  onError?: (error: Error) => void
+}) {
   const queryClient = useQueryClient()
   
   return useMutation({
     mutationFn: ({ bookingId, reason }: { bookingId: string; reason?: string }) =>
       confirmBooking(bookingId, reason),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['booking', 'bookings'] })
-      toast.success('Booking confirmed successfully')
+      
+      if (options?.toastSuccess !== false) {
+        toast.success('Booking confirmed successfully')
+      }
+      
+      options?.onSuccess?.(data)
     },
     onError: (error: Error) => {
       console.error('Failed to confirm booking:', error)
-      toast.error('Failed to confirm booking')
+      
+      if (options?.toastError !== false) {
+        toast.error('Failed to confirm booking')
+      }
+      
+      options?.onError?.(error)
     },
   })
 }
@@ -283,19 +373,34 @@ export function useConfirmBooking() {
 /**
  * Reject a booking request
  */
-export function useRejectBooking() {
+export function useRejectBooking(options?: {
+  toastSuccess?: boolean,
+  onSuccess?: (data: any) => void
+  toastError?: boolean,
+  onError?: (error: Error) => void
+}) {
   const queryClient = useQueryClient()
   
   return useMutation({
     mutationFn: ({ bookingId, reason }: { bookingId: string; reason?: string }) =>
       rejectBooking(bookingId, reason),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['booking', 'bookings'] })
-      toast.success('Booking rejected')
+      
+      if (options?.toastSuccess !== false) {
+        toast.success('Booking rejected')
+      }
+      
+      options?.onSuccess?.(data)
     },
     onError: (error: Error) => {
       console.error('Failed to reject booking:', error)
-      toast.error('Failed to reject booking')
+      
+      if (options?.toastError !== false) {
+        toast.error('Failed to reject booking')
+      }
+      
+      options?.onError?.(error)
     },
   })
 }
@@ -303,19 +408,34 @@ export function useRejectBooking() {
 /**
  * Cancel a booking
  */
-export function useCancelBooking() {
+export function useCancelBooking(options?: {
+  toastSuccess?: boolean,
+  onSuccess?: (data: any) => void
+  toastError?: boolean,
+  onError?: (error: Error) => void
+}) {
   const queryClient = useQueryClient()
   
   return useMutation({
     mutationFn: ({ bookingId, reason }: { bookingId: string; reason?: string }) =>
       cancelBooking(bookingId, reason),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['booking', 'bookings'] })
-      toast.success('Booking cancelled')
+      
+      if (options?.toastSuccess !== false) {
+        toast.success('Booking cancelled')
+      }
+      
+      options?.onSuccess?.(data)
     },
     onError: (error: Error) => {
       console.error('Failed to cancel booking:', error)
-      toast.error('Failed to cancel booking')
+      
+      if (options?.toastError !== false) {
+        toast.error('Failed to cancel booking')
+      }
+      
+      options?.onError?.(error)
     },
   })
 }
@@ -323,18 +443,33 @@ export function useCancelBooking() {
 /**
  * Mark booking as no-show
  */
-export function useMarkBookingNoShow() {
+export function useMarkBookingNoShow(options?: {
+  toastSuccess?: boolean,
+  onSuccess?: (data: any) => void
+  toastError?: boolean,
+  onError?: (error: Error) => void
+}) {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: (bookingId: string) => markBookingNoShow(bookingId),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['booking', 'bookings'] })
-      toast.success('Booking marked as no-show')
+      
+      if (options?.toastSuccess !== false) {
+        toast.success('Booking marked as no-show')
+      }
+      
+      options?.onSuccess?.(data)
     },
     onError: (error: Error) => {
       console.error('Failed to mark booking as no-show:', error)
-      toast.error('Failed to mark booking as no-show')
+      
+      if (options?.toastError !== false) {
+        toast.error('Failed to mark booking as no-show')
+      }
+      
+      options?.onError?.(error)
     },
   })
 }
@@ -349,7 +484,9 @@ import { createBooking, type CreateBookingData } from '../../services/booking'
  * Create a new booking (patient action)
  */
 export function useCreateBooking(options?: {
+  toastSuccess?: boolean,
   onSuccess?: (data: any) => void
+  toastError?: boolean,
   onError?: (error: Error) => void
 }) {
   const queryClient = useQueryClient()
@@ -358,16 +495,24 @@ export function useCreateBooking(options?: {
     mutationFn: createBooking,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['booking', 'bookings'] })
-      toast.success('Booking created successfully')
+      
+      if (options?.toastSuccess !== false) {
+        toast.success('Booking created successfully')
+      }
+      
       options?.onSuccess?.(data)
     },
     onError: (error: Error) => {
       console.error('Failed to create booking:', error)
-      if (error instanceof ApiError) {
-        toast.error(error.message || 'Failed to create booking')
-      } else {
-        toast.error('Failed to create booking')
+      
+      if (options?.toastError !== false) {
+        if (error instanceof ApiError) {
+          toast.error(error.message || 'Failed to create booking')
+        } else {
+          toast.error('Failed to create booking')
+        }
       }
+      
       options?.onError?.(error)
     },
   })

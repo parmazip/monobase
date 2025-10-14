@@ -68,20 +68,33 @@ export function useConsultation(
  * Create consultation
  */
 export function useCreateConsultation(
-  options?: UseMutationOptions<ConsultationNote, Error, CreateConsultationRequest>
+  options?: {
+    toastSuccess?: boolean,
+    toastError?: boolean,
+  } & UseMutationOptions<ConsultationNote, Error, CreateConsultationRequest>
 ) {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: createConsultation,
-    onSuccess: () => {
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.emrConsultations() })
-      toast.success('Consultation created successfully')
+      
+      if (options?.toastSuccess !== false) {
+        toast.success('Consultation created successfully')
+      }
+      
+      options?.onSuccess?.(data, variables, context)
     },
-    onError: (error) => {
-      toast.error('Failed to create consultation')
+    onError: (error, variables, context) => {
+      if (options?.toastError !== false) {
+        toast.error('Failed to create consultation')
+      }
+      
+      options?.onError?.(error, variables, context)
     },
-    ...options,
+    onMutate: options?.onMutate,
+    onSettled: options?.onSettled,
   })
 }
 
@@ -89,21 +102,34 @@ export function useCreateConsultation(
  * Update consultation
  */
 export function useUpdateConsultation(
-  options?: UseMutationOptions<ConsultationNote, Error, { id: string; data: UpdateConsultationRequest }>
+  options?: {
+    toastSuccess?: boolean,
+    toastError?: boolean,
+  } & UseMutationOptions<ConsultationNote, Error, { id: string; data: UpdateConsultationRequest }>
 ) {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: ({ id, data }) => updateConsultation(id, data),
-    onSuccess: (_, variables) => {
+    onSuccess: (data, variables, context) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.emrConsultation(variables.id) })
       queryClient.invalidateQueries({ queryKey: queryKeys.emrConsultations() })
-      toast.success('Consultation updated successfully')
+      
+      if (options?.toastSuccess !== false) {
+        toast.success('Consultation updated successfully')
+      }
+      
+      options?.onSuccess?.(data, variables, context)
     },
-    onError: (error) => {
-      toast.error('Failed to update consultation')
+    onError: (error, variables, context) => {
+      if (options?.toastError !== false) {
+        toast.error('Failed to update consultation')
+      }
+      
+      options?.onError?.(error, variables, context)
     },
-    ...options,
+    onMutate: options?.onMutate,
+    onSettled: options?.onSettled,
   })
 }
 
@@ -112,7 +138,9 @@ export function useUpdateConsultation(
  */
 export function useFinalizeConsultation(
   options?: {
+    toastSuccess?: boolean,
     onSuccess?: () => void
+    toastError?: boolean,
     onError?: (error: Error) => void
   }
 ) {
@@ -122,11 +150,18 @@ export function useFinalizeConsultation(
     mutationFn: (consultationId: string) => finalizeConsultation(consultationId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.emrConsultations() })
-      toast.success('Consultation finalized successfully')
+      
+      if (options?.toastSuccess !== false) {
+        toast.success('Consultation finalized successfully')
+      }
+      
       options?.onSuccess?.()
     },
     onError: (error) => {
-      toast.error('Failed to finalize consultation')
+      if (options?.toastError !== false) {
+        toast.error('Failed to finalize consultation')
+      }
+      
       options?.onError?.(error)
     },
   })
