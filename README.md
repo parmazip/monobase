@@ -75,6 +75,7 @@ Create `.env` files in each service/app directory (see individual READMEs for re
 # services/api/.env
 DATABASE_URL=postgresql://user:password@localhost:5432/monobase
 PORT=7213
+AUTH_SECRET=your-secret-key-here
 ```
 
 ### 4. Start Development Servers
@@ -150,7 +151,7 @@ bun run build:types            # Generate TypeScript types only
 ### Account App (`apps/account/`)
 
 ```bash
-bun dev                        # Start dev server (port 3001)
+bun dev                        # Start dev server (port 3002)
 bun run build                  # Build production bundle
 bun run typecheck              # TypeScript type checking
 bun run test:e2e               # Run Playwright E2E tests
@@ -168,7 +169,7 @@ User-facing application for:
 - File access and management
 
 **Development**: `cd apps/account && bun dev`
-**Port**: 3001
+**Port**: 3002
 
 ## API Service
 
@@ -177,11 +178,14 @@ User-facing application for:
 The API service is organized into domain-specific modules:
 
 1. **Person** - User profile management and PII safeguard
-2. **Audit** - Compliance logging and activity tracking
-3. **Comms** - Video/chat sessions (WebRTC) and messaging
-4. **Notifs** - Multi-channel notifications (email, push via OneSignal)
-5. **Storage** - File upload/download (S3/MinIO)
-6. **Email** - Transactional email delivery
+2. **Booking** - Professional booking and scheduling system
+3. **Billing** - Invoice-based payments (Stripe integration)
+4. **Audit** - Compliance logging and activity tracking
+5. **Comms** - Video/chat sessions (WebRTC) and messaging
+6. **Notifs** - Multi-channel notifications (email, push via OneSignal)
+7. **Storage** - File upload/download (S3/MinIO)
+8. **Email** - Transactional email delivery
+9. **Reviews** - NPS review system
 
 **Authentication** is handled by Better-Auth (integrated, not a separate module).
 

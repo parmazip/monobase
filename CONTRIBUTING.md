@@ -25,7 +25,7 @@ Thank you for your interest in contributing to Monobase! This guide will help yo
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd pmono
+cd monobase
 
 # Install dependencies
 bun install
@@ -41,7 +41,7 @@ Each service/app requires its own `.env` file:
 **API Service** (`services/api/.env`):
 ```bash
 DATABASE_URL=postgresql://user:password@localhost:5432/monobase
-PORT=4000
+PORT=7213
 AUTH_SECRET=your-secret-key-here
 STRIPE_SECRET_KEY=sk_test_...
 AWS_ACCESS_KEY_ID=...
@@ -50,7 +50,7 @@ AWS_SECRET_ACCESS_KEY=...
 
 **Account App** (`apps/account/.env`):
 ```bash
-VITE_API_URL=http://localhost:4000
+VITE_API_URL=http://localhost:7213
 ```
 
 ### 3. Database Initialization
@@ -70,7 +70,7 @@ cd services/api && bun dev
 cd apps/account && bun dev
 
 # Verify API is running
-curl http://localhost:4000/health
+curl http://localhost:7213/health
 ```
 
 ## Project Structure
@@ -78,12 +78,13 @@ curl http://localhost:4000/health
 ### Workspace Organization
 
 ```
-pmono/
+monobase/
 ├── apps/                      # Frontend applications
-│   ├── account/              # Vite + TanStack Router account portal
-│   └── website/              # Next.js marketing site
+│   └── account/              # Vite + TanStack Router account portal
 ├── packages/                  # Shared packages
-│   └── typescript-config/    # Shared TypeScript configs
+│   ├── typescript-config/    # Shared TypeScript configs
+│   ├── ui/                   # Shared UI components
+│   └── sdk/                  # Type-safe API client
 ├── services/                  # Backend services
 │   └── api/                  # Main Hono API service
 └── specs/                     # API specifications

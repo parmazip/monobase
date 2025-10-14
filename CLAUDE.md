@@ -25,12 +25,14 @@ For detailed information, refer to:
 The platform implements the following core modules:
 
 1. **person** - User profile management and central PII safeguard
-2. **audit** - Compliance logging (Pino structured logging)
-3. **notifs** - Multi-channel notifications (email, push via OneSignal)
-4. **comms** - Video/chat sessions (WebRTC) and messaging
-5. **storage** - File upload/download (S3/MinIO)
-6. **email** - Transactional emails (SMTP/Postmark)
-7. **billing** - Invoice-based payments (Stripe integration)
+2. **booking** - Professional booking and scheduling system
+3. **billing** - Invoice-based payments (Stripe integration)
+4. **audit** - Compliance logging (Pino structured logging)
+5. **notifs** - Multi-channel notifications (email, push via OneSignal)
+6. **comms** - Video/chat sessions (WebRTC) and messaging
+7. **storage** - File upload/download (S3/MinIO)
+8. **email** - Transactional emails (SMTP/Postmark)
+9. **reviews** - NPS review system
 
 **Note**: Authentication is handled by Better-Auth (integrated, not a separate module). Consent management is implemented as JSONB fields on the Person model (not a standalone module).
 
@@ -175,7 +177,7 @@ The canonical API reference is at: `specs/api/dist/openapi/openapi.json`
 ## Frontend Development
 
 ### Account App (Vite + TanStack Router)
-- **Port**: 3001
+- **Port**: 3002
 - **Routing**: File-based in `src/routes/`
 - **Auth**: Better-Auth with TanStack integration
 - **Data Fetching**: TanStack Query with React Query
@@ -206,7 +208,7 @@ cd ../../services/api && bun run generate  # Generate routes/validators
 
 # Start development
 cd services/api && bun dev        # API on port 7213
-cd apps/account && bun dev        # Account app on port 3001
+cd apps/account && bun dev        # Account app on port 3002
 
 # Database
 cd services/api && bun run db:generate  # Generate migration
@@ -221,17 +223,14 @@ cd apps/account && bun run test:e2e     # E2E tests
 
 ### What Exists
 - ✅ **packages/ui/** - Shared UI component library
+- ✅ **packages/sdk/** - Type-safe API client
 - ✅ **Authentication** via Better-Auth (integrated, not a separate module)
 - ✅ **Consent** as JSONB fields on Person model (not a separate module)
-- ✅ **7 Core Modules**: person, audit, notifs, comms, storage, email, billing
+- ✅ **9 Core Modules**: person, booking, billing, audit, notifs, comms, storage, email, reviews
 
 ### What Does Not Exist
 - ❌ **apps/admin/** - No admin/service provider app yet
 - ❌ **apps/website/** - No Next.js marketing website yet
-- ❌ **Booking module** - No scheduling system yet
-- ❌ **Client/Service Provider modules** - No role-specific extensions yet
-- ❌ **Records/EMR module** - No document management yet
-- ❌ **Reviews module** - No rating system yet
 
 ## When in Doubt
 
