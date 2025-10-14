@@ -73,9 +73,34 @@ export function useMyPerson() {
 
 ## Adding Services
 
-### Step 1: Define Types
+### Service Types
 
-Follow the **three-type pattern**:
+There are two types of service files:
+
+1. **Type-Only Services** - Re-export types from external libraries
+2. **Implementation Services** - Implement API calls with type mapping
+
+### Type-Only Services (e.g., `services/auth.ts`)
+
+For services that only need to re-export types from external libraries:
+
+```typescript
+// src/services/auth.ts
+/**
+ * Auth Service - Type re-exports from better-auth
+ * Provides User and Session types for authentication context
+ */
+export type { User, Session } from 'better-auth'
+```
+
+**When to use**:
+- When types come from an external package (Better-Auth, etc.)
+- When no API calls are needed (auth is handled by Better-Auth client)
+- When you want to provide a consistent import path for types
+
+### Implementation Services (e.g., `services/person.ts`)
+
+For services that make API calls, follow the **three-type pattern**:
 
 ```typescript
 // src/services/booking.ts
@@ -419,12 +444,43 @@ function TestPage() {
 
 For API integration tests, see [main CONTRIBUTING.md](../../CONTRIBUTING.md#testing-requirements).
 
+## Utility Organization
+
+### Nested Utilities
+
+The SDK supports nested utility directories via wildcard exports in `package.json`:
+
+```json
+{
+  "exports": {
+    "./utils/*": "./src/utils/*.ts"
+  }
+}
+```
+
+This allows imports from nested paths:
+
+```typescript
+// Nested utilities work automatically
+import { SignalingClient } from "@monobase/sdk/utils/webrtc/signaling-client"
+import { VideoPeerConnection } from "@monobase/sdk/utils/webrtc/peer-connection"
+
+// Top-level utilities
+import { formatDate } from "@monobase/sdk/utils/format"
+import { sanitizeObject } from "@monobase/sdk/utils/api"
+```
+
+**When to nest utilities**:
+- Group related utilities by domain (e.g., `webrtc/`, `validation/`)
+- Keep top-level utils for common cross-cutting concerns
+- Maintain flat structure for simple utilities
+
 ## Common Patterns
 
 ### Date Handling
 
 ```typescript
-import { formatDate } from '@monobase/ui/lib/format-date'
+import { formatDate } from "@monobase/sdk/utils/format"
 
 // Frontend Date → API ISO string
 const isoString = formatDate(new Date(), { format: 'iso' })
