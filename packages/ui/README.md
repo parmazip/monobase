@@ -184,7 +184,7 @@ import { VideoPeerConnection } from "@monobase/sdk/utils/webrtc/peer-connection"
 export function VideoCallPage({ roomId }: { roomId: string }) {
   // Get local media (camera/mic)
   const {
-    localStream,
+    stream,
     audioEnabled,
     videoEnabled,
     isScreenSharing,
@@ -192,13 +192,13 @@ export function VideoCallPage({ roomId }: { roomId: string }) {
     toggleCamera,
     startScreenShare,
     stopScreenShare,
-  } = useMediaStream()
+  } = useMediaStream(true, true)
 
   // Create peer connection (from SDK)
   const peerConnection = new VideoPeerConnection(
     signalingClient,
     iceServers,
-    localStream
+    stream
   )
 
   // Manage video call state
@@ -216,7 +216,7 @@ export function VideoCallPage({ roomId }: { roomId: string }) {
 
   return (
     <VideoCallUI
-      localStream={localStream}
+      localStream={stream}
       remoteStream={remoteStream}
       connectionState={connectionState}
       audioEnabled={audioEnabled}
@@ -376,7 +376,8 @@ import { useMediaStream } from "@monobase/ui/comms/hooks/use-media-stream"
 
 function VideoCallComponent() {
   const {
-    localStream,
+    stream,          // Local media stream (camera/mic)
+    displayStream,   // Screen sharing stream
     audioEnabled,
     videoEnabled,
     isScreenSharing,
@@ -385,15 +386,14 @@ function VideoCallComponent() {
     startScreenShare,
     stopScreenShare,
     error,
-  } = useMediaStream({
-    autoStart: true, // Automatically request media on mount
-    audio: true,
-    video: true,
-  })
+  } = useMediaStream(
+    true,  // initialAudio
+    true   // initialVideo
+  )
 
   return (
     <div>
-      <video ref={videoRef} srcObject={localStream} autoPlay muted />
+      <video ref={videoRef} srcObject={stream} autoPlay muted />
       <button onClick={toggleMic}>
         {audioEnabled ? 'Mute' : 'Unmute'}
       </button>
@@ -446,159 +446,11 @@ function VideoCall({ roomId, peerConnection }: {
 
 ### UI Components
 
-All components are pure presentation components that receive state as props.
-
-#### VideoTile
-
-```typescript
-import { VideoTile } from "@monobase/ui/comms/components/video-tile"
-
-<VideoTile
-  stream={mediaStream}
-  label="John Doe"
-  muted={false}
-  className="aspect-video"
-/>
-```
-
-#### CallControls
-
-```typescript
-import { CallControls } from "@monobase/ui/comms/components/call-controls"
-
-<CallControls
-  audioEnabled={true}
-  videoEnabled={true}
-  isScreenSharing={false}
-  onToggleMic={() => console.log('Toggle mic')}
-  onToggleCamera={() => console.log('Toggle camera')}
-  onStartScreenShare={() => console.log('Start screen share')}
-  onStopScreenShare={() => console.log('Stop screen share')}
-  onEndCall={() => console.log('End call')}
-/>
-```
-
-#### ConnectionStatus
-
-```typescript
-import { ConnectionStatus } from "@monobase/ui/comms/components/connection-status"
-
-<ConnectionStatus state="connected" />
-<ConnectionStatus state="connecting" />
-<ConnectionStatus state="failed" />
-```
-
-#### VideoCallUI (Complete Interface)
-
-```typescript
-import { VideoCallUI } from "@monobase/ui/comms/components/video-call-ui"
-
-<VideoCallUI
-  localStream={localMediaStream}
-  remoteStream={remoteMediaStream}
-  connectionState="connected"
-  audioEnabled={true}
-  videoEnabled={true}
-  isScreenSharing={false}
-  onToggleMic={handleToggleMic}
-  onToggleCamera={handleToggleCamera}
-  onStartScreenShare={handleStartScreenShare}
-  onStopScreenShare={handleStopScreenShare}
-  onEndCall={handleEndCall}
-  localLabel="You"
-  remoteLabel="Remote Participant"
-  className="h-screen"
-/>
-```
-
-### Complete Example
-
-```tsx
-import { VideoCallUI } from "@monobase/ui/comms/components/video-call-ui"
-import { useMediaStream } from "@monobase/ui/comms/hooks/use-media-stream"
-import { useVideoCall } from "@monobase/ui/comms/hooks/use-video-call"
-import { VideoPeerConnection } from "@monobase/sdk/utils/webrtc/peer-connection"
-import { SignalingClient } from "@monobase/sdk/utils/webrtc/signaling-client"
-import { getIceServers } from "@monobase/sdk/services/comms"
-
-export function VideoCallPage({ roomId, authToken }: {
-  roomId: string
-  authToken: string
-}) {
-  // Step 1: Get local media (UI package)
-  const {
-    localStream,
-    audioEnabled,
-    videoEnabled,
-    isScreenSharing,
-    toggleMic,
-    toggleCamera,
-    startScreenShare,
-    stopScreenShare,
-  } = useMediaStream({ autoStart: true, audio: true, video: true })
-
-  // Step 2: Create signaling client (SDK)
-  const signalingClient = new SignalingClient(
-    'http://localhost:7213',
-    roomId,
-    authToken
-  )
-
-  // Step 3: Get ICE servers and create peer connection (SDK)
-  const [iceServers, setIceServers] = useState([])
-  const [peerConnection, setPeerConnection] = useState(null)
-
-  useEffect(() => {
-    getIceServers().then(servers => {
-      setIceServers(servers)
-      const pc = new VideoPeerConnection(
-        signalingClient,
-        servers,
-        localStream
-      )
-      setPeerConnection(pc)
-    })
-  }, [localStream])
-
-  // Step 4: Orchestrate video call (UI package)
-  const {
-    remoteStream,
-    connectionState,
-    handleEndCall,
-  } = useVideoCall({
-    peerConnection,
-    roomId,
-    onCallEnded: () => {
-      console.log('Call ended')
-    },
-  })
-
-  // Step 5: Render UI (UI package)
-  return (
-    <VideoCallUI
-      localStream={localStream}
-      remoteStream={remoteStream}
-      connectionState={connectionState}
-      audioEnabled={audioEnabled}
-      videoEnabled={videoEnabled}
-      isScreenSharing={isScreenSharing}
-      onToggleMic={toggleMic}
-      onToggleCamera={toggleCamera}
-      onStartScreenShare={startScreenShare}
-      onStopScreenShare={stopScreenShare}
-      onEndCall={handleEndCall}
-      localLabel="You"
-      remoteLabel="Remote User"
-    />
-  )
-}
-```
-
-**Key Principles**:
-1. **UI package** handles browser APIs (MediaDevices) and presentation
-2. **SDK package** handles network layer (REST, WebSocket, WebRTC peer connection)
-3. **Apps** wire them together
-4. Zero cross-dependencies between packages
+All components are pure presentation - see individual component prop types for details:
+- `VideoTile` - Displays a video stream with label
+- `CallControls` - Action buttons for mic/camera/screen/end call
+- `ConnectionStatus` - Shows connection state indicator
+- `VideoCallUI` - Complete video call interface combining all components
 
 ## shadcn/ui Configuration
 
