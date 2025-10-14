@@ -13,11 +13,11 @@ function RouteComponent() {
   const authHeaders = {
     'sign-in': {
       title: 'Welcome back',
-      subtitle: 'Sign in to your PARMAZIP account'
+      subtitle: 'Sign in to your Monobase account'
     },
     'sign-up': {
       title: 'Create an account',
-      subtitle: 'Join PARMAZIP Healthcare today'
+      subtitle: 'Join Monobase today'
     },
     'forgot-password': {
       title: 'Reset your password',
@@ -51,7 +51,7 @@ function RouteComponent() {
             <p className="subtitle text-muted-foreground mt-2">{headerContent.subtitle}</p>
           </div>
         )}
-        <div className="w-full overflow-hidden [&_.flex.items-center.gap-2]:justify-center">
+        <div className="w-full overflow-hidden flex justify-center text-center [&_.flex.items-center.gap-2]:justify-center">
           <AuthView
             pathname={authView}
             callbackURL={callbackURL}

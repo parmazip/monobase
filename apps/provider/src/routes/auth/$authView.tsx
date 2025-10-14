@@ -13,11 +13,11 @@ function RouteComponent() {
   const authHeaders = {
     'sign-in': {
       title: 'Welcome back',
-      subtitle: 'Sign in to your MONOBASE account'
+      subtitle: 'Sign in to your Monobase account'
     },
     'sign-up': {
       title: 'Create an account',
-      subtitle: 'Join MONOBASE Healthcare today'
+      subtitle: 'Join Monobase today'
     },
     'forgot-password': {
       title: 'Reset your password',
@@ -45,13 +45,13 @@ function RouteComponent() {
         {headerContent && (
           <div className="text-center mb-6">
             <div className="flex justify-center mb-3">
-              <Logo variant="horizontal" size="lg" />
+              <Logo variant="horizontal" size="xl" />
             </div>
-            <h1 className="text-2xl font-bold text-foreground">{headerContent.title}</h1>
-            <p className="text-muted-foreground mt-2">{headerContent.subtitle}</p>
+            <h1 className="text-2xl font-headline font-bold text-foreground">{headerContent.title}</h1>
+            <p className="subtitle text-muted-foreground mt-2">{headerContent.subtitle}</p>
           </div>
         )}
-        <div className="w-full overflow-hidden [&_.flex.items-center.gap-2]:justify-center">
+        <div className="w-full overflow-hidden flex justify-center text-center [&_.flex.items-center.gap-2]:justify-center">
           <AuthView
             pathname={authView}
             callbackURL={callbackURL}
