@@ -41,7 +41,7 @@ Microsoft TypeSpec is a language for defining APIs and generating OpenAPI specif
 Modules are defined in `src/modules/{domain}.tsp`:
 
 ```typescript
-// src/modules/patient.tsp
+// src/modules/person.tsp
 import "@typespec/http";
 import "@typespec/openapi3";
 
@@ -49,10 +49,10 @@ using TypeSpec.Http;
 using TypeSpec.OpenAPI;
 
 @service({
-  title: "Patient Management API"
+  title: "Person Management API"
 })
-@tag("Patient")
-namespace Patients {
+@tag("Person")
+namespace PersonModule {
   // Operations and models defined here
 }
 ```
@@ -61,49 +61,54 @@ namespace Patients {
 
 **Base Model Pattern:**
 ```typescript
-@doc("Patient record in the healthcare system")
-model Patient {
-  @doc("Unique patient identifier")
-  id: string;
+@doc("Person record representing a user in the system")
+model Person extends BaseEntity {
+  @doc("First name")
+  firstName: string;
 
-  @doc("Associated person ID")
-  person_id: string;
+  @doc("Last name")
+  lastName?: string;
 
-  @doc("Medical history summary")
-  medical_history?: string;
+  @doc("Email address")
+  @format("email")
+  email?: Email;
 
-  @doc("Primary care provider ID")
-  primary_provider_id?: string;
+  @doc("Phone number")
+  phone?: PhoneNumber;
 
-  @doc("Record creation timestamp")
-  created_at: utcDateTime;
-
-  @doc("Last update timestamp")
-  updated_at: utcDateTime;
+  @doc("Consent preferences")
+  marketingConsent?: ConsentRecord;
+  dataSharingConsent?: ConsentRecord;
 }
 ```
 
 **Request Model Pattern:**
 ```typescript
-@doc("Request body for creating a patient")
-model CreatePatientRequest {
-  @doc("Person ID to associate with patient")
-  person_id: string;
+@doc("Request body for creating a person")
+model PersonCreateRequest {
+  @doc("First name")
+  firstName: string;
 
-  @doc("Initial medical history")
-  medical_history?: string;
+  @doc("Last name")
+  lastName?: string;
 
-  @doc("Primary care provider ID")
-  primary_provider_id?: string;
+  @doc("Email address")
+  email?: Email;
+
+  @doc("Phone number")
+  phone?: PhoneNumber;
 }
 
-@doc("Request body for updating a patient")
-model UpdatePatientRequest {
-  @doc("Updated medical history")
-  medical_history?: string;
+@doc("Request body for updating a person")
+model PersonUpdateRequest {
+  @doc("Updated first name")
+  firstName?: string;
 
-  @doc("Updated primary care provider")
-  primary_provider_id?: string;
+  @doc("Updated last name")
+  lastName?: string;
+
+  @doc("Updated email")
+  email?: Email;
 }
 ```
 
@@ -111,58 +116,64 @@ model UpdatePatientRequest {
 
 **CRUD Operations Pattern:**
 ```typescript
-namespace Patients {
-  @route("/patients")
-  interface PatientOperations {
+namespace PersonModule {
+  @route("/persons")
+  interface PersonManagement {
     @get
-    @summary("List all patients")
-    @doc("Retrieves a paginated list of all patients")
-    listPatients(
-      @query limit?: int32,
-      @query offset?: int32
+    @summary("List all persons")
+    @doc("Retrieves a paginated list of all persons")
+    listPersons(
+      ...PaginationQuery
     ): {
       @statusCode statusCode: 200;
-      @body patients: Patient[];
+      @body body: PaginatedResponse<Person>;
     };
 
     @post
-    @summary("Create a new patient")
-    @doc("Creates a new patient record")
-    createPatient(
-      @body request: CreatePatientRequest
+    @summary("Create a new person")
+    @doc("Creates a new person record")
+    createPerson(
+      @body request: PersonCreateRequest
     ): {
       @statusCode statusCode: 201;
-      @body patient: Patient;
+      @body body: Person;
+    } | {
+      @statusCode statusCode: 400;
+      @body body: ValidationError;
     };
 
     @get
-    @summary("Get patient by ID")
-    getPatient(
-      @path id: string
+    @summary("Get person by ID")
+    @route("/{person}")
+    getPerson(
+      @path person: UUID
     ): {
       @statusCode statusCode: 200;
-      @body patient: Patient;
+      @body body: Person;
     } | {
       @statusCode statusCode: 404;
-      @body error: NotFoundError;
+      @body body: NotFoundError;
     };
 
     @patch
-    @summary("Update patient")
-    updatePatient(
-      @path id: string,
-      @body request: UpdatePatientRequest
+    @summary("Update person")
+    @route("/{person}")
+    updatePerson(
+      @path person: UUID,
+      @body request: PersonUpdateRequest
     ): {
       @statusCode statusCode: 200;
-      @body patient: Patient;
+      @body body: Person;
     };
 
     @delete
-    @summary("Delete patient")
-    deletePatient(
-      @path id: string
+    @summary("Delete person")
+    @route("/{person}")
+    deletePerson(
+      @path person: UUID
     ): {
       @statusCode statusCode: 204;
+      @body body: NoContentResponse;
     };
   }
 }
@@ -180,10 +191,10 @@ namespace Patients {
 ```typescript
 model Example {
   // Optional - can be omitted
-  optional_field?: string;
+  optionalField?: string;
 
   // Nullable - must be present, can be null
-  nullable_field: string | null;
+  nullableField: string | null;
 
   // Both - can be omitted OR present as null
   both?: string | null;
@@ -196,25 +207,31 @@ Define common models in `src/common/models.tsp`:
 
 ```typescript
 // src/common/models.tsp
-@doc("Pagination parameters")
-model PaginationParams {
-  @doc("Maximum number of items to return")
-  @minValue(1)
-  @maxValue(100)
-  limit?: int32 = 20;
+@doc("Base entity with audit fields")
+model BaseEntity {
+  @doc("Unique identifier")
+  id: UUID;
 
-  @doc("Number of items to skip")
-  @minValue(0)
-  offset?: int32 = 0;
-}
-
-@doc("Timestamp fields for all models")
-model Timestamps {
   @doc("Creation timestamp")
-  created_at: utcDateTime;
+  createdAt: utcDateTime;
 
   @doc("Last update timestamp")
-  updated_at: utcDateTime;
+  updatedAt: utcDateTime;
+
+  @doc("Version for optimistic locking")
+  version: int32;
+}
+
+@doc("Consent record structure")
+model ConsentRecord {
+  @doc("Whether consent was granted")
+  granted: boolean;
+
+  @doc("Timestamp when consent was granted")
+  grantedAt?: utcDateTime;
+
+  @doc("IP address of consent action")
+  ipAddress?: string;
 }
 ```
 
@@ -246,7 +263,7 @@ model NotFoundError extends ApiError {
 model ValidationError extends ApiError {
   code: "VALIDATION_ERROR";
   @doc("Field-specific validation errors")
-  field_errors?: Record<string[]>;
+  fieldErrors?: Record<string[]>;
 }
 ```
 
@@ -271,15 +288,14 @@ Follow RESTful conventions for endpoint design:
 
 ```typescript
 @get
-@summary("Search patients")
-searchPatients(
-  @query name?: string,
-  @query dob?: plainDate,
-  @query provider_id?: string,
-  ...PaginationParams
+@summary("Search persons")
+searchPersons(
+  @query firstName?: string,
+  @query email?: Email,
+  ...PaginationQuery
 ): {
   @statusCode statusCode: 200;
-  @body results: Patient[];
+  @body body: PaginatedResponse<Person>;
 };
 ```
 
@@ -287,11 +303,15 @@ searchPatients(
 
 ```typescript
 @get
-@route("/patients/{patient_id}/appointments")
-getPatientAppointments(
-  @path patient_id: string,
-  @query status?: "scheduled" | "completed" | "cancelled"
-): Appointment[];
+@route("/booking/events/{event}/slots")
+getEventSlots(
+  @path event: UUID,
+  @query startDate?: plainDate,
+  @query endDate?: plainDate
+): {
+  @statusCode statusCode: 200;
+  @body body: TimeSlot[];
+};
 ```
 
 ---
@@ -301,58 +321,58 @@ getPatientAppointments(
 ### String Constraints
 
 ```typescript
-model Patient {
-  @doc("Patient email")
+model Person {
+  @doc("Email address")
   @format("email")
-  email: string;
+  email?: Email;
 
   @doc("Phone number")
   @pattern("^\\+?[1-9]\\d{1,14}$")
-  phone?: string;
+  phone?: PhoneNumber;
 
-  @doc("Medical record number")
-  @minLength(5)
-  @maxLength(20)
-  mrn: string;
+  @doc("First name")
+  @minLength(1)
+  @maxLength(100)
+  firstName: string;
 }
 ```
 
 ### Numeric Constraints
 
 ```typescript
-model Appointment {
+model BookingEvent {
   @doc("Duration in minutes")
   @minValue(15)
   @maxValue(480)
-  duration_minutes: int32;
+  durationMinutes: int32;
 
-  @doc("Patient age")
+  @doc("Buffer time between bookings")
   @minValue(0)
-  @maxValue(150)
-  age?: int32;
+  @maxValue(120)
+  bufferMinutes?: int32;
 }
 ```
 
 ### Enum Patterns
 
 ```typescript
-@doc("Appointment status")
-enum AppointmentStatus {
-  @doc("Appointment is scheduled")
-  Scheduled: "scheduled",
+@doc("Booking status")
+enum BookingStatus {
+  @doc("Booking is confirmed")
+  Confirmed: "confirmed",
 
-  @doc("Appointment is completed")
+  @doc("Booking is completed")
   Completed: "completed",
 
-  @doc("Appointment is cancelled")
+  @doc("Booking is cancelled")
   Cancelled: "cancelled",
 
-  @doc("Appointment is no-show")
+  @doc("Attendee did not show up")
   NoShow: "no_show"
 }
 
-model Appointment {
-  status: AppointmentStatus;
+model Booking {
+  status: BookingStatus;
 }
 ```
 
@@ -368,21 +388,23 @@ model Appointment {
 3. Examples for complex fields
 
 ```typescript
-@doc("Healthcare provider in the system")
-model Provider {
-  @doc("Unique provider identifier")
-  id: string;
+@doc("Booking event defining availability for scheduling")
+model BookingEvent extends BaseEntity {
+  @doc("Event title")
+  title: string;
 
-  @doc("Associated person ID for demographic info")
-  person_id: string;
+  @doc("Event description")
+  description?: string;
 
-  @doc("National Provider Identifier (NPI)")
-  @pattern("^\\d{10}$")
-  npi: string;
+  @doc("Duration in minutes")
+  durationMinutes: int32;
 
-  @doc("Primary medical specialty")
-  @example("Family Medicine")
-  specialty: string;
+  @doc("Associated person (service provider)")
+  person: UUID | Person;
+
+  @doc("Location type")
+  @example("virtual")
+  locationType: "in_person" | "virtual" | "hybrid";
 }
 ```
 
@@ -390,36 +412,36 @@ model Provider {
 
 ```typescript
 @post
-@summary("Create a new provider")
+@summary("Create a new booking")
 @doc("""
-  Creates a new healthcare provider in the system.
+  Creates a new booking for an event.
 
   Requires:
-  - Valid person_id reference
-  - Unique NPI number
-  - Valid medical specialty
+  - Valid event ID reference
+  - Available time slot
+  - Attendee information
 
-  Returns the created provider with generated ID.
+  Returns the created booking with confirmation details.
 """)
-createProvider(
-  @body request: CreateProviderRequest
+createBooking(
+  @body request: BookingCreateRequest
 ): {
   @statusCode statusCode: 201;
-  @body provider: Provider;
+  @body body: Booking;
 };
 ```
 
 ### Tags for Organization
 
 ```typescript
-@tag("Patient Management")
-namespace Patients {
-  // Patient operations
+@tag("Person Management")
+namespace PersonModule {
+  // Person operations
 }
 
-@tag("Provider Management")
-namespace Providers {
-  // Provider operations
+@tag("Booking Management")
+namespace BookingModule {
+  // Booking operations
 }
 ```
 
@@ -476,13 +498,15 @@ bun run clean         # Clean dist/
 
 ```
 src/modules/
-├── identity.tsp      # Auth & users
-├── person.tsp        # Demographics
-├── patient.tsp       # Patient records
-├── provider.tsp      # Provider records
+├── person.tsp        # User profiles
 ├── booking.tsp       # Appointments
-├── emr.tsp          # Medical records
-└── billing.tsp       # Payments
+├── billing.tsp       # Payments
+├── notifs.tsp        # Notifications
+├── comms.tsp         # Video/chat
+├── storage.tsp       # Files
+├── email.tsp         # Email
+├── audit.tsp         # Logging
+└── reviews.tsp       # Reviews
 ```
 
 ---
@@ -501,5 +525,3 @@ For complete details on:
 ---
 
 **For TypeSpec syntax reference**: https://typespec.io/docs
-
-**Last Updated**: 2025-10-02

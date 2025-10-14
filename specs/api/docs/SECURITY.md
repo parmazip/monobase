@@ -22,13 +22,9 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 The system implements a hierarchical role and permission system using role:permission syntax.
 
 #### System Roles
-- **user**: Base authenticated user (can create profiles)
+- **user**: Base authenticated user (can create profiles and bookings)
 - **admin**: System administrator with access to admin dashboards and system-wide operations  
 - **support**: Support staff with read access to user data for customer service
-
-#### Context Roles
-- **patient**: User onboarded in the patient application
-- **provider**: User onboarded in the provider application
 
 #### Permissions
 - **owner**: Resource ownership permission (user accessing their own data)
@@ -41,16 +37,16 @@ Role requirements are specified using the `x-security-required-roles` OpenAPI ex
 @extension("x-security-required-roles", ["admin"])
 
 // Role with permission requirement (both must be satisfied)
-@extension("x-security-required-roles", ["patient:owner"])
+@extension("x-security-required-roles", ["user:owner"])
 
 // Multiple options (OR conditions)
-@extension("x-security-required-roles", ["admin", "support", "patient:owner"])
+@extension("x-security-required-roles", ["admin", "support", "user:owner"])
 ```
 
 **Syntax Rules:**
 - `["admin"]` - Requires admin role only
-- `["patient:owner"]` - Requires patient role AND owner permission
-- `["admin", "provider:owner"]` - Requires admin OR (provider AND owner)
+- `["user:owner"]` - Requires user role AND owner permission
+- `["admin", "user:owner"]` - Requires admin OR (user AND owner)
 - When both role and permission are specified with ":", both conditions must be met
 - Multiple array elements represent OR conditions
 
@@ -65,73 +61,116 @@ Role requirements are specified using the `x-security-required-roles` OpenAPI ex
 | `/persons/{person}` | GET | Bearer | admin, support, user:owner | View person details (admin/support = any, user:owner = self) |
 | `/persons/{person}` | PATCH | Bearer | admin, user:owner | Update person record (admin = any, user:owner = self) |
 
-### Patient Module (`/patients`)
+### Booking Module (`/booking`)
 
 | Endpoint | Method | Security | Required Roles | Notes |
 |----------|--------|----------|----------------|-------|
-| `/patients` | GET | Bearer | admin, support | List all patients (admin/support dashboard) |
-| `/patients` | POST | Bearer | user | Create patient profile (requires user role) |
-| `/patients/{patient}` | GET | Bearer | admin, support, patient:owner | View patient details (admin/support = any, patient:owner = self) |
-| `/patients/{patient}` | PATCH | Bearer | admin, patient:owner | Update patient profile (admin = any, patient:owner = self) |
-| `/patients/{patient}` | DELETE | Bearer | admin, patient:owner | Archive patient profile (admin = any, patient:owner = self) |
+| `/booking/events` | GET | None | Public | List public booking events |
+| `/booking/events` | POST | Bearer | user | Create booking event (requires user role) |
+| `/booking/events/{event}` | GET | None | Public | View event details |
+| `/booking/events/{event}` | PATCH | Bearer | admin, user:owner | Update event (admin = any, user:owner = event creator) |
+| `/booking/events/{event}/slots` | GET | None | Public | View available time slots |
+| `/booking/bookings` | POST | Bearer | user | Create booking (requires user role) |
+| `/booking/bookings/{booking}` | GET | Bearer | admin, support, user:owner | View booking (admin/support = any, user:owner = participant) |
+| `/booking/bookings/{booking}` | PATCH | Bearer | user:owner | Update booking (must be participant) |
 
-**Special Endpoint**: `/patients/me`
-- Allows authenticated users to access their own patient profile
-- Only available for GET operations  
-- Automatically resolves to the authenticated user's resource (equivalent to owner role)
+**Special Endpoint**: `/booking/events/me`
+- Allows authenticated users to access their own booking events
+- Automatically resolves to events created by the authenticated user
 
-### Provider Module (`/providers`)
+### Billing Module (`/billing`)
 
 | Endpoint | Method | Security | Required Roles | Notes |
 |----------|--------|----------|----------------|-------|
-| `/providers` | GET | None | Public | Public provider directory |
-| `/providers` | POST | Bearer | user | Create provider profile (requires user role) |
-| `/providers/{provider}` | GET | Optional | Public | View provider profile (enhanced data when authenticated) |
-| `/providers/{provider}` | PATCH | Bearer | admin, provider:owner | Update provider profile (admin = any, provider:owner = self) |
-| `/providers/{provider}` | DELETE | Bearer | admin, provider:owner | Deactivate provider profile (admin = any, provider:owner = self) |
+| `/billing/invoices` | GET | Bearer | admin, support | List all invoices (admin/support dashboard) |
+| `/billing/invoices` | POST | Bearer | user | Create invoice (requires user role) |
+| `/billing/invoices/{invoice}` | GET | Bearer | admin, support, user:owner | View invoice (admin/support = any, user:owner = invoice owner) |
+| `/billing/merchants` | POST | Bearer | user | Register as merchant |
+| `/billing/merchants/{merchant}` | GET | Bearer | admin, user:owner | View merchant account |
 
-**Special Endpoint**: `/providers/me`
-- Allows authenticated users to access their own provider profile
-- Only available for GET operations
-- Automatically resolves to the authenticated user's resource (equivalent to owner role)
+### Notification Module (`/notifs`)
+
+| Endpoint | Method | Security | Required Roles | Notes |
+|----------|--------|----------|----------------|-------|
+| `/notifs` | GET | Bearer | user:owner | List own notifications |
+| `/notifs/{notification}` | GET | Bearer | user:owner | View own notification |
+| `/notifs/{notification}` | PATCH | Bearer | user:owner | Mark notification as read |
+
+**Note**: Notification creation is internal-only (not exposed via API)
+
+### Communication Module (`/comms`)
+
+| Endpoint | Method | Security | Required Roles | Notes |
+|----------|--------|----------|----------------|-------|
+| `/comms/chats` | GET | Bearer | user:owner | List own chats |
+| `/comms/chats` | POST | Bearer | user | Create new chat |
+| `/comms/chats/{chat}` | GET | Bearer | user:owner | View chat (must be participant) |
+| `/comms/chats/{chat}/messages` | POST | Bearer | user:owner | Send message (must be participant) |
+| `/comms/video-calls` | POST | Bearer | user:owner | Start video call in chat |
+
+### Storage Module (`/storage`)
+
+| Endpoint | Method | Security | Required Roles | Notes |
+|----------|--------|----------|----------------|-------|
+| `/storage/files` | POST | Bearer | user | Upload file |
+| `/storage/files/{file}` | GET | Bearer | user:owner | Download own file |
+| `/storage/files/{file}` | DELETE | Bearer | user:owner | Delete own file |
+
+### Email Module (`/email`)
+
+| Endpoint | Method | Security | Required Roles | Notes |
+|----------|--------|----------|----------------|-------|
+| `/email/templates` | GET | Bearer | admin | List email templates |
+| `/email/templates` | POST | Bearer | admin | Create email template |
+| `/email/templates/{template}` | PATCH | Bearer | admin | Update email template |
+| `/email/queue` | GET | Bearer | admin | View email queue |
+
+### Audit Module (`/audit`)
+
+| Endpoint | Method | Security | Required Roles | Notes |
+|----------|--------|----------|----------------|-------|
+| `/audit/logs` | GET | Bearer | admin, support | View audit logs |
+| `/audit/logs/{log}` | GET | Bearer | admin, support | View specific audit entry |
+
+### Reviews Module (`/reviews`)
+
+| Endpoint | Method | Security | Required Roles | Notes |
+|----------|--------|----------|----------------|-------|
+| `/reviews` | POST | Bearer | user | Submit review |
+| `/reviews` | GET | Bearer | admin, support | List all reviews |
+| `/reviews/{review}` | GET | Bearer | admin, support, user:owner | View review |
 
 ## Security Patterns
 
 ### Public Endpoints
 No authentication required:
-- `GET /providers` - Public provider directory
-
-### Optional Authentication Pattern
-Endpoints that support both public and authenticated access:
-- **Implementation**: Uses `@useAuth(bearerAuth | NoAuth)` decorator
-- **Behavior**: Returns different levels of information based on authentication status
-- **Use Cases**: Public profiles that provide additional details for authenticated users
-
-#### Example: Provider Profile Access
-- `GET /providers/{provider}` - Optional authentication endpoint
-  - **Unauthenticated**: Returns public provider profile information
-  - **Authenticated**: Returns enhanced profile with additional details
-  - **Special Case**: When using `"me"` as provider ID, authentication is required
-
-#### Key Characteristics
-- Gracefully handles both authenticated and unauthenticated requests
-- No authentication errors (401) for unauthenticated access
-- Middleware determines data visibility based on authentication status
-- Enables progressive disclosure of information
+- `GET /booking/events` - Public event listing
+- `GET /booking/events/{event}` - Public event details
+- `GET /booking/events/{event}/slots` - Public slot availability
 
 ### Protected Endpoints
 Require bearer token authentication with specific role:permission combinations:
 - **Admin/Support-only**: System administration operations (admin dashboards, system-wide listings)  
-- **Context:Owner**: Self-access operations (users managing their own resources with appropriate context role)
-- **Multiple Roles**: OR conditions allowing admin/support OR context:owner access
+- **User:Owner**: Self-access operations (users managing their own resources)
+- **Multiple Roles**: OR conditions allowing admin/support OR user:owner access
 
 ### Self-Access Pattern (`/me`)
 Special endpoints allowing users to access their own data:
-- Available only for GET operations
+- Available for specific GET operations
 - Uses the special path parameter value `"me"`  
-- Automatically resolves to the authenticated user's resource
-- Implements the owner permission pattern (user accessing their own resource)
-- Equivalent to having the appropriate context:owner role combination
+- Automatically resolves to the authenticated user's resources
+- Implements the owner permission pattern
+- Example: `GET /booking/events/me` returns events created by current user
+
+### Owner Permission Logic
+The owner permission is dynamically determined based on resource ownership:
+- **Person records**: User owns their own person record
+- **Bookings**: User owns bookings they created or are attending
+- **Events**: User owns events they created
+- **Invoices**: User owns invoices for their transactions
+- **Files**: User owns files they uploaded
+- **Chats**: User owns chats they participate in
+- **Notifications**: User owns their own notifications
 
 ## Error Responses
 
@@ -171,45 +210,39 @@ model bearerAuth is Http.BearerAuth;
  * 
  * Role Syntax:
  * - ["admin"] - Requires admin role only
- * - ["patient:owner"] - Requires patient role AND owner permission
- * - ["admin", "provider:owner"] - Requires admin OR (provider AND owner)
+ * - ["user:owner"] - Requires user role AND owner permission
+ * - ["admin", "user:owner"] - Requires admin OR (user AND owner)
  * 
  * The format is "role:permission" where:
- * - role: The user's role (e.g., admin, patient, provider, user, support)
- * - permission: Additional permission requirement (e.g., owner, read, write)
+ * - role: The user's role (e.g., admin, user, support)
+ * - permission: Additional permission requirement (e.g., owner)
  * - When both are specified with ":", both conditions must be met
  * - Multiple array elements represent OR conditions
  */
 ```
 
-### Operation-Level Security
+### Operation-Level Security Examples
 ```typescript
 // Basic user role requirement
-@doc("Create new patient. Requires 'user' role.")
-@operationId("createPatient")
+@doc("Create new booking event. Requires 'user' role.")
 @post
 @useAuth(bearerAuth)
 @extension("x-security-required-roles", ["user"])
-createPatient(@body patient: PatientCreateRequest): ...
+createBookingEvent(@body event: BookingEventCreateRequest): ...
 
-// Context role with owner permission
-@doc("Get patient profile. Requires 'admin', 'support', or 'patient:owner' role.")
-@operationId("getPatient")
+// User:owner permission (self-access)
+@doc("Get person profile. Requires 'admin', 'support', or 'user:owner' role.")
 @get
 @useAuth(bearerAuth)
-@extension("x-security-required-roles", ["admin", "support", "patient:owner"])
-getPatient(@path patient: UUID): ...
+@extension("x-security-required-roles", ["admin", "support", "user:owner"])
+getPerson(@path person: UUID): ...
 
-// Optional authentication pattern
-@doc("Get provider profile. Optional authentication - returns additional details when authenticated.")
-@operationId("getProvider")
+// Admin-only operation
+@doc("View audit logs. Requires 'admin' or 'support' role.")
 @get
-@useAuth(bearerAuth | NoAuth)
-@route("/{provider}")
-getProvider(
-  @path @doc("Provider ID (UUID) or 'me' for current user's profile") provider: UUID | "me",
-  @query expand?: string[]
-): ...
+@useAuth(bearerAuth)
+@extension("x-security-required-roles", ["admin", "support"])
+listAuditLogs(): ...
 ```
 
 ### Role Assignment Logic
@@ -219,33 +252,8 @@ getProvider(
 - **admin**: System administrator with full system privileges  
 - **support**: Customer support staff with read access to user data
 
-#### Context Roles
-- **patient**: User is onboarded in the patient application
-- **provider**: User is onboarded in the provider application
-
 #### Permissions
 - **owner**: User is accessing/modifying their own resource (determined by resource ownership)
-
-### Role Context and Usage
-
-#### Owner Permission
-The owner permission is dynamically determined based on resource ownership:
-- When a user accesses `/patients/{patient}`, they have owner permission only if the patient record belongs to them
-- When a user accesses `/providers/{provider}`, they have owner permission only if the provider record belongs to them  
-- The `/me` endpoint automatically implements owner logic by resolving to the user's own resource
-- Owner permission must be combined with appropriate context role (e.g., `patient:owner`, `provider:owner`)
-
-#### System Role Usage
-- **admin**: Can access any resource and perform system administration operations
-- **support**: Can read any user resource for customer service purposes
-- **user**: Base role required for creating new profiles and basic operations
-
-#### Context Role Usage
-These roles indicate application onboarding status and determine available features:
-- **patient**: Required for patient-specific operations (combined with owner permission for self-access)
-- **provider**: Required for provider-specific operations (combined with owner permission for self-access)  
-- Users may have both patient and provider roles if onboarded in both applications
-- Context roles are combined with permissions using the role:permission syntax
 
 ### Middleware Implementation
 The API service implements authentication middleware to:
@@ -270,8 +278,7 @@ The API service implements authentication middleware to:
 - Role:permission system follows principle of least privilege
 - Owner permission ensures users can only access their own resources
 - System roles (admin/support) provide necessary administration capabilities
-- Context roles (patient/provider) control feature access
-- Public endpoints limited to non-sensitive data only
+- Public endpoints limited to non-sensitive data only (booking events)
 - Self-access patterns (/me) prevent unauthorized resource access
 - Multiple role options provide flexibility while maintaining security
 
@@ -281,7 +288,7 @@ The API service implements authentication middleware to:
 The Monobase API integrates with Better-Auth's admin plugin for user and role management:
 
 - **User Management**: Create, update, and manage user accounts
-- **Role Assignment**: Assign system roles (admin, support) and context roles 
+- **Role Assignment**: Assign system roles (admin, support)
 - **Permission Management**: Configure role-based permissions and access levels
 - **Session Management**: Handle user sessions and token lifecycle
 

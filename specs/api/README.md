@@ -1,6 +1,6 @@
 # @monobase/api-spec
 
-TypeSpec API definitions for the Monobase healthcare platform. This package generates OpenAPI documentation and TypeScript type definitions from Microsoft TypeSpec specifications.
+TypeSpec API definitions for the Monobase Application Platform. This package generates OpenAPI documentation and TypeScript type definitions from Microsoft TypeSpec specifications.
 
 > ⚠️ **THIS IS A BUN MONOREPO**
 > Always use `bun` commands, **never** `npm` commands.
@@ -8,11 +8,13 @@ TypeSpec API definitions for the Monobase healthcare platform. This package gene
 
 ## Overview
 
-The Monobase API specification defines secure, HIPAA-compliant endpoints for:
-- Patient healthcare management
-- Healthcare provider workflows
-- Pharmacy integrations
-- Administrative functions
+The Monobase API specification defines secure endpoints for:
+- User management and profiles
+- Video sessions and messaging
+- Booking and scheduling
+- Billing and payments
+- Notifications and communications
+- File storage and management
 
 ## Quick Start
 
@@ -31,23 +33,22 @@ bun run watch
 
 ```
 specs/api/
-├── config/                 # Package-specific configuration
-│   ├── api.config.json    # API metadata and settings
-│   └── validation.config.json # Validation rules
 ├── src/                   # TypeSpec source files
 │   ├── main.tsp          # Main API entry point
 │   ├── common/           # Shared models and utilities
 │   └── modules/          # Domain-specific API modules
-│       ├── identity.tsp  # Authentication & identity
-│       ├── person.tsp    # Personal information
-│       ├── patient.tsp   # Patient management
-│       ├── provider.tsp  # Healthcare provider
-│       ├── emr.tsp       # Electronic medical records
+│       ├── person.tsp    # User profiles and PII
 │       ├── booking.tsp   # Appointments & scheduling
-│       └── billing.tsp   # Payments & invoicing
+│       ├── billing.tsp   # Payments & invoicing
+│       ├── notifs.tsp    # Multi-channel notifications
+│       ├── comms.tsp     # Video/chat sessions
+│       ├── storage.tsp   # File management
+│       ├── email.tsp     # Email delivery
+│       ├── audit.tsp     # Compliance logging
+│       └── reviews.tsp   # NPS reviews
 ├── dist/                 # Generated output files
 │   ├── openapi/         # OpenAPI specifications
-│   └── types/           # TypeScript type definitions
+│   └── typescript-types/ # TypeScript type definitions
 └── tspconfig.yaml        # TypeSpec configuration
 ```
 
@@ -59,9 +60,8 @@ bun run build            # Compile TypeSpec definitions
 bun run watch           # Compile in watch mode
 
 # Generation
-bun run generate:openapi       # Generate OpenAPI JSON
-bun run generate:typescript    # Generate TypeScript types
-bun run generate:all          # Generate all outputs
+bun run build:openapi       # Generate OpenAPI JSON
+bun run build:types         # Generate TypeScript types
 
 # Quality
 bun run lint            # Validate TypeSpec syntax
@@ -73,17 +73,17 @@ bun run clean           # Clean output directory
 
 | Module | Endpoint | Purpose |
 |--------|----------|---------|
-| **Identity** | `/identity` | User authentication and authorization |
-| **Person** | `/persons` | Personal demographics and contacts |
-| **Patient** | `/patients` | Patient-specific medical information |
-| **Provider** | `/providers` | Healthcare provider credentials |
-| **EMR** | `/emr` | Electronic medical records |
-| **Booking** | `/bookings` | Appointment scheduling |
-| **Billing** | `/billing` | Invoice and payment processing |
-| **Consent** | `/consent` | Patient consent tracking |
+| **Person** | `/persons` | User profiles and central PII safeguard |
+| **Booking** | `/booking` | Professional booking and scheduling |
+| **Billing** | `/billing` | Invoice-based payments (Stripe) |
+| **Notifs** | `/notifs` | Multi-channel notifications (email, push) |
+| **Comms** | `/comms` | Video calls and messaging (WebRTC) |
+| **Storage** | `/storage` | Secure file upload/download (S3) |
+| **Email** | `/email` | Transactional email delivery |
 | **Audit** | `/audit` | Compliance audit logging |
-| **Notification** | `/notifications` | Multi-channel notifications |
-| **Communication** | `/communication` | Secure messaging |
+| **Reviews** | `/reviews` | NPS review system |
+
+**Note**: Authentication is handled by Better-Auth (integrated, not a separate TypeSpec module).
 
 ## Generated Outputs
 
@@ -93,7 +93,7 @@ bun run clean           # Clean output directory
 - **Used by**: API services, frontend apps, API testing tools
 
 ### TypeScript Types
-- **Location**: `dist/types/api.d.ts`
+- **Location**: `dist/typescript-types/api.d.ts`
 - **Purpose**: Type-safe API contracts for TypeScript
 - **Used by**: Frontend apps, API service handlers
 
@@ -101,18 +101,18 @@ bun run clean           # Clean output directory
 
 ### Frontend Apps
 ```typescript
-import type { Patient, CreatePatientRequest } from '@monobase/api-spec/types';
+import type { Person, CreatePersonRequest } from '@monobase/api-spec/types';
 
-async function createPatient(data: CreatePatientRequest): Promise<Patient> {
+async function createPerson(data: CreatePersonRequest): Promise<Person> {
   // Type-safe API call
 }
 ```
 
 ### API Service
 ```typescript
-import type { Patient } from '@monobase/api-spec';
+import type { Person } from '@monobase/api-spec';
 
-async function getPatient(id: string): Promise<Patient> {
+async function getPerson(id: string): Promise<Person> {
   // Type-safe handler implementation
 }
 ```
@@ -133,4 +133,4 @@ For detailed development guidelines, patterns, and best practices, see [CONTRIBU
 
 ---
 
-**Part of the Monobase Healthcare Platform monorepo**
+**Part of the Monobase Application Platform monorepo**

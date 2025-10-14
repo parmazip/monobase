@@ -439,19 +439,19 @@ model Address {
 
 ```typescript
 // ✅ Correct - Models outside namespace (reusable)
-model Patient extends BaseEntity {
+model Person extends BaseEntity {
   // Model definition
 }
 
-model PatientCreateRequest {
+model PersonCreateRequest {
   // Request model
 }
 
 // ✅ Correct - Namespace only for endpoints
-@route("/patients")
-@tag("Patient")
-namespace PatientModule {
-  interface PatientManagement {
+@route("/persons")
+@tag("Person")
+namespace PersonModule {
+  interface PersonManagement {
     // Endpoint definitions only
   }
 }

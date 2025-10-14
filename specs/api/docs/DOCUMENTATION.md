@@ -1,397 +1,202 @@
-# Documentation Standards Guide
+# Documentation Standards
 
-## Introduction
+This guide establishes documentation standards for the Monobase Application Platform API specifications.
 
-This guide establishes documentation standards for technical documentation within the Monobase Application Platform. These standards ensure consistency and clarity across all technical documentation.
+## Core Principles
 
-### Purpose
-- Establish consistent documentation patterns
-- Provide clear technical specifications
-- Support effective code reviews
-- Enable maintainable documentation
+1. **Clear and Concise** - Get to the point quickly, avoid jargon
+2. **Specification-Focused** - Document what must be built, not implementation details
+3. **Maintainable** - Balance completeness with ease of updates
+4. **Security-Aware** - Include security and compliance considerations
 
-### Target Audience
-- **Developers**: Implementation guidance
-- **Reviewers**: Code and design reviews
-- **Maintainers**: System understanding
-- **Contributors**: Project context
+## Document Structure
 
-### Documentation Philosophy
-Documentation **should** be clear, concise, and focused on providing value to readers. It **should** balance completeness with maintainability, avoiding overly prescriptive patterns that become outdated quickly.
+### Essential Elements
 
-## Core Documentation Principles
+Every documentation file should include:
 
-### 1. Design Specification Approach
-Documentation **must**:
-- Present requirements and specifications, not implementation details
-- Use prescriptive language to guide development
-- Focus on "what must be built" rather than "what has been built"
-- Maintain implementation neutrality while providing clear guidance
+1. **Title** - Clear, descriptive heading
+2. **Overview** - Purpose, scope, and audience
+3. **Content** - Organized into logical sections
+4. **Examples** - Concrete illustrations when helpful
 
-### 2. Security and Compliance Focus
-All documentation **shall**:
-- Address security compliance requirements explicitly
-- Include security and privacy considerations
-- Document audit trail requirements
-- Specify data protection mechanisms
+### Optional Elements (Use When Valuable)
 
-### 3. Clarity and Precision
-Documentation **must**:
-- Use clear, unambiguous language
-- Avoid jargon without explanation
-- Provide concrete examples and specifications
-- Include visual representations where appropriate
+- Diagrams for complex workflows or architecture
+- Code examples for technical specifications
+- Tables for structured comparisons
+- References to related documentation
 
-## Standard Document Structure
+## Writing Style
 
-Documentation **should follow** a logical structure appropriate to its purpose:
+### Language Guidelines
 
-### 1. Document Title
-Use clear, descriptive titles that indicate the document's purpose.
+- **Use active voice** - "Define endpoints" not "Endpoints are defined"
+- **Be specific** - Provide concrete examples
+- **Be consistent** - Use the same terminology throughout
+- **Define acronyms** - Explain on first use
 
-Examples:
-```markdown
-# API Development Guide
-# Security Architecture
-# Testing Standards
-```
+### Modal Verbs
 
-### 2. Overview Section
-**Recommended Elements**:
-- Document purpose
-- Key concepts
-- Scope and boundaries
-- Related documentation
+- **Must/Required** - Mandatory requirements
+- **Should/Recommended** - Best practices
+- **May/Optional** - Optional features
+- **Can** - Capabilities
 
-**Example Structure**:
-```markdown
-## Overview
-This document describes [topic]. It covers [scope] and is intended for [audience].
-```
+### Formatting
 
-### 3. Core Concepts
-**Useful Elements**:
-- Key principles
-- Important patterns
-- Common conventions
-- Best practices
+- **Bold** for emphasis
+- `Code formatting` for technical terms and paths
+- Bullet points for lists (3+ items)
+- Numbered lists for sequential steps
+- Tables for structured data
 
-**Structure**:
-```markdown
-## Core Concepts
+## TypeSpec Documentation
 
-### [Concept Name]
-Description of the concept and its importance.
-```
+### Model Documentation
 
-### 4. Technical Specifications
-**When Appropriate**:
-- API contracts
-- Data models
-- Interface definitions
-- Configuration schemas
+Always include `@doc` decorators:
 
-**Format Guidelines**:
-- Use appropriate syntax for the context
-- Include helpful comments
-- Show both required and optional elements
-- Document constraints when relevant
-
-**Example Structure**:
 ```typescript
-interface EntityName {
-  // Base Fields
-  id: string;              // Description and constraints
-  createdAt: Date;         // Automatic timestamp
-  
-  // Domain Fields
-  fieldName: string;       // Required, max 50 characters
-  optionalField?: Type;    // Optional, constraints
+@doc("User profile record")
+model Person extends BaseEntity {
+  @doc("First name")
+  firstName: string;
+
+  @doc("Email address")
+  @format("email")
+  email?: Email;
 }
 ```
 
-### 5. API Documentation
-**When Documenting APIs**:
-- HTTP methods and paths
-- Authentication requirements
-- Purpose and usage
-- Request/response formats
-- Common error scenarios
+### Operation Documentation
 
-**Example Format**:
-```markdown
-### Endpoint Name
-`[METHOD] /path/{parameter}`
+Document endpoints clearly:
 
-Description of what the endpoint does.
-
-**Authentication**: Required/Optional/None
-**Request**: Description or example
-**Response**: Description or example
+```typescript
+@post
+@summary("Create new person")
+@doc("""
+  Creates a new person record.
+  
+  Requires valid email format.
+  Returns created person with generated ID.
+""")
+createPerson(@body request: PersonCreateRequest): Person;
 ```
-
-### 6. Examples and Workflows
-**When Helpful**:
-- Common use cases
-- Integration examples
-- Process flows
-- Decision trees
-
-**Diagram Usage**:
-Use diagrams when they add clarity:
-```mermaid
-sequenceDiagram
-    participant Client
-    participant Server
-    
-    Client->>Server: Request
-    Server-->>Client: Response
-```
-
-### 7. Security Considerations
-**Important Topics**:
-- Authentication and authorization
-- Data protection
-- Compliance requirements
-- Security best practices
-
-**Format**:
-```markdown
-## Security and Compliance Requirements
-
-### Role-Based Access Control Specification
-The system **must enforce** these access controls:
-- **Operation**: Required role(s)
-
-### Audit Logging Requirements
-All operations **must be logged** with:
-- [Required field 1]
-- [Required field 2]
-```
-
-### 8. Implementation Notes
-**Helpful Additions**:
-- Dependencies and prerequisites
-- Configuration requirements
-- Common patterns
-- Known limitations
-
-### 9. Error Handling
-**Document When Relevant**:
-- Common error scenarios
-- Error codes and meanings
-- Recovery strategies
-- Debugging tips
-
-### 10. Best Practices
-**Include When Valuable**:
-- Recommended patterns
-- Performance considerations
-- Common pitfalls
-- Tips and tricks
-
-## Language and Style Guidelines
-
-### Clear Communication
-Documentation **should** use clear, consistent language:
-
-- **Be Specific**: Avoid vague terms
-- **Be Concise**: Get to the point quickly
-- **Be Consistent**: Use the same terms throughout
-- **Be Helpful**: Focus on what readers need to know
-
-### Modal Verbs
-Use modal verbs appropriately:
-- **Must/Required**: For mandatory requirements
-- **Should/Recommended**: For best practices
-- **May/Optional**: For optional features
-- **Can/Possible**: For capabilities
-
-### Technical Writing Standards
-- Use active voice when possible
-- Write in present tense for requirements
-- Be specific and concrete
-- Avoid ambiguous terms ("various", "some", "etc." without context)
-- Define acronyms on first use
-- Use consistent terminology throughout
-
-### Formatting Conventions
-- **Bold** for emphasis on requirements
-- `Code formatting` for technical terms, paths, and values
-- Bullet points for lists of 3+ items
-- Numbered lists for sequential steps
-- Tables for structured comparison data
 
 ## Visual Documentation
 
 ### When to Use Diagrams
-Diagrams **should** be used when they enhance understanding:
+
+Use diagrams for:
 - Complex workflows
 - System architecture
-- Data flows
-- State machines
+- Multi-step processes
+- Module relationships
 
-**Good Practices**:
-- Keep diagrams simple and focused
-- Use clear labels
-- Update diagrams when systems change
-- Consider the maintenance burden
+Keep diagrams simple and up-to-date.
 
-### Diagram Types and Usage
+### Sequence Diagrams
 
-#### Sequence Diagrams
-Use for API workflows, authentication flows, and multi-step processes:
+For API flows:
+
 ```mermaid
 sequenceDiagram
-    participant User
-    participant API
-    participant Database
-    
-    User->>API: Request
-    API->>Database: Query
-    Database-->>API: Result
-    API-->>User: Response
+    Client->>API: POST /persons
+    API->>Database: Insert
+    Database-->>API: Person
+    API-->>Client: 201 Created
 ```
 
-#### Graph Diagrams
-Use for architecture relationships and module dependencies:
+### Architecture Diagrams
+
+For module relationships:
+
 ```mermaid
 graph TD
-    A[Module A] --> B[Module B]
-    A --> C[Module C]
-    B --> D["Shared Component"]
-    C --> D
+    Person --> Booking
+    Booking --> Billing
+    Person --> Notifs
 ```
 
-## Code Documentation
+## Security Documentation
 
-### Inline Documentation
-**Guidelines**:
-- Document complex logic
-- Explain non-obvious decisions
-- Include usage examples
-- Keep comments up-to-date
+Always document:
+- Authentication requirements
+- Required roles/permissions
+- Data sensitivity levels
+- Audit logging needs
 
-**Example**:
+Example:
+
 ```typescript
-interface Example {
-  // Basic fields with clear names often don't need comments
-  id: string;
-  name: string;
-  
-  // Document constraints or special behavior
-  code?: string;  // Must match pattern: /^[A-Z]{3}$/
-  
-  // Explain complex structures
-  settings?: {
-    enabled: boolean;
-    config: unknown;  // Provider-specific configuration
-  };
+@doc("List persons. Requires admin or support role.")
+@get
+@useAuth(bearerAuth)
+@extension("x-security-required-roles", ["admin", "support"])
+listPersons(): PaginatedResponse<Person>;
+```
+
+## Code Examples
+
+### Good Examples
+
+```typescript
+// ✅ Clear and realistic
+model PersonCreateRequest {
+  firstName: string;
+  lastName?: string;
+  email?: Email;
 }
 ```
 
-### Code Example Standards
-- Provide realistic, relevant examples
-- Include error handling patterns
-- Show both success and failure cases
-- Add comments explaining key decisions
+### Bad Examples
 
-## Domain-Specific Considerations
+```typescript
+// ❌ Vague or unrealistic
+model Request {
+  data: any;  // What data?
+  stuff?: unknown;  // What stuff?
+}
+```
 
-### Application-Specific Documentation
-When documenting application systems:
-- Note compliance requirements
-- Document data sensitivity levels
-- Include audit requirements
-- Reference relevant standards
+## Maintenance
 
-### Technical Standards
-- Reference industry standards when applicable
-- Define domain-specific terminology
-- Link to external specifications
-- Note regulatory requirements
+### Review Documentation When:
+- Adding new features
+- Changing APIs
+- Updating security patterns
+- Refactoring code
 
-## Review and Maintenance
+### Remove Documentation That Is:
+- Outdated or incorrect
+- Redundant with other docs
+- Overly prescriptive
+- No longer relevant
 
-### Documentation Quality
+## Anti-Patterns
+
+Avoid:
+- ❌ Over-documenting obvious code
+- ❌ Under-documenting complex logic
+- ❌ Inconsistent terminology
+- ❌ Outdated examples
+- ❌ Missing context
+
+## Quality Checklist
+
 Good documentation:
-- Is accurate and up-to-date
-- Serves its intended audience
-- Is easy to find and navigate
-- Gets updated with code changes
+- ✅ Is accurate and current
+- ✅ Serves its intended audience
+- ✅ Is easy to find and navigate
+- ✅ Gets updated with code changes
+- ✅ Provides concrete examples
+- ✅ Uses consistent terminology
 
-### Maintenance Guidelines
-- Review documentation during code reviews
-- Update docs when making changes
-- Remove outdated information
-- Consolidate redundant content
+## Summary
 
-### Quality Indicators
-High-quality documentation **exhibits**:
-- Clear, unambiguous requirements
-- Comprehensive coverage of edge cases
-- Practical implementation guidance
-- Strong security and compliance focus
-- Effective visual representations
-- Consistent terminology and style
+**Key Takeaway**: Write documentation that helps developers understand and use the API effectively. Keep it clear, concise, and maintainable.
 
-## Writing Effective Documentation
-
-### Starting Points
-When creating new documentation:
-- Start with the reader's needs
-- Focus on the most important information
-- Build incrementally
-- Get feedback early
-
-### Complex Topics
-When documenting complex systems:
-- Break into manageable sections
-- Use examples liberally
-- Provide multiple perspectives
-- Link to detailed references
-
-### Asynchronous Operations
-When documenting async systems:
-- Explain timing and ordering
-- Document retry strategies
-- Note performance implications
-- Include monitoring guidance
-
-### Performance Documentation
-For performance-sensitive areas:
-- Document performance goals
-- Note optimization strategies
-- Include benchmarking data
-- Explain trade-offs
-
-## Common Patterns
-
-### Documentation Types
-Different purposes require different approaches:
-
-**API Documentation**: Focus on contracts and usage
-**Architecture Documentation**: Explain design decisions
-**User Guides**: Step-by-step instructions
-**Reference Documentation**: Complete specifications
-
-### Anti-Patterns to Avoid
-- Over-documenting obvious code
-- Under-documenting complex logic
-- Outdated examples
-- Inconsistent terminology
-- Missing context
-- Overly prescriptive standards
-
-## Conclusion
-
-These documentation guidelines help create clear, maintainable documentation that serves its intended audience effectively.
-
-### Key Principles
-1. **Clarity**: Make information easy to find and understand
-2. **Relevance**: Focus on what readers need
-3. **Maintainability**: Keep documentation sustainable
-4. **Consistency**: Use common patterns and terminology
-5. **Value**: Ensure documentation provides real benefit
-
-Good documentation is an investment in the project's future success.
+For API-specific patterns, see [DEVELOPMENT.md](./DEVELOPMENT.md).
+For security patterns, see [SECURITY.md](./SECURITY.md).
