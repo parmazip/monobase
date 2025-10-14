@@ -1,30 +1,138 @@
-CREATE TYPE "public"."audit_action" AS ENUM('create', 'read', 'update', 'delete', 'login', 'logout');--> statement-breakpoint
-CREATE TYPE "public"."audit_category" AS ENUM('hipaa', 'security', 'privacy', 'administrative', 'clinical', 'financial');--> statement-breakpoint
-CREATE TYPE "public"."audit_event_type" AS ENUM('authentication', 'data-access', 'data-modification', 'system-config', 'security', 'compliance');--> statement-breakpoint
-CREATE TYPE "public"."audit_outcome" AS ENUM('success', 'failure', 'partial', 'denied');--> statement-breakpoint
-CREATE TYPE "public"."audit_retention_status" AS ENUM('active', 'archived', 'pending-purge');--> statement-breakpoint
-CREATE TYPE "public"."capture_method" AS ENUM('automatic', 'manual');--> statement-breakpoint
-CREATE TYPE "public"."invoice_status" AS ENUM('draft', 'open', 'paid', 'void', 'uncollectible');--> statement-breakpoint
-CREATE TYPE "public"."payment_status" AS ENUM('pending', 'requires_capture', 'processing', 'succeeded', 'failed', 'canceled');--> statement-breakpoint
-CREATE TYPE "public"."booking_event_status" AS ENUM('draft', 'active', 'paused', 'archived');--> statement-breakpoint
-CREATE TYPE "public"."booking_status" AS ENUM('pending', 'confirmed', 'rejected', 'cancelled', 'completed', 'no_show_client', 'no_show_provider');--> statement-breakpoint
-CREATE TYPE "public"."consultation_mode" AS ENUM('video', 'phone', 'in-person');--> statement-breakpoint
-CREATE TYPE "public"."location_type" AS ENUM('video', 'phone', 'in-person');--> statement-breakpoint
-CREATE TYPE "public"."recurrence_type" AS ENUM('daily', 'weekly', 'monthly', 'yearly');--> statement-breakpoint
-CREATE TYPE "public"."slot_status" AS ENUM('available', 'booked', 'blocked');--> statement-breakpoint
-CREATE TYPE "public"."chat_room_status" AS ENUM('active', 'archived');--> statement-breakpoint
-CREATE TYPE "public"."message_type" AS ENUM('text', 'system', 'video_call');--> statement-breakpoint
-CREATE TYPE "public"."participant_type" AS ENUM('patient', 'provider');--> statement-breakpoint
-CREATE TYPE "public"."video_call_status" AS ENUM('starting', 'active', 'ended', 'cancelled');--> statement-breakpoint
-CREATE TYPE "public"."email_provider" AS ENUM('smtp', 'postmark', 'onesignal');--> statement-breakpoint
-CREATE TYPE "public"."email_queue_status" AS ENUM('pending', 'processing', 'sent', 'failed', 'cancelled');--> statement-breakpoint
-CREATE TYPE "public"."template_status" AS ENUM('draft', 'active', 'archived');--> statement-breakpoint
-CREATE TYPE "public"."variable_type" AS ENUM('string', 'number', 'boolean', 'date', 'datetime', 'url', 'email', 'array');--> statement-breakpoint
-CREATE TYPE "public"."notification_channel" AS ENUM('email', 'push', 'in-app');--> statement-breakpoint
-CREATE TYPE "public"."notification_status" AS ENUM('queued', 'sent', 'delivered', 'read', 'failed', 'expired');--> statement-breakpoint
-CREATE TYPE "public"."notification_type" AS ENUM('billing', 'security', 'system', 'booking.created', 'booking.confirmed', 'booking.rejected', 'booking.cancelled', 'booking.no-show-client', 'booking.no-show-provider', 'comms.video-call-started', 'comms.video-call-joined', 'comms.video-call-left', 'comms.video-call-ended', 'comms.chat-message');--> statement-breakpoint
-CREATE TYPE "public"."gender" AS ENUM('male', 'female', 'non-binary', 'other', 'prefer-not-to-say');--> statement-breakpoint
-CREATE TYPE "public"."file_status" AS ENUM('uploading', 'processing', 'available', 'failed');--> statement-breakpoint
+DO $$ BEGIN
+  CREATE TYPE "public"."audit_action" AS ENUM('create', 'read', 'update', 'delete', 'login', 'logout');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+  CREATE TYPE "public"."audit_category" AS ENUM('hipaa', 'security', 'privacy', 'administrative', 'clinical', 'financial');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+  CREATE TYPE "public"."audit_event_type" AS ENUM('authentication', 'data-access', 'data-modification', 'system-config', 'security', 'compliance');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+  CREATE TYPE "public"."audit_outcome" AS ENUM('success', 'failure', 'partial', 'denied');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+  CREATE TYPE "public"."audit_retention_status" AS ENUM('active', 'archived', 'pending-purge');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+  CREATE TYPE "public"."capture_method" AS ENUM('automatic', 'manual');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+  CREATE TYPE "public"."invoice_status" AS ENUM('draft', 'open', 'paid', 'void', 'uncollectible');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+  CREATE TYPE "public"."payment_status" AS ENUM('pending', 'requires_capture', 'processing', 'succeeded', 'failed', 'canceled');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+  CREATE TYPE "public"."booking_event_status" AS ENUM('draft', 'active', 'paused', 'archived');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+  CREATE TYPE "public"."booking_status" AS ENUM('pending', 'confirmed', 'rejected', 'cancelled', 'completed', 'no_show_client', 'no_show_provider');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+  CREATE TYPE "public"."consultation_mode" AS ENUM('video', 'phone', 'in-person');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+  CREATE TYPE "public"."location_type" AS ENUM('video', 'phone', 'in-person');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+  CREATE TYPE "public"."recurrence_type" AS ENUM('daily', 'weekly', 'monthly', 'yearly');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+  CREATE TYPE "public"."slot_status" AS ENUM('available', 'booked', 'blocked');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+  CREATE TYPE "public"."chat_room_status" AS ENUM('active', 'archived');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+  CREATE TYPE "public"."message_type" AS ENUM('text', 'system', 'video_call');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+  CREATE TYPE "public"."participant_type" AS ENUM('patient', 'provider');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+  CREATE TYPE "public"."video_call_status" AS ENUM('starting', 'active', 'ended', 'cancelled');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+  CREATE TYPE "public"."email_provider" AS ENUM('smtp', 'postmark', 'onesignal');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+  CREATE TYPE "public"."email_queue_status" AS ENUM('pending', 'processing', 'sent', 'failed', 'cancelled');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+  CREATE TYPE "public"."template_status" AS ENUM('draft', 'active', 'archived');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+  CREATE TYPE "public"."variable_type" AS ENUM('string', 'number', 'boolean', 'date', 'datetime', 'url', 'email', 'array');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+  CREATE TYPE "public"."notification_channel" AS ENUM('email', 'push', 'in-app');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+  CREATE TYPE "public"."notification_status" AS ENUM('queued', 'sent', 'delivered', 'read', 'failed', 'expired');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+  CREATE TYPE "public"."notification_type" AS ENUM('billing', 'security', 'system', 'booking.created', 'booking.confirmed', 'booking.rejected', 'booking.cancelled', 'booking.no-show-client', 'booking.no-show-provider', 'comms.video-call-started', 'comms.video-call-joined', 'comms.video-call-left', 'comms.video-call-ended', 'comms.chat-message');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+  CREATE TYPE "public"."gender" AS ENUM('male', 'female', 'non-binary', 'other', 'prefer-not-to-say');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
+DO $$ BEGIN
+  CREATE TYPE "public"."file_status" AS ENUM('uploading', 'processing', 'available', 'failed');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "account" (
 	"id" text PRIMARY KEY NOT NULL,
 	"account_id" text NOT NULL,
@@ -297,14 +405,13 @@ CREATE TABLE IF NOT EXISTS "time_slot" (
 	"owner_id" uuid NOT NULL,
 	"event_id" uuid NOT NULL,
 	"context_id" text,
-	"date" date NOT NULL,
 	"start_time" timestamp NOT NULL,
 	"end_time" timestamp NOT NULL,
 	"location_types" jsonb NOT NULL,
 	"status" "slot_status" DEFAULT 'available' NOT NULL,
-	"billing_override" jsonb,
+	"billing_config" jsonb,
 	"booking_id" uuid,
-	CONSTRAINT "time_slots_owner_time_unique" UNIQUE("owner_id","start_time")
+	CONSTRAINT "time_slots_event_time_unique" UNIQUE("event_id","start_time")
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "chat_message" (
@@ -648,9 +755,9 @@ CREATE INDEX IF NOT EXISTS "schedule_exceptions_owner_id_idx" ON "schedule_excep
 CREATE INDEX IF NOT EXISTS "schedule_exceptions_context_id_idx" ON "schedule_exception" USING btree ("context_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "schedule_exceptions_date_range_idx" ON "schedule_exception" USING btree ("start_datetime","end_datetime");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "schedule_exceptions_owner_date_range_idx" ON "schedule_exception" USING btree ("owner_id","start_datetime","end_datetime");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "time_slots_owner_date_idx" ON "time_slot" USING btree ("owner_id","date");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "time_slots_owner_start_time_idx" ON "time_slot" USING btree ("owner_id","start_time");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "time_slots_status_idx" ON "time_slot" USING btree ("status");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "time_slots_bookable_idx" ON "time_slot" USING btree ("owner_id","date","start_time") WHERE "time_slot"."status" = 'available';--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "time_slots_bookable_idx" ON "time_slot" USING btree ("owner_id","start_time") WHERE "time_slot"."status" = 'available';--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "time_slots_event_id_idx" ON "time_slot" USING btree ("event_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "time_slots_context_id_idx" ON "time_slot" USING btree ("context_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "time_slots_booking_id_idx" ON "time_slot" USING btree ("booking_id");--> statement-breakpoint

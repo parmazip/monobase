@@ -11,7 +11,7 @@ import { createPerson, generateTestPersonData } from '../../helpers/person';
 import {
   createBookingEvent,
   generateTestBookingEventData,
-  getBookingEventDetails
+  listEventSlots
 } from '../../helpers/booking';
 
 describe('GET /booking/slots/{slotId} - expand=event', () => {
@@ -43,16 +43,16 @@ describe('GET /booking/slots/{slotId} - expand=event', () => {
     eventId = createdEvent.id;
     
     // Wait for slot generation to complete (triggered by booking event creation)
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 3000));
     
-    // Fetch event with slots to get a slot ID
-    const eventResponse = await getBookingEventDetails(providerClient, eventId, 'slots:7d');
+    // Use listEventSlots to get available slots
+    const { data: slots } = await listEventSlots(providerClient, eventId);
     
-    if (!eventResponse.data.slots || eventResponse.data.slots.length === 0) {
+    if (!slots || slots.length === 0) {
       throw new Error('No slots were generated for the event');
     }
     
-    slotId = eventResponse.data.slots[0].id;
+    slotId = slots[0].id;
   });
 
   afterAll(async () => {

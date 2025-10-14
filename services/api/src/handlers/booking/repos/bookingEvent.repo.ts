@@ -154,6 +154,9 @@ export interface BookingEventFilters {
       effectiveFrom: request.effectiveFrom ? new Date(request.effectiveFrom) : new Date(),
       effectiveTo: request.effectiveTo ? new Date(request.effectiveTo) : null,
       dailyConfigs: this.processAndValidateDailyConfigs(request.dailyConfigs),
+      // Audit fields - event created by owner
+      createdBy: ownerId,
+      updatedBy: ownerId,
     };
 
     const created = await this.createOne(eventData);

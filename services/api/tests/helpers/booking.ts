@@ -47,13 +47,13 @@ export function generateTestBookingEventData(
     minBookingMinutes: 1440, // 24 hours
     status: 'active',
     dailyConfigs: {
-      sun: { enabled: false, timeBlocks: [] },
+      sun: { enabled: true, timeBlocks: [{ startTime: '09:00', endTime: '17:00', slotDuration: 30, bufferTime: 0 }] },
       mon: { enabled: true, timeBlocks: [{ startTime: '09:00', endTime: '17:00', slotDuration: 30, bufferTime: 0 }] },
       tue: { enabled: true, timeBlocks: [{ startTime: '09:00', endTime: '17:00', slotDuration: 30, bufferTime: 0 }] },
       wed: { enabled: true, timeBlocks: [{ startTime: '09:00', endTime: '17:00', slotDuration: 30, bufferTime: 0 }] },
       thu: { enabled: true, timeBlocks: [{ startTime: '09:00', endTime: '17:00', slotDuration: 30, bufferTime: 0 }] },
       fri: { enabled: true, timeBlocks: [{ startTime: '09:00', endTime: '17:00', slotDuration: 30, bufferTime: 0 }] },
-      sat: { enabled: false, timeBlocks: [] }
+      sat: { enabled: true, timeBlocks: [{ startTime: '09:00', endTime: '17:00', slotDuration: 30, bufferTime: 0 }] }
     },
     ...overrides
   };
@@ -401,6 +401,39 @@ export async function listBookingEvents(
 /**
  * Get booking event details via API (public endpoint)
  */
+/**
+ * List event slots via API
+ */
+export async function listEventSlots(
+  apiClient: ApiClient,
+  eventId: string,
+  options?: {
+    startTime?: Date;
+    endTime?: Date;
+    status?: 'available' | 'booked' | 'blocked';
+  }
+): Promise<BookingTestResponse<any[]>> {
+  let url = `/booking/events/${eventId}/slots`;
+  
+  const params = new URLSearchParams();
+  if (options?.startTime) params.append('startTime', options.startTime.toISOString());
+  if (options?.endTime) params.append('endTime', options.endTime.toISOString());
+  if (options?.status) params.append('status', options.status);
+  
+  if (params.toString()) {
+    url += `?${params.toString()}`;
+  }
+  
+  const response = await apiClient.fetch(url);
+
+  if (!response.ok) {
+    const error = await response.text();
+    return { response, error };
+  }
+
+  return { response, data: await response.json() };
+}
+
 export async function getBookingEventDetails(
   apiClient: ApiClient,
   eventId: string,

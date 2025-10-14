@@ -260,9 +260,6 @@ model TimeSlot extends BaseEntity {
   @doc("Optional context (inherited from event)")
   context?: string;
 
-  @doc("Slot date")
-  date: plainDate;
-
   @doc("Slot start time (UTC)")
   startTime: utcDateTime;
 
@@ -275,8 +272,8 @@ model TimeSlot extends BaseEntity {
   @doc("Slot availability status")
   status: SlotStatus;
 
-  @doc("Optional billing override for this specific slot")
-  billingOverride?: BillingConfig;
+  @doc("Optional billing configuration for this specific slot (overrides event billingConfig)")
+  billingConfig?: BillingConfig;
 
   @doc("Linked booking if booked")
   booking?: UUID;
@@ -716,6 +713,19 @@ namespace BookingModule {
       @path event: UUID | "me",
       ...ExpandParams
     ): ApiOkResponse<BookingEvent>
+      | ApiNotFoundResponse;
+
+    @doc("List available time slots for a booking event. Default: available slots from now to +7 days.")
+    @operationId("listEventSlots")
+    @get
+    @useAuth(bearerAuth | TypeSpec.Http.NoAuth)
+    @route("/events/{event}/slots")
+    listEventSlots(
+      @path event: UUID,
+      @query startTime?: utcDateTime,
+      @query endTime?: utcDateTime,
+      @query status?: SlotStatus
+    ): ApiOkResponse<TimeSlot[]>
       | ApiNotFoundResponse;
 
     @doc("Update booking event (partial updates supported).")

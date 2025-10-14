@@ -6,11 +6,12 @@
 import type { JobContext } from '@/core/jobs';
 import { TimeSlotRepository } from '../repos/timeSlot.repo';
 import { BookingEventRepository } from '../repos/bookingEvent.repo';
-import type { BookingEvent, DailyConfig, TimeBlock, NewTimeSlot } from '../repos/booking.schema';
+import { ScheduleExceptionRepository } from '../repos/scheduleException.repo';
+import type { BookingEvent, DailyConfig, TimeBlock, NewTimeSlot, ScheduleException } from '../repos/booking.schema';
 import { timeSlots, DayOfWeek } from '../repos/booking.schema';
 import { eq, and, gte } from 'drizzle-orm';
-import { addDays, startOfDay, format, getDay, eachDayOfInterval, parseISO, setHours, setMinutes, addMinutes } from 'date-fns';
-import { fromZonedTime } from 'date-fns-tz';
+import { addDays, startOfDay, format, getDay, eachDayOfInterval, parseISO, setHours, setMinutes, addMinutes, areIntervalsOverlapping } from 'date-fns';
+import { fromZonedTime, toZonedTime } from 'date-fns-tz';
 
 /**
  * Configuration for slot generation job
@@ -39,6 +40,7 @@ export async function slotGeneratorJob(context: JobContext): Promise<void> {
   
   const timeSlotRepo = new TimeSlotRepository(db, logger);
   const eventRepo = new BookingEventRepository(db, logger);
+  const exceptionRepo = new ScheduleExceptionRepository(db, logger);
   
   try {
     // Calculate date range for slot generation
@@ -81,8 +83,14 @@ export async function slotGeneratorJob(context: JobContext): Promise<void> {
           status: event.status
         });
 
-        // Generate slots from this event
-        const slots = await generateSlotsFromEvent(event, startDate, endDate, logger);
+        // Fetch schedule exceptions for this event
+        const exceptions = await exceptionRepo.findMany({
+          event: event.id,
+          dateRange: { start: startDate, end: endDate }
+        });
+
+        // Generate slots from this event with exception filtering
+        const slots = await generateSlotsFromEvent(event, startDate, endDate, logger, exceptions);
         results.totalGenerated += slots.length;
 
         if (slots.length > 0) {
@@ -165,18 +173,21 @@ export async function slotGeneratorJob(context: JobContext): Promise<void> {
 /**
  * Generate time slots from a BookingEvent
  * Processes the event's dailyConfigs and creates slots for the date range
+ * Filters out slots that overlap with schedule exceptions
  */
 async function generateSlotsFromEvent(
   event: BookingEvent,
   startDate: Date,
   endDate: Date,
-  logger?: any
+  logger?: any,
+  scheduleExceptions?: ScheduleException[]
 ): Promise<NewTimeSlot[]> {
   logger?.debug(`Generating slots from event ${event.id}`, {
     eventId: event.id,
     owner: event.owner,
     startDate: startDate.toISOString(),
-    endDate: endDate.toISOString()
+    endDate: endDate.toISOString(),
+    exceptionsCount: scheduleExceptions?.length || 0
   });
 
   const slots: NewTimeSlot[] = [];
@@ -205,15 +216,18 @@ async function generateSlotsFromEvent(
     }
 
     // Check if the day falls within the event's effective date range
-    const dayStr = format(day, 'yyyy-MM-dd');
-    const effectiveFromStr = event.effectiveFrom instanceof Date
-      ? format(event.effectiveFrom, 'yyyy-MM-dd')
-      : event.effectiveFrom;
-    const effectiveToStr = event.effectiveTo
-      ? (event.effectiveTo instanceof Date ? format(event.effectiveTo, 'yyyy-MM-dd') : event.effectiveTo)
+    // Normalize dates to ensure consistent comparison
+    const dayStart = startOfDay(day);
+    const effectiveFrom = event.effectiveFrom instanceof Date 
+      ? startOfDay(event.effectiveFrom)
+      : startOfDay(parseISO(event.effectiveFrom));
+    const effectiveTo = event.effectiveTo
+      ? (event.effectiveTo instanceof Date 
+          ? startOfDay(event.effectiveTo)
+          : startOfDay(parseISO(event.effectiveTo)))
       : null;
 
-    if (dayStr < effectiveFromStr || (effectiveToStr && dayStr > effectiveToStr)) {
+    if (dayStart < effectiveFrom || (effectiveTo && dayStart > effectiveTo)) {
       continue;
     }
 
@@ -229,13 +243,47 @@ async function generateSlotsFromEvent(
     }
   }
 
-  logger?.info(`Generated ${slots.length} slots from event ${event.id}`, {
+  // Filter out slots that overlap with schedule exceptions
+  let filteredSlots = slots;
+  if (scheduleExceptions && scheduleExceptions.length > 0) {
+    const beforeFilter = slots.length;
+    filteredSlots = slots.filter(slot => {
+      // Check if this slot overlaps with any exception
+      return !scheduleExceptions.some(exception => {
+        // Handle recurring exceptions by generating all occurrences
+        const exceptionOccurrences = exception.recurring && exception.recurrencePattern
+          ? generateRecurrenceOccurrences(exception, endDate)
+          : [{ start: exception.startDatetime, end: exception.endDatetime }];
+
+        // Check if slot overlaps with any occurrence
+        return exceptionOccurrences.some(occurrence =>
+          areIntervalsOverlapping(
+            { start: slot.startTime, end: slot.endTime },
+            { start: occurrence.start, end: occurrence.end },
+            { inclusive: false }
+          )
+        );
+      });
+    });
+
+    const filtered = beforeFilter - filteredSlots.length;
+    if (filtered > 0) {
+      logger?.info(`Filtered ${filtered} slots due to schedule exceptions`, {
+        eventId: event.id,
+        beforeFilter,
+        afterFilter: filteredSlots.length,
+        exceptionsCount: scheduleExceptions.length
+      });
+    }
+  }
+
+  logger?.info(`Generated ${filteredSlots.length} slots from event ${event.id}`, {
     eventId: event.id,
     owner: event.owner,
-    slotCount: slots.length
+    slotCount: filteredSlots.length
   });
 
-  return slots;
+  return filteredSlots;
 }
 
 /**
@@ -277,13 +325,15 @@ function generateSlotsFromTimeBlock(
       owner: event.owner,
       event: event.id,
       context: event.context,
-      date: format(day, 'yyyy-MM-dd'),
       startTime: slotStartUtc,
       endTime: slotEndUtc,
       locationTypes: event.locationTypes,
       status: 'available',
-      // Include billing override if specified in the event
-      billingOverride: event.billingConfig || undefined
+      // Include billing config if specified in the event
+      billingConfig: event.billingConfig || undefined,
+      // Audit fields - system-generated slots attributed to owner
+      createdBy: event.owner,
+      updatedBy: event.owner
     };
 
     slots.push(slot);
@@ -296,122 +346,147 @@ function generateSlotsFromTimeBlock(
 }
 
 /**
- * Regenerate slots for a specific booking event owner
- * Used when schedule changes occur - now works with BookingEvent system
+ * Helper function to generate recurrence occurrences for schedule exceptions
+ * Simplified version adapted from ScheduleExceptionRepository
  */
-export async function regenerateOwnerSlots(
+function generateRecurrenceOccurrences(
+  exception: ScheduleException,
+  untilDate: Date
+): Array<{ start: Date; end: Date }> {
+  if (!exception.recurring || !exception.recurrencePattern) {
+    return [{ start: exception.startDatetime, end: exception.endDatetime }];
+  }
+
+  const occurrences: Array<{ start: Date; end: Date }> = [];
+  const pattern = exception.recurrencePattern;
+  let currentStart = new Date(exception.startDatetime);
+  let currentEnd = new Date(exception.endDatetime);
+  const duration = currentEnd.getTime() - currentStart.getTime();
+
+  const maxOccurrences = pattern.maxOccurrences || 100;
+  const endDate = pattern.endDate ? new Date(pattern.endDate) : untilDate;
+
+  while (currentStart <= endDate && occurrences.length < maxOccurrences) {
+    occurrences.push({ start: new Date(currentStart), end: new Date(currentEnd) });
+
+    // Calculate next occurrence based on pattern type
+    switch (pattern.type) {
+      case 'daily':
+        currentStart = addDays(currentStart, pattern.interval || 1);
+        break;
+      case 'weekly':
+        currentStart = addDays(currentStart, 7 * (pattern.interval || 1));
+        break;
+      case 'monthly':
+        // Simple monthly increment (doesn't handle day-of-month edge cases)
+        currentStart = addDays(currentStart, 30 * (pattern.interval || 1));
+        break;
+      case 'yearly':
+        currentStart = addDays(currentStart, 365 * (pattern.interval || 1));
+        break;
+    }
+    currentEnd = new Date(currentStart.getTime() + duration);
+  }
+
+  return occurrences;
+}
+
+/**
+ * Regenerate slots for a specific booking event
+ * Used when a single event is created or updated
+ */
+export async function regenerateEventSlots(
   db: any,
-  ownerId: string,
+  eventId: string,
   fromDate?: Date
 ): Promise<void> {
   const logger = console; // Use proper logger in production
 
   const timeSlotRepo = new TimeSlotRepository(db, logger);
   const eventRepo = new BookingEventRepository(db, logger);
-
-  // Use UTC date to match how effectiveFrom is stored
-  // This prevents timezone mismatch when querying booking events
-  const startDate = fromDate || new Date(format(new Date(), 'yyyy-MM-dd'));
-  const endDate = addDays(startDate, 30);
-
-  logger.info(`Regenerating slots for owner ${ownerId}`, {
-    ownerId,
-    startDate: startDate.toISOString(),
-    endDate: endDate.toISOString()
-  });
+  const exceptionRepo = new ScheduleExceptionRepository(db, logger);
 
   try {
-    // Get active booking events for this owner within the date range
-    const activeEvents = await eventRepo.findActiveInDateRange(startDate, endDate);
-    const ownerEvents = activeEvents.filter(event => event.owner === ownerId);
-
-    if (ownerEvents.length === 0) {
-      logger.warn(`No active booking events found for owner ${ownerId}`);
+    // Get the specific event first to determine timezone
+    const event = await eventRepo.findOneById(eventId);
+    
+    if (!event) {
+      logger.warn(`Event ${eventId} not found`);
       return;
     }
 
-    logger.info(`Found ${ownerEvents.length} active events for owner ${ownerId}`);
+    if (event.status !== 'active') {
+      logger.info(`Skipping slot generation for non-active event ${eventId}`, {
+        status: event.status
+      });
+      return;
+    }
 
-    // Delete existing future available slots for this owner from the start date
+    // Calculate start date in owner's timezone
+    // If fromDate is provided, use it; otherwise use start-of-day in owner's timezone
+    let startDate: Date;
+    if (fromDate) {
+      startDate = fromDate;
+    } else {
+      // Get current time in owner's timezone, then get start of day
+      const nowInOwnerTz = toZonedTime(new Date(), event.timezone);
+      const startOfDayInOwnerTz = startOfDay(nowInOwnerTz);
+      // Convert back to UTC for database queries
+      startDate = fromZonedTime(startOfDayInOwnerTz, event.timezone);
+    }
+    
+    const endDate = addDays(startDate, 30);
+
+    logger.info(`Regenerating slots for event ${eventId}`, {
+      eventId,
+      timezone: event.timezone,
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString()
+    });
+
+    // Fetch schedule exceptions for this event in the date range
+    const exceptions = await exceptionRepo.findMany({
+      event: eventId,
+      dateRange: { start: startDate, end: endDate }
+    });
+
+    logger.info(`Found ${exceptions.length} schedule exceptions for event ${eventId}`, {
+      eventId,
+      exceptionsCount: exceptions.length
+    });
+
+    // Delete existing future available slots for THIS event only
     const deletedSlots = await db
       .delete(timeSlots)
       .where(
         and(
-          eq(timeSlots.owner, ownerId),
+          eq(timeSlots.event, eventId),
           eq(timeSlots.status, 'available'),
-          // Compare with DATE column using date-only string (timeSlots.date stores owner-local calendar day)
-          gte(timeSlots.date, format(startDate, 'yyyy-MM-dd'))
+          gte(timeSlots.startTime, startDate)
         )
       );
 
-    logger.info(`Deleted ${deletedSlots.rowCount || 0} existing available slots for owner ${ownerId}`);
+    logger.info(`Deleted ${deletedSlots.rowCount || 0} existing available slots for event ${eventId}`);
 
-    // Generate new slots from all active events for this owner
-    const results = {
-      totalGenerated: 0,
-      totalCreated: 0,
-      totalDuplicates: 0,
-      failedEvents: [] as string[],
-      errors: [] as string[]
-    };
+    // Generate new slots from this event, filtering by exceptions
+    const slots = await generateSlotsFromEvent(event, startDate, endDate, logger, exceptions);
 
-    for (const event of ownerEvents) {
-      try {
-        logger.debug(`Regenerating slots for event ${event.id}`, {
-          eventId: event.id,
-          owner: event.owner
-        });
-
-        // Generate slots from this event
-        const slots = await generateSlotsFromEvent(event, startDate, endDate, logger);
-        results.totalGenerated += slots.length;
-
-        if (slots.length > 0) {
-          // Bulk create the slots
-          const createResult = await timeSlotRepo.bulkCreateSlots(slots);
-          results.totalCreated += createResult.created.length;
-          results.totalDuplicates += createResult.duplicates;
-
-          logger.debug(`Completed slot regeneration for event ${event.id}`, {
-            eventId: event.id,
-            generated: slots.length,
-            created: createResult.created.length,
-            duplicates: createResult.duplicates
-          });
-        }
-
-      } catch (error) {
-        const errorMsg = `Event ${event.id} failed: ${error instanceof Error ? error.message : String(error)}`;
-        results.errors.push(errorMsg);
-        results.failedEvents.push(event.id);
-
-        logger.error(`Event regeneration failed`, {
-          eventId: event.id,
-          error: error instanceof Error ? error.message : String(error)
-        });
-      }
-    }
-
-    logger.info(`Slot regeneration completed for owner ${ownerId}`, {
-      ownerId,
-      totalEvents: ownerEvents.length,
-      totalGenerated: results.totalGenerated,
-      totalCreated: results.totalCreated,
-      totalDuplicates: results.totalDuplicates,
-      failedEvents: results.failedEvents.length,
-      successRate: `${((ownerEvents.length - results.failedEvents.length) / ownerEvents.length * 100).toFixed(2)}%`
-    });
-
-    if (results.failedEvents.length > 0) {
-      logger.warn(`Some events failed during regeneration for owner ${ownerId}`, {
-        failedEvents: results.failedEvents,
-        errors: results.errors
+    if (slots.length > 0) {
+      const createResult = await timeSlotRepo.bulkCreateSlots(slots);
+      
+      logger.info(`Slot regeneration completed for event ${eventId}`, {
+        eventId,
+        generated: slots.length,
+        created: createResult.created.length,
+        duplicates: createResult.duplicates
       });
+    } else {
+      logger.debug(`No slots generated for event ${eventId}`, { eventId });
     }
 
   } catch (error) {
-    logger.error(`Slot regeneration failed for owner ${ownerId}`, {
-      ownerId,
+    logger.error(`Slot regeneration failed for event ${eventId}`, {
+      eventId,
       error: error instanceof Error ? error.message : String(error)
     });
     throw error;

@@ -36,6 +36,7 @@ import { createScheduleException } from '../../handlers/booking/createScheduleEx
 import { listScheduleExceptions } from '../../handlers/booking/listScheduleExceptions';
 import { getScheduleException } from '../../handlers/booking/getScheduleException';
 import { deleteScheduleException } from '../../handlers/booking/deleteScheduleException';
+import { listEventSlots } from '../../handlers/booking/listEventSlots';
 import { getTimeSlot } from '../../handlers/booking/getTimeSlot';
 import { createChatRoom } from '../../handlers/comms/createChatRoom';
 import { listChatRooms } from '../../handlers/comms/listChatRooms';
@@ -114,6 +115,7 @@ export const registry = {
   listScheduleExceptions,
   getScheduleException,
   deleteScheduleException,
+  listEventSlots,
   getTimeSlot,
 
   // Comms handlers

@@ -269,6 +269,14 @@ export function registerRoutes(app: Hono) {
     registry.deleteScheduleException
   );
 
+  // listEventSlots
+  app.get('/booking/events/:event/slots',
+    authMiddleware({ required: false }),
+    zValidator('param', validators.ListEventSlotsParams, validationErrorHandler),
+    zValidator('query', validators.ListEventSlotsQuery, validationErrorHandler),
+    registry.listEventSlots
+  );
+
   // getTimeSlot
   app.get('/booking/slots/:slotId',
     zValidator('param', validators.GetTimeSlotParams, validationErrorHandler),

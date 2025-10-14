@@ -287,7 +287,6 @@ export const TimeSlotSchema = z.object({
   owner: z.string().uuid(),
   event: z.union([z.string(), BookingEventSchema]),
   context: z.string().optional(),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(val => { const parsed = new Date(val + "T00:00:00Z"); return !isNaN(parsed.getTime()) && parsed.toISOString().split("T")[0] === val; }, { message: "Invalid calendar date" }),
   startTime: z.string().datetime().transform((str) => new Date(str)),
   endTime: z.string().datetime().transform((str) => new Date(str)),
   locationTypes: z.array(LocationTypeSchema),
@@ -1542,6 +1541,18 @@ export const DeleteScheduleExceptionParams = z.object({
 });
 
 export const DeleteScheduleExceptionResponse = z.void();
+
+export const ListEventSlotsParams = z.object({
+  event: UUIDSchema,
+});
+
+export const ListEventSlotsQuery = z.object({
+  startTime: z.string().datetime().transform((str) => new Date(str)).optional(),
+  endTime: z.string().datetime().transform((str) => new Date(str)).optional(),
+  status: SlotStatusSchema.optional(),
+});
+
+export const ListEventSlotsResponse = z.array(TimeSlotSchema);
 
 export const GetTimeSlotParams = z.object({
   slotId: UUIDSchema,

@@ -165,11 +165,7 @@ export const timeSlots = pgTable('time_slot', {
 
   context: text('context_id'), // Optional context (inherited from event)
 
-  // Slot timing
-  // IMPORTANT: Denormalized date/timestamp design
-  // - date: Provider-local calendar day (e.g., "2025-10-07" for Monday in PST)
-  // - startTime/endTime: UTC timestamps (e.g., "2025-10-08T07:00:00Z" = Tuesday 7am UTC = Monday 11pm PST)
-  date: date('date').notNull(),
+  // Slot timing (UTC timestamps)
   startTime: timestamp('start_time').notNull(),
   endTime: timestamp('end_time').notNull(),
 
@@ -183,22 +179,22 @@ export const timeSlots = pgTable('time_slot', {
     .notNull()
     .default('available'),
 
-  // Optional billing override for this specific slot
-  billingOverride: jsonb('billing_override').$type<BillingConfig>(),
+  // Optional billing configuration for this specific slot (overrides event billingConfig)
+  billingConfig: jsonb('billing_config').$type<BillingConfig>(),
 
   // Linked booking (if booked)
   booking: uuid('booking_id')
     .references(() => bookings.id, { onDelete: 'set null' }),
 }, (table) => ({
   // Performance indexes (updated for BookingEvent system)
-  ownerDateIdx: index('time_slots_owner_date_idx')
-    .on(table.owner, table.date),
+  ownerStartTimeIdx: index('time_slots_owner_start_time_idx')
+    .on(table.owner, table.startTime),
 
   statusIdx: index('time_slots_status_idx').on(table.status),
 
   // Partial index for bookable slots (only available status)
   bookableSlotsIdx: index('time_slots_bookable_idx')
-    .on(table.owner, table.date, table.startTime)
+    .on(table.owner, table.startTime)
     .where(sql`"time_slot"."status" = 'available'`),
 
   eventIdx: index('time_slots_event_id_idx').on(table.event),
@@ -206,9 +202,9 @@ export const timeSlots = pgTable('time_slot', {
   bookingIdx: index('time_slots_booking_id_idx').on(table.booking),
 
 
-  // Ensure no slot overlap for same owner
-  uniqueOwnerTime: unique('time_slots_owner_time_unique')
-    .on(table.owner, table.startTime),
+  // Ensure no slot overlap within same event (different events can have overlapping slots)
+  uniqueEventTime: unique('time_slots_event_time_unique')
+    .on(table.event, table.startTime),
 }));// Bookings - Booked consultations between client and provider
 export const bookings = pgTable('booking', {
   // Base entity fields

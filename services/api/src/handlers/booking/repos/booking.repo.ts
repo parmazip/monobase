@@ -14,12 +14,15 @@ import {
   type BookingCreateRequest,
   type TimeSlot
 } from './booking.schema';
+import { bookingEvents } from './booking.schema';
 import { persons } from '../../person/repos/person.schema';
 import { NotFoundError, ConflictError, ValidationError } from '@/core/errors';
+import { InvoiceRepository } from '../../billing/repos/billing.repo';
 
 export interface BookingFilters {
   client?: string;
   provider?: string;
+  clientOrProvider?: string;
   status?: 'pending' | 'confirmed' | 'rejected' | 'cancelled' | 'completed' | 'no_show_client' | 'no_show_provider';
   dateRange?: { start: Date; end: Date };
   upcoming?: boolean;
@@ -53,6 +56,15 @@ export class BookingRepository extends DatabaseRepository<Booking, NewBooking, B
 
     if (filters.provider) {
       conditions.push(eq(bookings.provider, filters.provider));
+    }
+
+    if (filters.clientOrProvider) {
+      conditions.push(
+        or(
+          eq(bookings.client, filters.clientOrProvider),
+          eq(bookings.provider, filters.clientOrProvider)
+        )
+      );
     }
 
     if (filters.status) {
@@ -97,34 +109,81 @@ export class BookingRepository extends DatabaseRepository<Booking, NewBooking, B
   ): Promise<BookingWithDetails> {
     this.logger?.debug({ clientId, slotId, request }, 'Creating booking');
 
-    // Get slot details with transaction
-    const slot = await this.db.select()
+    // Get slot with event details to check for billingConfig
+    const slotWithEvent = await this.db.select()
       .from(timeSlots)
+      .leftJoin(bookingEvents, eq(timeSlots.event, bookingEvents.id))
       .where(eq(timeSlots.id, slotId))
-      .limit(1);    if (!slot[0]) {
+      .limit(1);
+
+    if (!slotWithEvent[0]) {
       throw new NotFoundError('Time slot not found');
     }
 
-    if (slot[0].status !== 'available') {
+    const slot = slotWithEvent[0].time_slot;
+    const event = slotWithEvent[0].booking_event;
+
+    if (slot.status !== 'available') {
       throw new ConflictError('Time slot is not available');
     }
 
     // Calculate duration in minutes
     const duration = Math.floor(
-      (slot[0].endTime.getTime() - slot[0].startTime.getTime()) / 60000
+      (slot.endTime.getTime() - slot.startTime.getTime()) / 60000
     );
 
-    // Create booking
+    // Pre-generate booking ID for invoice context
+    const bookingId = crypto.randomUUID();
+
+    // Check for billing configuration (slot-level overrides event-level)
+    const billingConfig = slot.billingConfig || event?.billingConfig;
+    let invoiceId: string | null = null;
+
+    // Create invoice FIRST if billing is required (before booking insert)
+    if (billingConfig) {
+      this.logger?.debug({ bookingId, billingConfig }, 'Creating invoice for booking with billingConfig');
+      
+      const invoiceRepo = new InvoiceRepository(this.db, this.logger);
+      
+      try {
+        const invoice = await invoiceRepo.createOne({
+          invoiceNumber: `INV-${Date.now()}-${bookingId.substring(0, 8)}`,
+          customer: clientId,
+          merchant: slot.owner,
+          context: `booking:${bookingId}`,
+          status: 'open',
+          subtotal: billingConfig.price,
+          total: billingConfig.price,
+          currency: billingConfig.currency,
+          paymentDueAt: slot.startTime,
+          createdBy: clientId,
+          updatedBy: clientId
+        });
+        
+        invoiceId = invoice.id;
+        this.logger?.info({ invoiceId, bookingId }, 'Invoice created for booking');
+      } catch (error) {
+        this.logger?.error({ error, bookingId }, 'Failed to create invoice - aborting booking');
+        throw error; // Abort booking if invoice creation fails
+      }
+    }
+
+    // Create booking with pre-generated ID and invoice reference
     const bookingData: NewBooking = {
+      id: bookingId,
       client: clientId,
-      provider: slot[0].owner, // Owner of the slot is the provider
+      provider: slot.owner,
       slot: slotId,
-      locationType: request.locationType || slot[0].locationTypes[0],
+      locationType: request.locationType || slot.locationTypes[0],
       reason: request.reason,
       status: 'pending',
-      scheduledAt: slot[0].startTime,
+      scheduledAt: slot.startTime,
       durationMinutes: duration,
-      formResponses: request.formResponses
+      formResponses: request.formResponses,
+      invoice: invoiceId ?? undefined, // Use undefined for optional fields
+      // Audit fields - booking created by client
+      createdBy: clientId,
+      updatedBy: clientId
     };
 
     const booking = await this.createOne(bookingData);
@@ -134,9 +193,9 @@ export class BookingRepository extends DatabaseRepository<Booking, NewBooking, B
       .set({ status: 'booked', booking: booking.id })
       .where(eq(timeSlots.id, slotId));
 
-    this.logger?.info({ bookingId: booking.id, clientId, slotId }, 'Booking created');
+    this.logger?.info({ bookingId: booking.id, clientId, slotId, invoiceId }, 'Booking created');
 
-    return { ...booking, slotDetails: slot[0] };
+    return { ...booking, slotDetails: slot };
   }  /**
    * Confirm a booking
    */

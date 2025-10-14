@@ -95,7 +95,10 @@ export class ScheduleExceptionRepository extends DatabaseRepository<ScheduleExce
       endDatetime: new Date(request.endDatetime),
       reason: request.reason,
       recurring: request.recurring || false,
-      recurrencePattern: request.recurrencePattern
+      recurrencePattern: request.recurrencePattern,
+      // Audit fields - exception created by owner
+      createdBy: ownerId,
+      updatedBy: ownerId
     };
 
     const exception = await this.createOne(exceptionData);

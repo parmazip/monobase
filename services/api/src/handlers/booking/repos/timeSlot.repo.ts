@@ -28,8 +28,7 @@ import { addDays, subDays, addMinutes, format } from 'date-fns';
 export interface TimeSlotFilters {
   owner?: string;
   event?: string;
-  date?: string;
-  dateRange?: { start: string; end: string };
+  timeRange?: { start: Date; end: Date };
   status?: 'available' | 'booked' | 'blocked';
   locationTypes?: string[];
 }export interface SlotGenerationOptions {
@@ -69,15 +68,11 @@ export class TimeSlotRepository extends DatabaseRepository<TimeSlot, NewTimeSlot
       conditions.push(eq(timeSlots.event, filters.event));
     }
 
-    if (filters.date) {
-      conditions.push(eq(timeSlots.date, filters.date));
-    }
-
-    if (filters.dateRange) {
+    if (filters.timeRange) {
       conditions.push(
         and(
-          gte(timeSlots.date, filters.dateRange.start),
-          lte(timeSlots.date, filters.dateRange.end)
+          gte(timeSlots.startTime, filters.timeRange.start),
+          lte(timeSlots.startTime, filters.timeRange.end)
         )
       );
     }
@@ -101,8 +96,8 @@ export class TimeSlotRepository extends DatabaseRepository<TimeSlot, NewTimeSlot
    * Find available slots - supports both query object and simple parameters
    */  async findAvailableSlots(
     queryOrEventId: AvailabilityQuery | string,
-    startDate?: string,
-    endDate?: string
+    startDate?: Date,
+    endDate?: Date
   ): Promise<TimeSlot[]> {
     // Handle overloaded signature
     if (typeof queryOrEventId === 'string') {
@@ -116,16 +111,19 @@ export class TimeSlotRepository extends DatabaseRepository<TimeSlot, NewTimeSlot
       };
 
       if (startDate && endDate) {
-        filters.dateRange = { start: startDate, end: endDate };
+        filters.timeRange = { start: startDate, end: endDate };
       }
+
+      this.logger?.info({ eventId, filters }, 'Finding available slots with filters');
 
       const slots = await this.findMany(filters);
 
-      this.logger?.debug({
+      this.logger?.info({
         eventId,
         startDate,
         endDate,
-        foundCount: slots.length
+        foundCount: slots.length,
+        sampleSlot: slots[0] ? { id: slots[0].id, startTime: slots[0].startTime } : null
       }, 'Available slots found by event');
 
       return slots;
@@ -137,7 +135,10 @@ export class TimeSlotRepository extends DatabaseRepository<TimeSlot, NewTimeSlot
 
     const filters: TimeSlotFilters = {
       owner: query.owner,
-      dateRange: query.dateRange,
+      timeRange: query.dateRange ? { 
+        start: new Date(query.dateRange.start), 
+        end: new Date(query.dateRange.end) 
+      } : undefined,
       status: query.includeAllStatuses ? undefined : 'available'
     };
 
@@ -230,25 +231,25 @@ export class TimeSlotRepository extends DatabaseRepository<TimeSlot, NewTimeSlot
   }
 
   /**
-   * Delete slots for an event within a date range
+   * Delete slots for an event within a time range
    */
-  async deleteSlotsForEvent(eventId: string, startDate: string, endDate: string): Promise<number> {
-    this.logger?.debug({ eventId, startDate, endDate }, 'Deleting slots for event');
+  async deleteSlotsForEvent(eventId: string, startTime: Date, endTime: Date): Promise<number> {
+    this.logger?.debug({ eventId, startTime, endTime }, 'Deleting slots for event');
 
     const result = await this.db
       .delete(timeSlots)
       .where(
         and(
           eq(timeSlots.event, eventId),
-          gte(timeSlots.date, startDate),
-          lte(timeSlots.date, endDate),
+          gte(timeSlots.startTime, startTime),
+          lte(timeSlots.startTime, endTime),
           eq(timeSlots.status, 'available') // Only delete available slots
         )
       );
 
     const count = result.rowCount || 0;
 
-    this.logger?.info({ eventId, startDate, endDate, deletedCount: count }, 'Slots deleted for event');
+    this.logger?.info({ eventId, startTime, endTime, deletedCount: count }, 'Slots deleted for event');
     return count;
   }
 
@@ -279,12 +280,12 @@ export class TimeSlotRepository extends DatabaseRepository<TimeSlot, NewTimeSlot
       
       try {
         // Create slots with ON CONFLICT handling for duplicate detection
-        // Note: Foreign key constraint on owner_id will catch invalid person IDs
+        // Unique constraint is on (event, startTime) to allow different events to have overlapping slots
         const batchCreated = await this.db
           .insert(timeSlots)
           .values(batch)
           .onConflictDoNothing({
-            target: [timeSlots.owner, timeSlots.startTime]
+            target: [timeSlots.event, timeSlots.startTime]
           })
           .returning();
 
@@ -301,9 +302,17 @@ export class TimeSlotRepository extends DatabaseRepository<TimeSlot, NewTimeSlot
       } catch (error) {
         this.logger?.error({
           error: error instanceof Error ? error.message : String(error),
+          errorStack: error instanceof Error ? error.stack : undefined,
           batchIndex: Math.floor(i / batchSize) + 1,
-          batchSize: batch.length
-        }, 'Batch creation failed');
+          batchSize: batch.length,
+          batchStartIndex: i,
+          sampleSlot: batch[0] ? {
+            owner: batch[0].owner,
+            event: batch[0].event,
+            startTime: batch[0].startTime,
+            endTime: batch[0].endTime
+          } : undefined
+        }, 'Batch creation failed - detailed error');
         
         errors += batch.length;
       }
@@ -336,7 +345,7 @@ export class TimeSlotRepository extends DatabaseRepository<TimeSlot, NewTimeSlot
       .where(
         and(
           eq(timeSlots.status, 'available'),
-          lte(timeSlots.date, format(cutoffDate, 'yyyy-MM-dd'))
+          lte(timeSlots.startTime, cutoffDate)
         )
       );
 

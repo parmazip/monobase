@@ -1,296 +1,311 @@
 # Testing Guide
 
-This document describes the testing infrastructure and procedures for the Monobase API service.
-
 ## Overview
 
-Monobase uses an externally controlled dependencies model for testing:
-- Docker Compose manages PostgreSQL and MinIO containers
-- Tests connect to pre-running services using standard ports
-- Each test gets an isolated database schema for complete test isolation
-- No complex container pooling or programmatic lifecycle management
+This document describes testing patterns and best practices for the Monobase API service.
 
-## Quick Start
+## Test Isolation for Parallel Execution
 
-```bash
-# Start test dependencies
-bun run dev:deps:up
+### The Problem
 
-# Run tests
-bun test:e2e         # Run all E2E tests
-bun test:unit        # Run unit tests
-bun test             # Run all tests
+Bun test runner executes tests in parallel by default. Tests that share state or assume they're the only ones accessing the database will fail unpredictably due to data leakage between tests.
 
-# Stop dependencies and clean volumes
-bun run dev:deps:down
-```
+**Common symptoms:**
+- Tests pass individually but fail when run together
+- Flaky tests that sometimes pass, sometimes fail
+- Assertion errors like `expect(data.length).toBe(1)` when you get 5 results
+- Tests finding data they didn't create
 
-## Test Infrastructure
+### The Solution: Complete Test Isolation
 
-### Docker Compose Setup
+Each test must be completely isolated:
 
-The `docker-compose.deps.yml` file provides:
+1. **Create its own authenticated clients** - Never share clients between tests
+2. **Create its own test data** - Events, bookings, users, etc.
+3. **Use data-aware assertions** - Verify YOUR data exists, not that ALL data matches
 
-1. **PostgreSQL 16**
-   - Port: 5432
-   - Database: monobase
-   - User: postgres / password
+## Data-Aware Assertions Pattern
 
-2. **MinIO (S3-compatible storage)**
-   - API Port: 9000
-   - Console Port: 9001
-   - Credentials: minioadmin / minioadmin
-
-### Test Isolation
-
-Each test creates an isolated database schema:
-- Schema name pattern: `test_{timestamp}_{nanoid}`
-- Complete isolation between tests
-- Tests can run in parallel without conflicts
-- Automatic cleanup after each test
-
-## Environment Variables
-
-Tests use sensible defaults that work out of the box. You can override them if needed:
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `DATABASE_URL` | `postgresql://postgres:password@localhost:5432/monobase` | PostgreSQL connection |
-| `STORAGE_ENDPOINT` | `http://localhost:9000` | MinIO endpoint |
-| `STORAGE_ACCESS_KEY_ID` | `minioadmin` | MinIO access key |
-| `STORAGE_SECRET_ACCESS_KEY` | `minioadmin` | MinIO secret key |
-| `API_URL` | `http://localhost:7213` | API endpoint (for E2E tests) |
-| `AUTH_ADMIN_EMAILS` | `[]` | Comma-separated list of admin emails for automatic admin role assignment |
-
-## Writing Tests
-
-### E2E Test Structure
+### ❌ Wrong: Assumes ALL data matches your filter
 
 ```typescript
-import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
-import { createTestApp, getApiUrl } from '../setup/test-app';
-import { createApiClient } from '../helpers/client';
-
-describe('Feature Tests', () => {
-  let testApp;
-  let client;
-
-  beforeEach(async () => {
-    // Create isolated test environment
-    testApp = await createTestApp({ storage: true });
-
-    // Create API client
-    const apiUrl = getApiUrl();
-    client = createApiClient({ apiBaseUrl: apiUrl });
+test('should filter by owner', async () => {
+  const provider = await createAuthenticatedClient(testApp.app);
+  await createBookingEvent(provider, eventData);
+  
+  const { data } = await listBookingEvents(apiClient, {
+    owner: provider.currentUser!.id
   });
-
-  afterEach(async () => {
-    // Cleanup test schema
-    await testApp.cleanup();
-  });
-
-  test('should do something', async () => {
-    // Your test implementation
+  
+  // WRONG: This assumes ALL events in DB belong to this provider
+  // Fails when other parallel tests create events
+  data.forEach(event => {
+    expect(event.owner).toBe(provider.currentUser!.id);
   });
 });
 ```
 
-### Unit Test Structure
+**Why this fails:** Other tests running in parallel also create events. Your query returns:
+- Your event (owner: provider-123)
+- Another test's event (owner: provider-456) ← Causes failure!
 
-Unit tests don't need the test app setup:
+### ✅ Correct: Verify YOUR data exists
 
 ```typescript
-import { describe, test, expect } from 'bun:test';
-import { functionToTest } from '../src/module';
+test('should filter by owner', async () => {
+  const provider = await createAuthenticatedClient(testApp.app);
+  const createdEvent = await createBookingEvent(provider, eventData);
+  
+  const { data } = await listBookingEvents(apiClient, {
+    owner: provider.currentUser!.id
+  });
+  
+  // CORRECT: Verify OUR event exists in results
+  expect(data.length).toBeGreaterThan(0);
+  const ourEvent = data.find(e => e.id === createdEvent.id);
+  expect(ourEvent).toBeDefined();
+  expect(ourEvent!.owner).toBe(provider.currentUser!.id);
+  
+  // Optional: Verify isolation - other test's data NOT in results
+  const otherTestData = data.find(e => e.id === someOtherId);
+  expect(otherTestData).toBeUndefined();
+});
+```
 
-describe('Module Tests', () => {
-  test('should behave correctly', () => {
-    const result = functionToTest();
-    expect(result).toBe(expected);
+**Why this works:** We only assert on data WE created, not ALL data in the database.
+
+## Test Structure Pattern
+
+### Template for Isolated Tests
+
+```typescript
+test('should do something', async () => {
+  // 1. Create your own clients
+  const providerClient = await createAuthenticatedClient(testApp.app);
+  const clientClient = await createAuthenticatedClient(testApp.app);
+  
+  // 2. Create your own test data
+  const event = await createBookingEvent(providerClient, generateTestEventData());
+  await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for slots
+  
+  const { data: slots } = await listEventSlots(apiClient, event.id);
+  const slot = slots.find(s => s.status === 'available');
+  
+  const booking = await createBooking(clientClient, {
+    slot: slot!.id,
+    reason: 'Test booking'
+  });
+  
+  // 3. Perform the action
+  const { data } = await getBooking(clientClient, booking.id);
+  
+  // 4. Use data-aware assertions
+  expect(data).toBeDefined();
+  expect(data!.id).toBe(booking.id);
+  expect(data!.client).toBe(clientClient.currentUser!.id);
+});
+```
+
+### When to Use beforeAll vs Per-Test Setup
+
+#### Use beforeAll for:
+- Expensive one-time setup (test app initialization)
+- Shared read-only data that doesn't change
+- Data that won't interfere with other tests
+
+#### Use per-test setup for:
+- Clients (always create per-test)
+- Data that will be modified (bookings, events, users)
+- Data used in assertions
+
+**Example with beforeAll:**
+
+```typescript
+describe('Booking Management', () => {
+  let testApp: TestApp;
+  
+  beforeAll(async () => {
+    testApp = await createTestApp();
+  }, 30000);
+  
+  test('should create booking', async () => {
+    // Each test creates its own clients and data
+    const providerClient = await createAuthenticatedClient(testApp.app);
+    const clientClient = await createAuthenticatedClient(testApp.app);
+    // ... rest of test
+  });
+  
+  test('should cancel booking', async () => {
+    // Don't reuse clients or data from previous test!
+    const providerClient = await createAuthenticatedClient(testApp.app);
+    const clientClient = await createAuthenticatedClient(testApp.app);
+    // ... rest of test
   });
 });
 ```
 
-## Running Specific Tests
+## Common Pitfalls
 
-```bash
-# Run specific test file
-bun test tests/e2e/patient/patient.test.ts
+### 1. Reusing Clients Between Tests
 
-# Run tests matching pattern
-bun test --match "Patient"
-
-# Run tests in watch mode
-bun test --watch
-```
-
-## Admin Email Configuration
-
-Some tests require admin privileges to access list endpoints and perform administrative operations. You must configure admin emails when starting the API to enable automatic admin role assignment.
-
-### Setting Up Admin Users
-
-When starting the API for testing, include the `AUTH_ADMIN_EMAILS` environment variable:
-
-```bash
-# For testing with admin privileges
-AUTH_ADMIN_EMAILS=admin1@test.com,admin2@test.com,admin3@test.com PORT=7213 bun dev
-```
-
-### How Admin Role Assignment Works
-
-- **Automatic Assignment**: When a user signs up with an email listed in `AUTH_ADMIN_EMAILS`, they automatically receive the `admin` role
-- **Better-Auth Integration**: The admin role assignment happens during user creation via Better-Auth database hooks
-- **Test Compatibility**: E2E tests can then use these predefined admin emails to create users with admin privileges
-- **List Endpoint Access**: Admin users can access list endpoints (e.g., `GET /persons`, `GET /patients`) that require admin authorization
-
-### Admin Email Examples in Tests
-
+❌ **Wrong:**
 ```typescript
-// Test helper will use one of the configured admin emails
-const adminClient = createApiClient({
-  apiBaseUrl: apiUrl,
-  // Uses admin1@test.com, admin2@test.com, or admin3@test.com
+let sharedClient: ApiClient; // Global state!
+
+beforeAll(async () => {
+  sharedClient = await createAuthenticatedClient(testApp.app);
 });
 
-await adminClient.signup(); // This user will have admin role automatically
+test('test 1', async () => {
+  await doSomething(sharedClient); // Pollutes shared state
+});
+
+test('test 2', async () => {
+  await doSomething(sharedClient); // Affected by test 1
+});
 ```
 
-## API Development Workflow
+✅ **Correct:**
+```typescript
+test('test 1', async () => {
+  const client = await createAuthenticatedClient(testApp.app);
+  await doSomething(client);
+});
 
-When developing the API alongside tests:
-
-```bash
-# Terminal 1: Start dependencies
-bun run dev:deps:up
-
-# Terminal 2: Start API with admin emails for testing
-AUTH_ADMIN_EMAILS=admin1@test.com,admin2@test.com,admin3@test.com bun dev
-
-# Terminal 3: Run tests
-bun test:e2e
+test('test 2', async () => {
+  const client = await createAuthenticatedClient(testApp.app);
+  await doSomething(client);
+});
 ```
 
-## Troubleshooting
+### 2. Asserting on ALL Results
 
-### PostgreSQL Connection Issues
-
-```bash
-# Check if PostgreSQL is running
-docker ps | grep monobase-test-postgres
-
-# View PostgreSQL logs
-docker logs monobase-test-postgres
-
-# Restart PostgreSQL
-bun run dev:deps:down
-bun run dev:deps:up
+❌ **Wrong:**
+```typescript
+const { data } = await listBookings(client);
+expect(data.length).toBe(1); // Fails when other tests create bookings
 ```
 
-### MinIO Connection Issues
-
-```bash
-# Check if MinIO is running
-docker ps | grep monobase-test-minio
-
-# View MinIO logs
-docker logs monobase-test-minio
-
-# Access MinIO console
-open http://localhost:9001
-# Login with minioadmin/minioadmin
+✅ **Correct:**
+```typescript
+const booking = await createBooking(client, bookingData);
+const { data } = await listBookings(client);
+const ourBooking = data.find(b => b.id === booking.id);
+expect(ourBooking).toBeDefined();
 ```
 
-### Port Conflicts
+### 3. Expecting Empty Results
 
-If default ports are in use:
-
-```bash
-# Stop conflicting services or use different ports
-DATABASE_URL=postgresql://postgres:password@localhost:5433/monobase bun test:e2e
-STORAGE_ENDPOINT=http://localhost:9100 bun test:e2e
+❌ **Wrong:**
+```typescript
+const { data } = await listBookings(otherClient);
+expect(data.length).toBe(0); // Fails when other tests run
 ```
 
-### Clean State Between Test Runs
-
-The `-v` flag in `dev:deps:down` removes volumes for a clean slate:
-
-```bash
-# Complete cleanup and restart
-bun run dev:deps:down  # Removes volumes
-bun run dev:deps:up    # Fresh start
+✅ **Correct:**
+```typescript
+const ourBookingId = 'booking-we-created';
+const { data } = await listBookings(otherClient);
+const leakedBooking = data.find(b => b.id === ourBookingId);
+expect(leakedBooking).toBeUndefined(); // Verify OUR data not leaked
 ```
 
-## CI/CD Integration
+## Database Considerations
 
-For GitHub Actions or other CI systems:
+### No Cleanup Required
 
-```yaml
-steps:
-  - name: Checkout code
-    uses: actions/checkout@v4
+With proper data-aware assertions, you don't need to clean up after tests:
 
-  - name: Setup Bun
-    uses: oven-sh/setup-bun@v1
+```typescript
+// ❌ NOT NEEDED with data-aware assertions
+afterEach(async () => {
+  await cleanupDatabase(); // Slow and unnecessary
+});
 
-  - name: Install dependencies
-    run: bun install
-
-  - name: Start test services
-    run: bun run dev:deps:up
-
-  - name: Run tests
-    run: bun test
-    env:
-      CLAUDECODE: 1  # Enable AI-friendly test output
-
-  - name: Stop services
-    if: always()
-    run: bun run dev:deps:down
+// ✅ Just use data-aware assertions instead
+test('test', async () => {
+  const myData = await createData();
+  const results = await queryData();
+  const myResult = results.find(r => r.id === myData.id);
+  expect(myResult).toBeDefined();
+});
 ```
 
-## Performance Tips
+### Why No Cleanup?
 
-1. **Keep containers running** during development for faster test runs
-2. **Use specific test files** instead of running all tests during development
-3. **Use watch mode** for rapid feedback: `bun test --watch`
-4. **Clean volumes periodically** to prevent disk space issues
+1. **Performance**: Cleanup is slow
+2. **Simplicity**: Less code to maintain
+3. **Safety**: Can't accidentally delete other tests' data
+4. **Real-world**: Tests database state more realistically
 
-## Key Differences from Complex Pool-Based Systems
+## Testing Checklist
 
-✅ **Simpler**: No container pool management, just Docker Compose
-✅ **Faster**: Containers stay warm between test runs
-✅ **Clearer**: Direct connection to services on standard ports
-✅ **Reliable**: No complex acquisition/release logic
-✅ **Debuggable**: Easy to inspect containers and databases directly
+Before committing tests, verify:
 
-## Database Schema Management
+- [ ] Each test creates its own authenticated clients
+- [ ] No shared state between tests (no global variables)
+- [ ] Assertions use `.find()` to locate specific data you created
+- [ ] No assertions on `data.length` or `.forEach()` over all results
+- [ ] Tests pass when run individually AND in parallel
+- [ ] No `beforeAll` that creates shared mutable data
 
-Tests automatically create and migrate isolated schemas using **Drizzle migrations**. To inspect test data:
+## Example: Complete Isolated Test
 
-```bash
-# Connect to PostgreSQL
-docker exec -it monobase-test-postgres psql -U postgres -d monobase
-
-# List test schemas
-\dn test_*
-
-# Inspect a specific schema
-SET search_path TO test_abc123_xyz;
-\dt
-
-# Clean up old test schemas (if needed)
-DROP SCHEMA test_abc123_xyz CASCADE;
+```typescript
+describe('Booking Isolation Example', () => {
+  let testApp: TestApp;
+  
+  beforeAll(async () => {
+    testApp = await createTestApp();
+  }, 30000);
+  
+  test('client can only see their own bookings', async () => {
+    // Setup: Create two separate clients
+    const client1 = await createAuthenticatedClient(testApp.app);
+    const client2 = await createAuthenticatedClient(testApp.app);
+    const provider = await createAuthenticatedClient(testApp.app);
+    
+    // Create provider's event and wait for slots
+    const event = await createBookingEvent(provider, generateTestEventData());
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Get available slots
+    const { data: slots } = await listEventSlots(testApp.app, event.id);
+    const slot1 = slots[0];
+    const slot2 = slots[1];
+    
+    // Each client creates a booking
+    const booking1 = await createBooking(client1, { slot: slot1.id, reason: 'Client 1' });
+    const booking2 = await createBooking(client2, { slot: slot2.id, reason: 'Client 2' });
+    
+    // Client 1 lists their bookings
+    const { data: client1Results } = await listBookings(client1);
+    
+    // Data-aware assertions: Verify OUR booking exists
+    const client1Booking = client1Results.find(b => b.id === booking1.id);
+    expect(client1Booking).toBeDefined();
+    expect(client1Booking!.client).toBe(client1.currentUser!.id);
+    
+    // Data-aware isolation: Verify OTHER client's booking NOT in results
+    const leakedBooking = client1Results.find(b => b.id === booking2.id);
+    expect(leakedBooking).toBeUndefined();
+    
+    // Client 2 lists their bookings
+    const { data: client2Results } = await listBookings(client2);
+    
+    // Verify client2's booking exists
+    const client2Booking = client2Results.find(b => b.id === booking2.id);
+    expect(client2Booking).toBeDefined();
+    
+    // Verify client1's booking NOT leaked to client2
+    const leakedToClient2 = client2Results.find(b => b.id === booking1.id);
+    expect(leakedToClient2).toBeUndefined();
+  });
+});
 ```
 
-### Migration Integration
+## Further Reading
 
-Tests use the actual Drizzle migration files from `src/generated/migrations/` rather than hardcoded SQL:
-
-- **Schema Isolation**: Each test creates a unique PostgreSQL schema (`test_{timestamp}_{nanoid}`)
-- **Real Migrations**: Runs all production Drizzle migration files in the isolated schema
-- **Schema Substitution**: Automatically replaces `"public"` references with test schema names
-- **Migration Tracking**: Creates `__drizzle_migrations` table to track applied migrations
-- **Automatic Cleanup**: `DROP SCHEMA CASCADE` removes all database objects (tables, enums, etc.)
-
-This ensures tests use the exact same database structure as production, maintaining consistency between environments.
+- [Bun Test Documentation](https://bun.sh/docs/cli/test)
+- [Test Isolation Patterns](https://martinfowler.com/articles/test-isolation.html)
+- See `tests/e2e/booking/booking.test.ts` for more examples

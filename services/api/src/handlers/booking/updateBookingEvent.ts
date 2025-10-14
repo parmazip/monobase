@@ -8,7 +8,7 @@ import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import { BookingEventRepository } from './repos/bookingEvent.repo';
 import type { BookingEventUpdateRequest } from './repos/booking.schema';
-import { regenerateOwnerSlots } from './jobs/slotGenerator';
+import { regenerateEventSlots } from './jobs/slotGenerator';
 
 export async function updateBookingEvent(ctx: Context) {
   // Get authenticated user
@@ -62,17 +62,9 @@ export async function updateBookingEvent(ctx: Context) {
         changes
       }, 'Event update requires slot regeneration - regenerating now');
 
-      try {
-        await regenerateOwnerSlots(db, updatedEvent.owner);
-        logger?.info({ eventId: updatedEvent.id, ownerId: updatedEvent.owner }, 'Slots regenerated successfully');
-      } catch (error) {
-        // Log but don't fail the request
-        logger?.error({
-          eventId: updatedEvent.id,
-          ownerId: updatedEvent.owner,
-          error: error instanceof Error ? error.message : 'Unknown error'
-        }, 'Failed to regenerate slots - will be handled by background job');
-      }
+      // Regenerate slots and let errors propagate to the client
+      await regenerateEventSlots(db, updatedEvent.id);
+      logger?.info({ eventId: updatedEvent.id, ownerId: updatedEvent.owner }, 'Slots regenerated successfully');
     }
 
     return ctx.json(updatedEvent);
