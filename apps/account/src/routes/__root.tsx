@@ -9,7 +9,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import type { RouterContext } from '@/router'
 import { AuthUIProviderTanstack } from '@daveyplate/better-auth-ui/tanstack'
 import { Toaster } from 'sonner'
-import { useAuthClient } from '@monobase/sdk/react/auth-client'
+import { useAuthClient } from '@monobase/sdk/react/auth'
 import { queryKeys } from '@monobase/sdk/react/query-keys'
 import '@/styles/globals.css'
 
