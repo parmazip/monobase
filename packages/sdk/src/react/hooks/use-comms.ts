@@ -68,7 +68,9 @@ export function useChatRoom(roomId: string, options?: {
  * Hook to create a new chat room
  */
 export function useCreateChatRoom(options?: {
+  toastSuccess?: boolean,
   onSuccess?: (data: ChatRoom) => void
+  toastError?: boolean,
   onError?: (error: Error) => void
 }) {
   const queryClient = useQueryClient()
@@ -83,20 +85,24 @@ export function useCreateChatRoom(options?: {
 
       // Show success message for new rooms (status 201)
       // Upsert returns existing room with status 200
-      toast.success('Chat room created successfully!')
+      if (options?.toastSuccess !== false) {
+        toast.success('Chat room created successfully!')
+      }
 
       options?.onSuccess?.(data)
     },
     onError: (error) => {
       console.error('Failed to create chat room:', error)
-      if (error instanceof ApiError) {
-        if (error.status === 409) {
-          toast.error('Chat room already exists. Try enabling upsert option.')
+      if (options?.toastError !== false) {
+        if (error instanceof ApiError) {
+          if (error.status === 409) {
+            toast.error('Chat room already exists. Try enabling upsert option.')
+          } else {
+            toast.error(error.message || 'Failed to create chat room')
+          }
         } else {
-          toast.error(error.message || 'Failed to create chat room')
+          toast.error('Failed to create chat room. Please try again.')
         }
-      } else {
-        toast.error('Failed to create chat room. Please try again.')
       }
       options?.onError?.(error)
     },
@@ -108,7 +114,9 @@ export function useCreateChatRoom(options?: {
  * Convenience wrapper around useCreateChatRoom with upsert: true
  */
 export function useUpsertChatRoom(options?: {
+  toastSuccess?: boolean,
   onSuccess?: (data: ChatRoom, created: boolean) => void
+  toastError?: boolean,
   onError?: (error: Error) => void
 }) {
   const queryClient = useQueryClient()
@@ -127,7 +135,7 @@ export function useUpsertChatRoom(options?: {
       const existingData = queryClient.getQueryData<ChatRoom>(queryKeys.chatRoom(data.id))
       const isNew = !existingData || existingData.createdAt !== data.createdAt
 
-      if (isNew) {
+      if (isNew && options?.toastSuccess !== false) {
         toast.success('Chat room created successfully!')
       }
 
@@ -135,11 +143,15 @@ export function useUpsertChatRoom(options?: {
     },
     onError: (error) => {
       console.error('Failed to upsert chat room:', error)
-      if (error instanceof ApiError) {
-        toast.error(error.message || 'Failed to create or get chat room')
-      } else {
-        toast.error('Failed to create or get chat room. Please try again.')
+      
+      if (options?.toastError !== false) {
+        if (error instanceof ApiError) {
+          toast.error(error.message || 'Failed to create or get chat room')
+        } else {
+          toast.error('Failed to create or get chat room. Please try again.')
+        }
       }
+      
       options?.onError?.(error)
     },
   })
@@ -251,7 +263,9 @@ export function useInfiniteChatMessages(
  * Hook to send a text message to a chat room
  */
 export function useSendMessage(options?: {
+  toastSuccess?: boolean,
   onSuccess?: (data: ChatMessage) => void
+  toastError?: boolean,
   onError?: (error: Error) => void
 }) {
   const queryClient = useQueryClient()
@@ -287,11 +301,15 @@ export function useSendMessage(options?: {
     },
     onError: (error) => {
       console.error('Failed to send message:', error)
-      if (error instanceof ApiError) {
-        toast.error(error.message || 'Failed to send message')
-      } else {
-        toast.error('Failed to send message. Please try again.')
+      
+      if (options?.toastError !== false) {
+        if (error instanceof ApiError) {
+          toast.error(error.message || 'Failed to send message')
+        } else {
+          toast.error('Failed to send message. Please try again.')
+        }
       }
+      
       options?.onError?.(error)
     },
   })
@@ -301,7 +319,9 @@ export function useSendMessage(options?: {
  * Hook to start a video call in a chat room
  */
 export function useStartVideoCall(options?: {
+  toastSuccess?: boolean,
   onSuccess?: (data: ChatMessage) => void
+  toastError?: boolean,
   onError?: (error: Error) => void
 }) {
   const queryClient = useQueryClient()
@@ -336,23 +356,29 @@ export function useStartVideoCall(options?: {
         queryKey: queryKeys.chatRoom(variables.roomId)
       })
 
-      toast.success('Video call started!')
+      if (options?.toastSuccess !== false) {
+        toast.success('Video call started!')
+      }
 
       options?.onSuccess?.(data)
     },
     onError: (error, variables) => {
       console.error('Failed to start video call:', error)
-      if (error instanceof ApiError) {
-        if (error.status === 409) {
-          toast.error('A video call is already active in this room')
-        } else if (error.status === 403) {
-          toast.error('You do not have permission to start a video call')
+      
+      if (options?.toastError !== false) {
+        if (error instanceof ApiError) {
+          if (error.status === 409) {
+            toast.error('A video call is already active in this room')
+          } else if (error.status === 403) {
+            toast.error('You do not have permission to start a video call')
+          } else {
+            toast.error(error.message || 'Failed to start video call')
+          }
         } else {
-          toast.error(error.message || 'Failed to start video call')
+          toast.error('Failed to start video call. Please try again.')
         }
-      } else {
-        toast.error('Failed to start video call. Please try again.')
       }
+      
       options?.onError?.(error)
     },
   })
@@ -362,7 +388,9 @@ export function useStartVideoCall(options?: {
  * Hook to send a message (generic - can be text or video call)
  */
 export function useSendChatMessage(options?: {
+  toastSuccess?: boolean,
   onSuccess?: (data: ChatMessage) => void
+  toastError?: boolean,
   onError?: (error: Error) => void
 }) {
   const queryClient = useQueryClient()
@@ -389,7 +417,7 @@ export function useSendChatMessage(options?: {
       })
 
       const isVideoCall = variables.message.messageType === 'video_call'
-      if (isVideoCall) {
+      if (isVideoCall && options?.toastSuccess !== false) {
         toast.success('Video call started!')
       }
 
@@ -400,17 +428,21 @@ export function useSendChatMessage(options?: {
       const errorPrefix = isVideoCall ? 'Failed to start video call' : 'Failed to send message'
 
       console.error(errorPrefix + ':', error)
-      if (error instanceof ApiError) {
-        if (error.status === 409 && isVideoCall) {
-          toast.error('A video call is already active in this room')
-        } else if (error.status === 403) {
-          toast.error(`You do not have permission to ${isVideoCall ? 'start a video call' : 'send messages'}`)
+      
+      if (options?.toastError !== false) {
+        if (error instanceof ApiError) {
+          if (error.status === 409 && isVideoCall) {
+            toast.error('A video call is already active in this room')
+          } else if (error.status === 403) {
+            toast.error(`You do not have permission to ${isVideoCall ? 'start a video call' : 'send messages'}`)
+          } else {
+            toast.error(error.message || errorPrefix)
+          }
         } else {
-          toast.error(error.message || errorPrefix)
+          toast.error(errorPrefix + '. Please try again.')
         }
-      } else {
-        toast.error(errorPrefix + '. Please try again.')
       }
+      
       options?.onError?.(error)
     },
   })
@@ -457,7 +489,9 @@ export function useInvalidateChatMessages() {
  * Adds message to cache immediately for better UX
  */
 export function useOptimisticSendMessage(options?: {
+  toastSuccess?: boolean,
   onSuccess?: (data: ChatMessage) => void
+  toastError?: boolean,
   onError?: (error: Error, rollbackMessage: ChatMessage) => void
 }) {
   const queryClient = useQueryClient()
@@ -524,10 +558,13 @@ export function useOptimisticSendMessage(options?: {
       }
 
       console.error('Failed to send message:', error)
-      if (error instanceof ApiError) {
-        toast.error(error.message || 'Failed to send message')
-      } else {
-        toast.error('Failed to send message. Please try again.')
+      
+      if (options?.toastError !== false) {
+        if (error instanceof ApiError) {
+          toast.error(error.message || 'Failed to send message')
+        } else {
+          toast.error('Failed to send message. Please try again.')
+        }
       }
 
       if (context?.tempMessage) {

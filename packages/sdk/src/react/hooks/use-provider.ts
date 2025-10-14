@@ -48,14 +48,23 @@ export function useProvider(id: string) {
 /**
  * Create a new provider profile
  */
-export function useCreateProvider() {
+export function useCreateProvider(options?: {
+  toastSuccess?: boolean,
+  onSuccess?: (data: Provider) => void
+  toastError?: boolean,
+  onError?: (error: Error) => void
+}) {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: (data: ProviderCreateRequest) =>
       providerService.createProvider(data),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.providers() })
+      options?.onSuccess?.(data)
+    },
+    onError: (error) => {
+      options?.onError?.(error as Error)
     },
   })
 }
@@ -63,15 +72,24 @@ export function useCreateProvider() {
 /**
  * Update an existing provider profile
  */
-export function useUpdateProvider() {
+export function useUpdateProvider(options?: {
+  toastSuccess?: boolean,
+  onSuccess?: (data: Provider) => void
+  toastError?: boolean,
+  onError?: (error: Error) => void
+}) {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: ({ id, updates }: { id: string; updates: ProviderUpdateRequest }) =>
       providerService.updateProvider(id, updates),
-    onSuccess: (_, variables) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.provider(variables.id) })
       queryClient.invalidateQueries({ queryKey: queryKeys.providers() })
+      options?.onSuccess?.(data)
+    },
+    onError: (error) => {
+      options?.onError?.(error as Error)
     },
   })
 }
@@ -79,14 +97,23 @@ export function useUpdateProvider() {
 /**
  * Delete a provider profile
  */
-export function useDeleteProvider() {
+export function useDeleteProvider(options?: {
+  toastSuccess?: boolean,
+  onSuccess?: (data: any) => void
+  toastError?: boolean,
+  onError?: (error: Error) => void
+}) {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: (id: string) => providerService.deleteProvider(id),
-    onSuccess: (_, id) => {
+    onSuccess: (data, id) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.provider(id) })
       queryClient.invalidateQueries({ queryKey: queryKeys.providers() })
+      options?.onSuccess?.(data)
+    },
+    onError: (error) => {
+      options?.onError?.(error as Error)
     },
   })
 }
@@ -153,15 +180,24 @@ export function useMyProvider() {
 /**
  * Create provider profile for current user
  */
-export function useCreateMyProvider() {
+export function useCreateMyProvider(options?: {
+  toastSuccess?: boolean,
+  onSuccess?: (data: Provider) => void
+  toastError?: boolean,
+  onError?: (error: Error) => void
+}) {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: (data: Omit<ProviderCreateRequest, 'person'>) =>
       providerService.createMyProvider(data),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['provider', 'me'] })
       queryClient.invalidateQueries({ queryKey: queryKeys.providers() })
+      options?.onSuccess?.(data)
+    },
+    onError: (error) => {
+      options?.onError?.(error as Error)
     },
   })
 }
@@ -169,15 +205,24 @@ export function useCreateMyProvider() {
 /**
  * Update current user's provider profile
  */
-export function useUpdateMyProvider() {
+export function useUpdateMyProvider(options?: {
+  toastSuccess?: boolean,
+  onSuccess?: (data: Provider) => void
+  toastError?: boolean,
+  onError?: (error: Error) => void
+}) {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: (updates: ProviderUpdateRequest) =>
       providerService.updateMyProvider(updates),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['provider', 'me'] })
       queryClient.invalidateQueries({ queryKey: queryKeys.providers() })
+      options?.onSuccess?.(data)
+    },
+    onError: (error) => {
+      options?.onError?.(error as Error)
     },
   })
 }
@@ -185,14 +230,23 @@ export function useUpdateMyProvider() {
 /**
  * Delete current user's provider profile
  */
-export function useDeleteMyProvider() {
+export function useDeleteMyProvider(options?: {
+  toastSuccess?: boolean,
+  onSuccess?: (data: any) => void
+  toastError?: boolean,
+  onError?: (error: Error) => void
+}) {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: () => providerService.deleteMyProvider(),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['provider', 'me'] })
       queryClient.invalidateQueries({ queryKey: queryKeys.providers() })
+      options?.onSuccess?.(data)
+    },
+    onError: (error) => {
+      options?.onError?.(error as Error)
     },
   })
 }

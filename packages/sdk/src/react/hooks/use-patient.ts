@@ -42,7 +42,9 @@ export function useMyPatient() {
  * Hook to create a new patient profile
  */
 export function useCreatePatient(options?: {
+  toastSuccess?: boolean,
   onSuccess?: (data: Patient) => void
+  toastError?: boolean,
   onError?: (error: Error) => void
 }) {
   const queryClient = useQueryClient()
@@ -52,24 +54,32 @@ export function useCreatePatient(options?: {
     onSuccess: (patient) => {
       queryClient.setQueryData(queryKeys.patientProfile('me'), patient)
       queryClient.invalidateQueries({ queryKey: queryKeys.patient() })
-      toast.success('Patient profile created successfully!')
+      
+      if (options?.toastSuccess !== false) {
+        toast.success('Patient profile created successfully!')
+      }
+      
       options?.onSuccess?.(patient)
     },
     onError: (error) => {
       console.error('Failed to create patient profile:', error)
-      if (error instanceof ApiError) {
-        if (error.status === 409) {
-          toast.error('A patient profile already exists for your account.')
-        } else if (error.status === 400) {
-          toast.error('Invalid profile information. Please check your inputs.')
-        } else if (error.status === 403) {
-          toast.error('You do not have permission to create a patient profile.')
+      
+      if (options?.toastError !== false) {
+        if (error instanceof ApiError) {
+          if (error.status === 409) {
+            toast.error('A patient profile already exists for your account.')
+          } else if (error.status === 400) {
+            toast.error('Invalid profile information. Please check your inputs.')
+          } else if (error.status === 403) {
+            toast.error('You do not have permission to create a patient profile.')
+          } else {
+            toast.error(error.message || 'Unable to create patient profile. Please try again.')
+          }
         } else {
-          toast.error(error.message || 'Unable to create patient profile. Please try again.')
+          toast.error('Network error. Please check your connection and try again.')
         }
-      } else {
-        toast.error('Network error. Please check your connection and try again.')
       }
+      
       options?.onError?.(error)
     },
   })
@@ -78,7 +88,12 @@ export function useCreatePatient(options?: {
 /**
  * Hook to update patient profile
  */
-export function useUpdatePatient() {
+export function useUpdatePatient(options?: {
+  toastSuccess?: boolean,
+  onSuccess?: (data: Patient) => void
+  toastError?: boolean,
+  onError?: (error: Error) => void
+}) {
   const queryClient = useQueryClient()
   const { data: currentPatient } = useMyPatient()
 
@@ -107,23 +122,33 @@ export function useUpdatePatient() {
         queryClient.setQueryData(queryKeys.patientProfile('me'), context.previousPatient)
       }
       console.error('Failed to update patient:', error)
-      if (error instanceof ApiError) {
-        if (error.status === 404) {
-          toast.error('Patient profile not found. Please create a profile first.')
-        } else if (error.status === 400) {
-          toast.error('Invalid profile information. Please check your inputs.')
-        } else if (error.status === 403) {
-          toast.error('You do not have permission to update this profile.')
+      
+      if (options?.toastError !== false) {
+        if (error instanceof ApiError) {
+          if (error.status === 404) {
+            toast.error('Patient profile not found. Please create a profile first.')
+          } else if (error.status === 400) {
+            toast.error('Invalid profile information. Please check your inputs.')
+          } else if (error.status === 403) {
+            toast.error('You do not have permission to update this profile.')
+          } else {
+            toast.error(error.message || 'Unable to update patient profile. Please try again.')
+          }
         } else {
-          toast.error(error.message || 'Unable to update patient profile. Please try again.')
+          toast.error('Network error. Please check your connection and try again.')
         }
-      } else {
-        toast.error('Network error. Please check your connection and try again.')
       }
+      
+      options?.onError?.(error)
     },
     onSuccess: (updatedPatient) => {
       queryClient.setQueryData(queryKeys.patientProfile('me'), updatedPatient)
-      toast.success('Patient profile updated successfully!')
+      
+      if (options?.toastSuccess !== false) {
+        toast.success('Patient profile updated successfully!')
+      }
+      
+      options?.onSuccess?.(updatedPatient)
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.patientProfile('me') })
@@ -134,7 +159,12 @@ export function useUpdatePatient() {
 /**
  * Hook to update patient's primary provider
  */
-export function useUpdatePrimaryProvider() {
+export function useUpdatePrimaryProvider(options?: {
+  toastSuccess?: boolean,
+  onSuccess?: (data: Patient) => void
+  toastError?: boolean,
+  onError?: (error: Error) => void
+}) {
   const queryClient = useQueryClient()
   const { data: currentPatient } = useMyPatient()
 
@@ -163,21 +193,31 @@ export function useUpdatePrimaryProvider() {
         queryClient.setQueryData(queryKeys.patientProfile('me'), context.previousPatient)
       }
       console.error('Failed to update primary provider:', error)
-      if (error instanceof ApiError) {
-        if (error.status === 404) {
-          toast.error('Patient profile not found. Please create a profile first.')
-        } else if (error.status === 400) {
-          toast.error('Invalid provider information. Please check your inputs.')
+      
+      if (options?.toastError !== false) {
+        if (error instanceof ApiError) {
+          if (error.status === 404) {
+            toast.error('Patient profile not found. Please create a profile first.')
+          } else if (error.status === 400) {
+            toast.error('Invalid provider information. Please check your inputs.')
+          } else {
+            toast.error(error.message || 'Unable to update primary provider. Please try again.')
+          }
         } else {
-          toast.error(error.message || 'Unable to update primary provider. Please try again.')
+          toast.error('Network error. Please check your connection and try again.')
         }
-      } else {
-        toast.error('Network error. Please check your connection and try again.')
       }
+      
+      options?.onError?.(error)
     },
     onSuccess: (updatedPatient) => {
       queryClient.setQueryData(queryKeys.patientProfile('me'), updatedPatient)
-      toast.success('Primary provider updated successfully!')
+      
+      if (options?.toastSuccess !== false) {
+        toast.success('Primary provider updated successfully!')
+      }
+      
+      options?.onSuccess?.(updatedPatient)
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.patientProfile('me') })
@@ -188,7 +228,12 @@ export function useUpdatePrimaryProvider() {
 /**
  * Hook to update patient's primary pharmacy
  */
-export function useUpdatePrimaryPharmacy() {
+export function useUpdatePrimaryPharmacy(options?: {
+  toastSuccess?: boolean,
+  onSuccess?: (data: Patient) => void
+  toastError?: boolean,
+  onError?: (error: Error) => void
+}) {
   const queryClient = useQueryClient()
   const { data: currentPatient } = useMyPatient()
 
@@ -217,21 +262,31 @@ export function useUpdatePrimaryPharmacy() {
         queryClient.setQueryData(queryKeys.patientProfile('me'), context.previousPatient)
       }
       console.error('Failed to update primary pharmacy:', error)
-      if (error instanceof ApiError) {
-        if (error.status === 404) {
-          toast.error('Patient profile not found. Please create a profile first.')
-        } else if (error.status === 400) {
-          toast.error('Invalid pharmacy information. Please check your inputs.')
+      
+      if (options?.toastError !== false) {
+        if (error instanceof ApiError) {
+          if (error.status === 404) {
+            toast.error('Patient profile not found. Please create a profile first.')
+          } else if (error.status === 400) {
+            toast.error('Invalid pharmacy information. Please check your inputs.')
+          } else {
+            toast.error(error.message || 'Unable to update primary pharmacy. Please try again.')
+          }
         } else {
-          toast.error(error.message || 'Unable to update primary pharmacy. Please try again.')
+          toast.error('Network error. Please check your connection and try again.')
         }
-      } else {
-        toast.error('Network error. Please check your connection and try again.')
       }
+      
+      options?.onError?.(error)
     },
     onSuccess: (updatedPatient) => {
       queryClient.setQueryData(queryKeys.patientProfile('me'), updatedPatient)
-      toast.success('Primary pharmacy updated successfully!')
+      
+      if (options?.toastSuccess !== false) {
+        toast.success('Primary pharmacy updated successfully!')
+      }
+      
+      options?.onSuccess?.(updatedPatient)
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.patientProfile('me') })

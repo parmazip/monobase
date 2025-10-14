@@ -76,7 +76,9 @@ export function useMyMerchantAccountStatus() {
  * Create new merchant account and get onboarding URL
  */
 export function useCreateMyMerchantAccount(options?: {
+  toastSuccess?: boolean,
   onSuccess?: (account: MerchantAccount, onboardingUrl: string) => void
+  toastError?: boolean,
   onError?: (error: Error) => void
 }) {
   const queryClient = useQueryClient()
@@ -97,17 +99,22 @@ export function useCreateMyMerchantAccount(options?: {
 
       // Open Stripe onboarding in new tab
       window.open(onboardingUrl, '_blank', 'noopener,noreferrer')
-      toast.success('Opening payment provider onboarding')
+      
+      if (options?.toastSuccess !== false) {
+        toast.success('Opening payment provider onboarding')
+      }
 
       options?.onSuccess?.(account, onboardingUrl)
     },
     onError: (error) => {
       console.error('Failed to create merchant account:', error)
 
-      if (error instanceof ApiError) {
-        toast.error(error.message || 'Failed to create merchant account')
-      } else {
-        toast.error('Failed to create merchant account. Please try again.')
+      if (options?.toastError !== false) {
+        if (error instanceof ApiError) {
+          toast.error(error.message || 'Failed to create merchant account')
+        } else {
+          toast.error('Failed to create merchant account. Please try again.')
+        }
       }
 
       options?.onError?.(error as Error)
@@ -119,7 +126,9 @@ export function useCreateMyMerchantAccount(options?: {
  * Get onboarding URL and open in new tab
  */
 export function useGetMyOnboardingUrl(options?: {
+  toastSuccess?: boolean,
   onSuccess?: (response: OnboardingResponse) => void
+  toastError?: boolean,
   onError?: (error: Error) => void
 }) {
   return useMutation({
@@ -128,16 +137,22 @@ export function useGetMyOnboardingUrl(options?: {
     onSuccess: (response) => {
       // Open onboarding in new tab
       window.open(response.onboardingUrl, '_blank', 'noopener,noreferrer')
-      toast.success('Opening payment provider onboarding')
+      
+      if (options?.toastSuccess !== false) {
+        toast.success('Opening payment provider onboarding')
+      }
+      
       options?.onSuccess?.(response)
     },
     onError: (error) => {
       console.error('Failed to get onboarding URL:', error)
 
-      if (error instanceof ApiError) {
-        toast.error(error.message || 'Failed to start onboarding')
-      } else {
-        toast.error('Failed to start onboarding. Please try again.')
+      if (options?.toastError !== false) {
+        if (error instanceof ApiError) {
+          toast.error(error.message || 'Failed to start onboarding')
+        } else {
+          toast.error('Failed to start onboarding. Please try again.')
+        }
       }
 
       options?.onError?.(error as Error)
@@ -149,7 +164,9 @@ export function useGetMyOnboardingUrl(options?: {
  * Get dashboard link and open in new tab
  */
 export function useGetMyDashboardLink(options?: {
+  toastSuccess?: boolean,
   onSuccess?: (response: DashboardLinkResponse) => void
+  toastError?: boolean,
   onError?: (error: Error) => void
 }) {
   const queryClient = useQueryClient()
@@ -162,17 +179,22 @@ export function useGetMyDashboardLink(options?: {
 
       // Open dashboard in new tab
       window.open(response.dashboardUrl, '_blank', 'noopener,noreferrer')
-      toast.success('Dashboard opened in new tab')
+      
+      if (options?.toastSuccess !== false) {
+        toast.success('Dashboard opened in new tab')
+      }
 
       options?.onSuccess?.(response)
     },
     onError: (error) => {
       console.error('Failed to get dashboard link:', error)
 
-      if (error instanceof ApiError) {
-        toast.error(error.message || 'Failed to access dashboard')
-      } else {
-        toast.error('Failed to access dashboard. Please try again.')
+      if (options?.toastError !== false) {
+        if (error instanceof ApiError) {
+          toast.error(error.message || 'Failed to access dashboard')
+        } else {
+          toast.error('Failed to access dashboard. Please try again.')
+        }
       }
 
       options?.onError?.(error as Error)
@@ -213,7 +235,12 @@ export function useInvoice(id: string) {
  * Initiate payment for an invoice
  * Redirects to checkout URL
  */
-export function useInitiatePayment() {
+export function useInitiatePayment(options?: {
+  toastSuccess?: boolean,
+  onSuccess?: (response: PaymentResponse, variables: { invoiceId: string }) => void
+  toastError?: boolean,
+  onError?: (error: Error) => void
+}) {
   const queryClient = useQueryClient()
 
   return useMutation({
@@ -238,15 +265,21 @@ export function useInitiatePayment() {
       if (response.checkoutUrl) {
         window.location.href = response.checkoutUrl
       }
+      
+      options?.onSuccess?.(response, variables)
     },
     onError: (error) => {
       console.error('Failed to initiate payment:', error)
 
-      if (error instanceof ApiError) {
-        toast.error(error.message || 'Failed to initiate payment')
-      } else {
-        toast.error('Failed to initiate payment. Please try again.')
+      if (options?.toastError !== false) {
+        if (error instanceof ApiError) {
+          toast.error(error.message || 'Failed to initiate payment')
+        } else {
+          toast.error('Failed to initiate payment. Please try again.')
+        }
       }
+      
+      options?.onError?.(error as Error)
     },
   })
 }

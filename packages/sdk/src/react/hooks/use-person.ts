@@ -44,7 +44,9 @@ export function useMyPerson() {
  * Hook to create a new person profile for the current user
  */
 export function useCreateMyPerson(options?: {
+  toastSuccess?: boolean,
   onSuccess?: (data: Person) => void
+  toastError?: boolean,
   onError?: (error: Error) => void
 }) {
   const queryClient = useQueryClient()
@@ -53,16 +55,24 @@ export function useCreateMyPerson(options?: {
     mutationFn: createMyPerson,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.person() })
-      toast.success('Profile created successfully!')
+      
+      if (options?.toastSuccess !== false) {
+        toast.success('Profile created successfully!')
+      }
+      
       options?.onSuccess?.(data)
     },
     onError: (error) => {
       console.error('Failed to create person profile:', error)
-      if (error instanceof ApiError) {
-        toast.error(error.message || 'Failed to create profile')
-      } else {
-        toast.error('Failed to create profile. Please try again.')
+      
+      if (options?.toastError !== false) {
+        if (error instanceof ApiError) {
+          toast.error(error.message || 'Failed to create profile')
+        } else {
+          toast.error('Failed to create profile. Please try again.')
+        }
       }
+      
       options?.onError?.(error)
     },
   })
@@ -71,22 +81,37 @@ export function useCreateMyPerson(options?: {
 /**
  * Hook to update the current user's personal information
  */
-export function useUpdateMyPersonalInfo() {
+export function useUpdateMyPersonalInfo(options?: {
+  toastSuccess?: boolean,
+  onSuccess?: (data: any) => void
+  toastError?: boolean,
+  onError?: (error: Error) => void
+}) {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: updateMyPersonalInfo,
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.personProfile('me') })
-      toast.success('Personal information updated successfully!')
+      
+      if (options?.toastSuccess !== false) {
+        toast.success('Personal information updated successfully!')
+      }
+      
+      options?.onSuccess?.(data)
     },
     onError: (err) => {
       console.error('Failed to update personal information:', err)
-      if (err instanceof ApiError) {
-        toast.error(err.message || 'Failed to update personal information')
-      } else {
-        toast.error('Failed to update personal information. Please try again.')
+      
+      if (options?.toastError !== false) {
+        if (err instanceof ApiError) {
+          toast.error(err.message || 'Failed to update personal information')
+        } else {
+          toast.error('Failed to update personal information. Please try again.')
+        }
       }
+      
+      options?.onError?.(err)
     },
   })
 }
@@ -94,22 +119,37 @@ export function useUpdateMyPersonalInfo() {
 /**
  * Hook to update the current user's contact information
  */
-export function useUpdateMyContactInfo() {
+export function useUpdateMyContactInfo(options?: {
+  toastSuccess?: boolean,
+  onSuccess?: (data: any) => void
+  toastError?: boolean,
+  onError?: (error: Error) => void
+}) {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: updateMyContactInfo,
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.personProfile('me') })
-      toast.success('Contact information updated successfully!')
+      
+      if (options?.toastSuccess !== false) {
+        toast.success('Contact information updated successfully!')
+      }
+      
+      options?.onSuccess?.(data)
     },
     onError: (err) => {
       console.error('Failed to update contact information:', err)
-      if (err instanceof ApiError) {
-        toast.error(err.message || 'Failed to update contact information')
-      } else {
-        toast.error('Failed to update contact information. Please try again.')
+      
+      if (options?.toastError !== false) {
+        if (err instanceof ApiError) {
+          toast.error(err.message || 'Failed to update contact information')
+        } else {
+          toast.error('Failed to update contact information. Please try again.')
+        }
       }
+      
+      options?.onError?.(err)
     },
   })
 }
@@ -117,22 +157,37 @@ export function useUpdateMyContactInfo() {
 /**
  * Hook to update the current user's address
  */
-export function useUpdateMyAddress() {
+export function useUpdateMyAddress(options?: {
+  toastSuccess?: boolean,
+  onSuccess?: (data: any) => void
+  toastError?: boolean,
+  onError?: (error: Error) => void
+}) {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: updateMyAddress,
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.personProfile('me') })
-      toast.success('Address updated successfully!')
+      
+      if (options?.toastSuccess !== false) {
+        toast.success('Address updated successfully!')
+      }
+      
+      options?.onSuccess?.(data)
     },
     onError: (err) => {
       console.error('Failed to update address:', err)
-      if (err instanceof ApiError) {
-        toast.error(err.message || 'Failed to update address')
-      } else {
-        toast.error('Failed to update address. Please try again.')
+      
+      if (options?.toastError !== false) {
+        if (err instanceof ApiError) {
+          toast.error(err.message || 'Failed to update address')
+        } else {
+          toast.error('Failed to update address. Please try again.')
+        }
       }
+      
+      options?.onError?.(err)
     },
   })
 }
@@ -140,22 +195,37 @@ export function useUpdateMyAddress() {
 /**
  * Hook to update the current user's preferences
  */
-export function useUpdateMyPreferences() {
+export function useUpdateMyPreferences(options?: {
+  toastSuccess?: boolean,
+  onSuccess?: (data: any) => void
+  toastError?: boolean,
+  onError?: (error: Error) => void
+}) {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: updateMyPreferences,
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.personProfile('me') })
-      toast.success('Preferences updated successfully!')
+      
+      if (options?.toastSuccess !== false) {
+        toast.success('Preferences updated successfully!')
+      }
+      
+      options?.onSuccess?.(data)
     },
     onError: (err) => {
       console.error('Failed to update preferences:', err)
-      if (err instanceof ApiError) {
-        toast.error(err.message || 'Failed to update preferences')
-      } else {
-        toast.error('Failed to update preferences. Please try again.')
+      
+      if (options?.toastError !== false) {
+        if (err instanceof ApiError) {
+          toast.error(err.message || 'Failed to update preferences')
+        } else {
+          toast.error('Failed to update preferences. Please try again.')
+        }
       }
+      
+      options?.onError?.(err)
     },
   })
 }
