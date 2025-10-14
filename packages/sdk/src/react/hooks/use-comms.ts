@@ -19,7 +19,7 @@ import {
   type SendTextMessageRequest,
   type StartVideoCallRequest,
 } from '../../services/comms'
-import type { PaginatedResponse } from '../../types'
+import type { PaginatedResponse } from '../../api'
 import { queryKeys } from '../query-keys'
 import { ApiError } from '../../api'
 

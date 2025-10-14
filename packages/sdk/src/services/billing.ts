@@ -108,7 +108,7 @@ function mapApiMerchantAccountToFrontend(api: ApiMerchantAccount): MerchantAccou
     onboardingCompletedAt?: string
     lastDashboardAccessAt?: string
   }
-  
+
   return {
     id: api.id,
     version: api.version,
@@ -116,7 +116,7 @@ function mapApiMerchantAccountToFrontend(api: ApiMerchantAccount): MerchantAccou
     createdBy: api.createdBy || '',
     updatedAt: new Date(api.updatedAt),
     updatedBy: api.updatedBy || '',
-    person: api.person,
+    person: typeof api.person === 'string' ? api.person : api.person.id,
     active: api.active,
     metadata: {
       stripeAccountId: metadata.stripeAccountId,
@@ -126,14 +126,14 @@ function mapApiMerchantAccountToFrontend(api: ApiMerchantAccount): MerchantAccou
       payoutsEnabled: metadata.payoutsEnabled,
       country: metadata.country,
       currency: metadata.currency,
-      onboardingStartedAt: metadata.onboardingStartedAt 
-        ? new Date(metadata.onboardingStartedAt) 
+      onboardingStartedAt: metadata.onboardingStartedAt
+        ? new Date(metadata.onboardingStartedAt)
         : undefined,
-      onboardingCompletedAt: metadata.onboardingCompletedAt 
-        ? new Date(metadata.onboardingCompletedAt) 
+      onboardingCompletedAt: metadata.onboardingCompletedAt
+        ? new Date(metadata.onboardingCompletedAt)
         : undefined,
-      lastDashboardAccessAt: metadata.lastDashboardAccessAt 
-        ? new Date(metadata.lastDashboardAccessAt) 
+      lastDashboardAccessAt: metadata.lastDashboardAccessAt
+        ? new Date(metadata.lastDashboardAccessAt)
         : undefined,
     }
   }
@@ -148,9 +148,11 @@ function mapApiInvoiceToFrontend(api: ApiInvoice): Invoice {
     updatedAt: new Date(api.updatedAt),
     updatedBy: api.updatedBy || '',
     invoiceNumber: api.invoiceNumber,
-    customer: api.customer,
-    merchant: api.merchant,
-    merchantAccount: api.merchantAccount,
+    customer: typeof api.customer === 'string' ? api.customer : api.customer.id,
+    merchant: typeof api.merchant === 'string' ? api.merchant : api.merchant.id,
+    merchantAccount: api.merchantAccount
+      ? (typeof api.merchantAccount === 'string' ? api.merchantAccount : api.merchantAccount.id)
+      : undefined,
     status: api.status as 'draft' | 'open' | 'paid' | 'void' | 'uncollectible',
     subtotal: api.subtotal,
     tax: api.tax,

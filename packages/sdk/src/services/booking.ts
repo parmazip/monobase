@@ -111,16 +111,24 @@ type ApiPersonWithSlots = ApiPerson & {
  * Convert API TimeSlot to Frontend TimeSlot with Date objects
  */
 function mapApiTimeSlotToFrontend(apiSlot: ApiTimeSlot): BookingTimeSlot {
+  const startTime = new Date(apiSlot.startTime)
+  const endTime = new Date(apiSlot.endTime)
+
   return {
     id: apiSlot.id,
     providerId: apiSlot.owner,
-    date: new Date(apiSlot.date),
-    startTime: new Date(apiSlot.startTime),
-    endTime: new Date(apiSlot.endTime),
+    date: startTime, // Use startTime as date
+    startTime,
+    endTime,
     status: apiSlot.status as 'available' | 'booked' | 'blocked',
     consultationModes: apiSlot.locationTypes as ('video' | 'phone' | 'in-person')[],
-    price: apiSlot.billingOverride?.price || 0,
-    billingOverride: apiSlot.billingOverride,
+    price: apiSlot.billingConfig?.price || 0,
+    billingOverride: apiSlot.billingConfig ? {
+      price: apiSlot.billingConfig.price,
+      currency: apiSlot.billingConfig.currency,
+      paymentRequired: true,
+      freeCancellationMinutes: apiSlot.billingConfig.cancellationThresholdMinutes,
+    } : undefined,
   }
 }
 
@@ -319,13 +327,17 @@ export async function createAvailabilitySlot(data: {
   endTime: Date
   locationTypes: ('video' | 'phone' | 'in-person')[]
   price?: number
+  currency?: string
 }): Promise<BookingTimeSlot> {
   const response = await apiPost<ApiTimeSlot>('/booking/availability', {
-      date: formatDate(data.date, { format: 'iso' }),
       startTime: data.startTime.toISOString(),
       endTime: data.endTime.toISOString(),
       locationTypes: data.locationTypes,
-      billingOverride: data.price ? { price: data.price } : undefined,
+      billingConfig: data.price ? {
+        price: data.price,
+        currency: data.currency || 'CAD',
+        cancellationThresholdMinutes: 24 * 60, // 24 hours default
+      } : undefined,
   })
   return mapApiTimeSlotToFrontend(response)
 }
@@ -341,6 +353,7 @@ export async function updateAvailabilitySlot(
     locationTypes: ('video' | 'phone' | 'in-person')[]
     status: 'available' | 'booked' | 'blocked'
     price: number
+    currency: string
   }>
 ): Promise<BookingTimeSlot> {
   const response = await apiGet<ApiTimeSlot>(`/booking/availability/${slotId}`, {
@@ -350,7 +363,11 @@ export async function updateAvailabilitySlot(
       endTime: data.endTime?.toISOString(),
       locationTypes: data.locationTypes,
       status: data.status,
-      billingOverride: data.price !== undefined ? { price: data.price } : undefined,
+      billingConfig: data.price !== undefined ? {
+        price: data.price,
+        currency: data.currency || 'CAD',
+        cancellationThresholdMinutes: 24 * 60,
+      } : undefined,
     }),
   })
   return mapApiTimeSlotToFrontend(response)
@@ -378,6 +395,7 @@ export async function createRecurringAvailability(data: {
   }>
   locationTypes: ('video' | 'phone' | 'in-person')[]
   price?: number
+  currency?: string
 }): Promise<{ created: number }> {
   const response = await apiPost<{ created: number }>('/booking/availability/bulk', {
       startDate: formatDate(data.startDate, { format: 'iso' }),
@@ -385,7 +403,11 @@ export async function createRecurringAvailability(data: {
       daysOfWeek: data.daysOfWeek,
       timeSlots: data.timeSlots,
       locationTypes: data.locationTypes,
-      billingOverride: data.price ? { price: data.price } : undefined,
+      billingConfig: data.price ? {
+        price: data.price,
+        currency: data.currency || 'CAD',
+        cancellationThresholdMinutes: 24 * 60,
+      } : undefined,
   })
   return response
 }

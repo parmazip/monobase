@@ -8,11 +8,14 @@ import {
   updateMyAddress,
   updateMyPreferences,
   type Person,
-  type CreatePersonData
+  type CreatePersonData,
+  type PersonalInfo,
+  type OptionalAddress,
+  type ContactInfo,
+  type Preferences,
 } from '../../services/person'
 import { queryKeys } from '../query-keys'
 import { ApiError } from '../../api'
-import type { PersonalInfo, OptionalAddress, ContactInfo, Preferences } from '../../types'
 
 // ============================================================================
 // Hooks

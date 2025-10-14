@@ -288,9 +288,9 @@ describe('mapApiPersonToFrontend', () => {
       id: '123',
       version: 1,
       createdAt: '2024-01-01T00:00:00Z',
-      createdBy: null,
+      createdBy: undefined,
       updatedAt: '2024-01-01T00:00:00Z',
-      updatedBy: null,
+      updatedBy: undefined,
 
       firstName: 'John',
       lastName: 'Doe'
@@ -298,7 +298,7 @@ describe('mapApiPersonToFrontend', () => {
 
     const result = mapApiPersonToFrontend(apiPerson)
 
-    // Should default to empty string when null
+    // Should default to empty string when undefined
     expect(result.createdBy).toBe('')
     expect(result.updatedBy).toBe('')
   })

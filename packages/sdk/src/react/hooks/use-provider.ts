@@ -30,11 +30,12 @@ export function useProviders(params?: ProviderQueryParams) {
 
 /**
  * Get a specific provider by ID
+ * Person is automatically expanded for better DX
  */
-export function useProvider(id: string, expand?: string) {
+export function useProvider(id: string) {
   return useQuery({
     queryKey: queryKeys.provider(id),
-    queryFn: () => providerService.getProvider(id, expand),
+    queryFn: () => providerService.getProvider(id),
     enabled: !!id,
   })
 }

@@ -23,7 +23,8 @@ export interface Provider {
   createdBy: string
   updatedAt: Date
   updatedBy: string
-  person: string | PersonType
+  personId: string
+  person: PersonType // Prefer expanded Person object
   providerType: ProviderType
   yearsOfExperience?: number
   biography?: string
@@ -70,10 +71,14 @@ export interface ProviderQueryParams {
 
 /**
  * Convert API Provider response to Frontend Provider
+ * Expects person to be expanded - throws if not provided
  */
-function mapApiProviderToFrontend(api: ApiProvider & { person?: ApiPerson | string }): Provider {
-  const personData = typeof api.person === 'object' && api.person !== null ? api.person : null
-  
+function mapApiProviderToFrontend(api: ApiProvider & { person: ApiPerson | string }): Provider {
+  // Require expanded person object for better DX
+  if (typeof api.person === 'string') {
+    throw new Error('Provider.person must be expanded. Use expand=person query parameter.')
+  }
+
   return {
     id: api.id,
     version: api.version,
@@ -81,7 +86,8 @@ function mapApiProviderToFrontend(api: ApiProvider & { person?: ApiPerson | stri
     createdBy: api.createdBy || '',
     updatedAt: new Date(api.updatedAt),
     updatedBy: api.updatedBy || '',
-    person: personData ? mapApiPersonToFrontend(personData) : (typeof api.person === 'string' ? api.person : ''),
+    personId: api.person.id,
+    person: mapApiPersonToFrontend(api.person),
     providerType: api.providerType as ProviderType,
     yearsOfExperience: api.yearsOfExperience,
     biography: api.biography,
@@ -95,24 +101,26 @@ function mapApiProviderToFrontend(api: ApiProvider & { person?: ApiPerson | stri
 // ============================================================================
 
 /**
- * List providers with optional filtering and expansion
+ * List providers with optional filtering
+ * Always expands person for better DX
  */
 export async function listProviders(
-  params?: ProviderQueryParams
+  params?: Omit<ProviderQueryParams, 'expand'>
 ): Promise<PaginatedResponse<Provider>> {
-  const response = await apiGet<PaginatedResponse<ApiProvider & { person?: ApiPerson | string }>>('/providers', params)
+  const response = await apiGet<PaginatedResponse<ApiProvider & { person: ApiPerson }>>('/providers', {
+    ...params,
+    expand: 'person'
+  })
   return mapPaginatedResponse(response, mapApiProviderToFrontend)
 }
 
 /**
  * Get a specific provider by ID
  * Use 'me' as the provider ID to get the current authenticated user's profile
+ * Always expands person for better DX
  */
-export async function getProvider(
-  id: string,
-  expand?: string
-): Promise<Provider> {
-  const apiProvider = await apiGet<ApiProvider & { person?: ApiPerson | string }>(`/providers/${id}`, expand ? { expand } : undefined)
+export async function getProvider(id: string): Promise<Provider> {
+  const apiProvider = await apiGet<ApiProvider & { person: ApiPerson }>(`/providers/${id}`, { expand: 'person' })
   return mapApiProviderToFrontend(apiProvider)
 }
 
@@ -122,7 +130,8 @@ export async function getProvider(
 export async function createProvider(
   data: ProviderCreateRequest
 ): Promise<Provider> {
-  const apiProvider = await apiPost<ApiProvider>('/providers', sanitizeObject(data, { nullable: [] }))
+  const created = await apiPost<ApiProvider>('/providers', sanitizeObject(data, { nullable: [] }))
+  const apiProvider = await apiGet<ApiProvider & { person: ApiPerson }>(`/providers/${created.id}`, { expand: 'person' })
   return mapApiProviderToFrontend(apiProvider)
 }
 
@@ -133,9 +142,10 @@ export async function updateProvider(
   id: string,
   updates: ProviderUpdateRequest
 ): Promise<Provider> {
-  const apiProvider = await apiPatch<ApiProvider>(`/providers/${id}`, sanitizeObject(updates, { 
+  await apiPatch<ApiProvider>(`/providers/${id}`, sanitizeObject(updates, {
     nullable: ['yearsOfExperience', 'biography', 'minorAilmentsSpecialties', 'minorAilmentsPracticeLocations']
   }))
+  const apiProvider = await apiGet<ApiProvider & { person: ApiPerson }>(`/providers/${id}`, { expand: 'person' })
   return mapApiProviderToFrontend(apiProvider)
 }
 

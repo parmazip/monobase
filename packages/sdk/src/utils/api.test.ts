@@ -3,8 +3,8 @@ import {
   mapPaginatedResponse,
   normalizeStringField,
   sanitizeObject,
-  type PaginatedResponse
 } from './api'
+import type { PaginatedResponse } from '../api'
 
 describe('mapPaginatedResponse', () => {
   test('maps data correctly using mapper function', () => {
@@ -16,7 +16,12 @@ describe('mapPaginatedResponse', () => {
       pagination: {
         offset: 0,
         limit: 10,
-        totalCount: 2
+        count: 2,
+        totalCount: 2,
+        totalPages: 1,
+        currentPage: 1,
+        hasNextPage: false,
+        hasPreviousPage: false,
       }
     }
 
@@ -39,16 +44,26 @@ describe('mapPaginatedResponse', () => {
       pagination: {
         offset: 10,
         limit: 20,
-        totalCount: 100
+        count: 3,
+        totalCount: 100,
+        totalPages: 5,
+        currentPage: 1,
+        hasNextPage: true,
+        hasPreviousPage: false,
       }
     }
 
-    const result = mapPaginatedResponse(apiResponse, (x) => x * 2)
+    const result = mapPaginatedResponse(apiResponse, (x: number) => x * 2)
 
     expect(result.pagination).toEqual({
       offset: 10,
       limit: 20,
-      totalCount: 100
+      count: 3,
+      totalCount: 100,
+      totalPages: 5,
+      currentPage: 1,
+      hasNextPage: true,
+      hasPreviousPage: false,
     })
   })
 
@@ -58,11 +73,16 @@ describe('mapPaginatedResponse', () => {
       pagination: {
         offset: 0,
         limit: 10,
-        totalCount: 0
+        count: 0,
+        totalCount: 0,
+        totalPages: 0,
+        currentPage: 1,
+        hasNextPage: false,
+        hasPreviousPage: false,
       }
     }
 
-    const result = mapPaginatedResponse(apiResponse, (x) => x.toUpperCase())
+    const result = mapPaginatedResponse(apiResponse, (x: string) => x.toUpperCase())
 
     expect(result.data).toEqual([])
     expect(result.pagination.totalCount).toBe(0)
