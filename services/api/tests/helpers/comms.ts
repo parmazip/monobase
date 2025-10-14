@@ -175,6 +175,27 @@ export async function getOrCreateBookingChatRoom(
   );
 }
 
+/**
+ * Get or create appointment chat room (alias for booking chat room)
+ * Uses upsert behavior: creates new room or returns existing room if one exists between the participants
+ */
+export async function getOrCreateAppointmentChatRoom(
+  client: ApiClient,
+  appointmentId: string,
+  patientId: string,
+  providerId: string
+) {
+  return createChatRoom(
+    client,
+    [patientId, providerId],
+    [providerId], // Provider is the admin
+    {
+      context: appointmentId,
+      upsert: true
+    }
+  );
+}
+
 // ============================================================================
 // MESSAGE HELPERS
 // ============================================================================

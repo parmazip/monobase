@@ -97,7 +97,7 @@ export async function cancelBooking(ctx: Context) {
 
     // Notification for the person who cancelled (confirmation)
     // (automatically sends WebSocket notification via NotificationService)
-    await notificationService.createNotification({
+    await notificationService.createNotificationForModule({
       recipient: user.id,
       type: 'booking.cancelled',
       channel: 'in-app',
@@ -110,7 +110,7 @@ export async function cancelBooking(ctx: Context) {
 
     // Notification for the other party (cancellation notice)
     // (automatically sends WebSocket notification via NotificationService)
-    await notificationService.createNotification({
+    await notificationService.createNotificationForModule({
       recipient: otherPartyPersonId,
       type: 'booking.cancelled',
       channel: 'in-app',

@@ -109,7 +109,7 @@ export async function rejectBooking(ctx: Context) {
 
     // Notification for client - booking was rejected
     // (automatically sends WebSocket notification via NotificationService)
-    await notificationService.createNotification({
+    await notificationService.createNotificationForModule({
       recipient: booking.client,
       type: 'booking.rejected',
       channel: 'in-app',
@@ -130,7 +130,7 @@ export async function rejectBooking(ctx: Context) {
 
     // Notification for provider - rejection confirmation
     // (automatically sends WebSocket notification via NotificationService)
-    await notificationService.createNotification({
+    await notificationService.createNotificationForModule({
       recipient: user.id,
       type: 'booking.rejected',
       channel: 'in-app',
