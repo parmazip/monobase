@@ -36,7 +36,7 @@ export interface Patient {
   updatedAt: Date
   updatedBy: string
   personId: string
-  person?: PersonType | null
+  person: PersonType // Prefer expanded Person object
   primaryProvider?: PrimaryProvider | null
   primaryPharmacy?: PrimaryPharmacy | null
 }
@@ -58,10 +58,14 @@ export interface UpdatePatientData {
 
 /**
  * Convert API Patient response to Frontend Patient
+ * Expects person to be expanded - throws if not provided
  */
-export function mapApiPatientToFrontend(api: ApiPatient & { person?: ApiPerson | string }): Patient {
-  const personData = typeof api.person === 'object' && api.person !== null ? api.person : null
-  
+export function mapApiPatientToFrontend(api: ApiPatient & { person: ApiPerson | string }): Patient {
+  // Require expanded person object for better DX
+  if (typeof api.person === 'string') {
+    throw new Error('Patient.person must be expanded. Use expand=person query parameter.')
+  }
+
   return {
     id: api.id,
     version: api.version,
@@ -69,8 +73,8 @@ export function mapApiPatientToFrontend(api: ApiPatient & { person?: ApiPerson |
     createdBy: api.createdBy || '',
     updatedAt: new Date(api.updatedAt),
     updatedBy: api.updatedBy || '',
-    personId: typeof api.person === 'string' ? api.person : api.person?.id || '',
-    person: personData ? mapApiPersonToFrontend(personData) : null,
+    personId: api.person.id,
+    person: mapApiPersonToFrontend(api.person),
     primaryProvider: api.primaryProvider || null,
     primaryPharmacy: api.primaryPharmacy || null,
   }
@@ -107,7 +111,9 @@ export async function createPatient(data: CreatePatientData): Promise<Patient> {
     nullable: []  // No nullable fields in CREATE operations
   })
 
-  const apiPatient = await apiPost<ApiPatient>('/patients', apiRequest)
+  // Note: POST doesn't support expand param, so we need to fetch with expand after creation
+  const created = await apiPost<ApiPatient>('/patients', apiRequest)
+  const apiPatient = await apiGet<ApiPatient & { person: ApiPerson }>(`/patients/${created.id}`, { expand: 'person' })
   return mapApiPatientToFrontend(apiPatient)
 }
 
@@ -119,11 +125,13 @@ export async function updatePatient(patientId: string, data: UpdatePatientData):
     primaryProvider: data.primaryProvider,
     primaryPharmacy: data.primaryPharmacy,
   }, {
-    nullable: ['primaryProvider', 'primaryProvider.specialty', 'primaryProvider.phone', 'primaryProvider.fax', 
+    nullable: ['primaryProvider', 'primaryProvider.specialty', 'primaryProvider.phone', 'primaryProvider.fax',
                'primaryPharmacy', 'primaryPharmacy.address', 'primaryPharmacy.phone', 'primaryPharmacy.fax']
   })
 
-  const apiPatient = await apiPatch<ApiPatient>(`/patients/${patientId}`, apiRequest)
+  // PATCH doesn't support expand, so fetch with expand after update
+  await apiPatch<ApiPatient>(`/patients/${patientId}`, apiRequest)
+  const apiPatient = await apiGet<ApiPatient & { person: ApiPerson }>(`/patients/${patientId}`, { expand: 'person' })
   return mapApiPatientToFrontend(apiPatient)
 }
 
@@ -137,7 +145,8 @@ export async function updatePrimaryProvider(patientId: string, data: PrimaryProv
     nullable: ['primaryProvider', 'primaryProvider.specialty', 'primaryProvider.phone', 'primaryProvider.fax']
   })
 
-  const apiPatient = await apiPatch<ApiPatient>(`/patients/${patientId}`, apiRequest)
+  await apiPatch<ApiPatient>(`/patients/${patientId}`, apiRequest)
+  const apiPatient = await apiGet<ApiPatient & { person: ApiPerson }>(`/patients/${patientId}`, { expand: 'person' })
   return mapApiPatientToFrontend(apiPatient)
 }
 
@@ -151,6 +160,7 @@ export async function updatePrimaryPharmacy(patientId: string, data: PrimaryPhar
     nullable: ['primaryPharmacy', 'primaryPharmacy.address', 'primaryPharmacy.phone', 'primaryPharmacy.fax']
   })
 
-  const apiPatient = await apiPatch<ApiPatient>(`/patients/${patientId}`, apiRequest)
+  await apiPatch<ApiPatient>(`/patients/${patientId}`, apiRequest)
+  const apiPatient = await apiGet<ApiPatient & { person: ApiPerson }>(`/patients/${patientId}`, { expand: 'person' })
   return mapApiPatientToFrontend(apiPatient)
 }

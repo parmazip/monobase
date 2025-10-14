@@ -108,7 +108,7 @@ function mapApiMerchantAccountToFrontend(api: ApiMerchantAccount): MerchantAccou
     onboardingCompletedAt?: string
     lastDashboardAccessAt?: string
   }
-  
+
   return {
     id: api.id,
     version: api.version,
@@ -126,14 +126,14 @@ function mapApiMerchantAccountToFrontend(api: ApiMerchantAccount): MerchantAccou
       payoutsEnabled: metadata.payoutsEnabled,
       country: metadata.country,
       currency: metadata.currency,
-      onboardingStartedAt: metadata.onboardingStartedAt 
-        ? new Date(metadata.onboardingStartedAt) 
+      onboardingStartedAt: metadata.onboardingStartedAt
+        ? new Date(metadata.onboardingStartedAt)
         : undefined,
-      onboardingCompletedAt: metadata.onboardingCompletedAt 
-        ? new Date(metadata.onboardingCompletedAt) 
+      onboardingCompletedAt: metadata.onboardingCompletedAt
+        ? new Date(metadata.onboardingCompletedAt)
         : undefined,
-      lastDashboardAccessAt: metadata.lastDashboardAccessAt 
-        ? new Date(metadata.lastDashboardAccessAt) 
+      lastDashboardAccessAt: metadata.lastDashboardAccessAt
+        ? new Date(metadata.lastDashboardAccessAt)
         : undefined,
     }
   }
@@ -150,7 +150,9 @@ function mapApiInvoiceToFrontend(api: ApiInvoice): Invoice {
     invoiceNumber: api.invoiceNumber,
     customer: typeof api.customer === 'string' ? api.customer : api.customer.id,
     merchant: typeof api.merchant === 'string' ? api.merchant : api.merchant.id,
-    merchantAccount: api.merchantAccount ? (typeof api.merchantAccount === 'string' ? api.merchantAccount : api.merchantAccount.id) : undefined,
+    merchantAccount: api.merchantAccount
+      ? (typeof api.merchantAccount === 'string' ? api.merchantAccount : api.merchantAccount.id)
+      : undefined,
     status: api.status as 'draft' | 'open' | 'paid' | 'void' | 'uncollectible',
     subtotal: api.subtotal,
     tax: api.tax,
