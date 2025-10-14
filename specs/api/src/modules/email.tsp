@@ -497,7 +497,7 @@ namespace EmailModule {
     @extension("x-security-required-roles", #["admin"])
     listEmailQueueItems(
       @doc("Filter by queue status (pending, processing, sent, failed, cancelled). Supports comma-separated values (e.g., 'pending,processing')")
-      @query status?: EmailQueueStatus,
+      @query status?: EmailQueueStatus | EmailQueueStatus[],
       @doc("Filter by recipient email address")
       @query recipientEmail?: Email,
       @doc("Start date for filtering queue items (inclusive)")

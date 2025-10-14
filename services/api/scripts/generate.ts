@@ -1025,8 +1025,30 @@ function convertParameterToZod(param: any): string {
   
   // Add query parameter specific transformations
   if (param.in === 'query') {
-    // Handle array query parameters (e.g., ?tags=a,b,c)
-    if (param.schema?.type === 'array' || param.type === 'array') {
+    // Detect union types with enum arrays (e.g., EmailQueueStatus | EmailQueueStatus[])
+    // Pattern: z.union([EnumSchema, z.array(EnumSchema)])
+    // Check for both oneOf and anyOf (TypeSpec can generate either)
+    const unionOptions = param.schema?.oneOf || param.schema?.anyOf;
+    const isEnumArrayUnion = unionOptions && 
+      unionOptions.length === 2 &&
+      unionOptions.some((opt: any) => opt.$ref) &&
+      unionOptions.some((opt: any) => opt.type === 'array' && opt.items?.$ref);
+    
+    if (isEnumArrayUnion) {
+      // Extract the enum schema name from the single value option
+      const enumRef = unionOptions.find((opt: any) => opt.$ref).$ref;
+      const enumSchemaName = enumRef.split('/').pop();
+      const cleanEnumName = enumSchemaName
+        .split('.')
+        .map((part: string, index: number) => index === 0 ? part : capitalize(part))
+        .join('');
+      
+      // Generate union with CSV transformation as third option
+      // This allows: single enum value, actual array, OR comma-separated string
+      zodType = `z.union([${cleanEnumName}Schema, z.array(${cleanEnumName}Schema), z.string().transform(val => val.split(",").map(s => s.trim())).pipe(z.array(${cleanEnumName}Schema))])`;
+    }
+    // Handle simple array query parameters (e.g., ?tags=a,b,c)
+    else if (param.schema?.type === 'array' || param.type === 'array') {
       zodType = 'z.string().transform(val => val.split(",").filter(Boolean))';
     }
     // Handle number coercion for query params (with constraints preserved)

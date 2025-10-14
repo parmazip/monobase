@@ -1668,7 +1668,7 @@ export const UpdateVideoCallParticipantResponse = CallParticipantSchema;
 export const GetIceServersResponse = IceServersResponseSchema;
 
 export const ListEmailQueueItemsQuery = z.object({
-  status: EmailQueueStatusSchema.optional(),
+  status: z.union([EmailQueueStatusSchema, z.array(EmailQueueStatusSchema), z.string().transform(val => val.split(",").map(s => s.trim())).pipe(z.array(EmailQueueStatusSchema))]).optional(),
   recipientEmail: EmailSchema.optional(),
   dateFrom: z.string().datetime().transform((str) => new Date(str)).optional(),
   dateTo: z.string().datetime().transform((str) => new Date(str)).optional(),
