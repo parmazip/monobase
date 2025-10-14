@@ -1,4 +1,4 @@
-import { apiGet, apiPost, ApiError } from '../api'
+import { apiGet, apiPost, ApiError, type PaginatedResponse } from '../api'
 import { sanitizeObject } from '../utils/api'
 import type { components } from '@monobase/api-spec/types'
 
@@ -88,13 +88,6 @@ export interface InvoiceListParams {
   paymentStatus?: string
   limit?: number
   offset?: number
-}
-
-export interface PaginatedInvoices {
-  items: Invoice[]
-  total: number
-  limit: number
-  offset: number
 }
 
 // ============================================================================
@@ -238,18 +231,16 @@ export async function getMyDashboardLink(merchantAccountId: string): Promise<Das
 /**
  * List invoices for current user
  */
-export async function listMyInvoices(params?: InvoiceListParams): Promise<PaginatedInvoices> {
+export async function listMyInvoices(params?: InvoiceListParams): Promise<PaginatedResponse<Invoice>> {
   const queryParams = sanitizeObject(params || {}, { nullable: [] })
-  const response = await apiGet<{ items: ApiInvoice[]; total: number; limit: number; offset: number }>(
+  const response = await apiGet<PaginatedResponse<ApiInvoice>>(
     '/billing/invoices',
     queryParams
   )
   
   return {
-    items: response.items.map(mapApiInvoiceToFrontend),
-    total: response.total,
-    limit: response.limit,
-    offset: response.offset,
+    data: response.data.map(mapApiInvoiceToFrontend),
+    pagination: response.pagination,
   }
 }
 

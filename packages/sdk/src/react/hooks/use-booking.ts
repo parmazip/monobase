@@ -4,9 +4,8 @@ import {
   searchProviders,
   getProviderWithSlots,
   type SearchProvidersParams,
-  type PaginatedProviders,
 } from '../../services/booking'
-import type { ProviderWithSlots, BookingTimeSlot } from '../../types'
+import type { ProviderWithSlots, BookingTimeSlot } from '../../services/booking'
 import { queryKeys } from '../query-keys'
 import { ApiError, apiGet } from '../../api'
 import type { components } from '@monobase/api-spec/types'

@@ -1,8 +1,59 @@
-import { apiGet, apiPost, ApiError } from '../api'
+import { apiGet, apiPost, ApiError, type PaginatedResponse } from '../api'
 import { sanitizeObject } from '../utils/api'
-import type { BookingProvider, BookingTimeSlot, BookingEventData, ProviderWithSlots } from '../types'
 import { formatDate } from '../utils/format'
 import type { components } from '@monobase/api-spec/types'
+
+// ============================================================================
+// Booking Types
+// ============================================================================
+
+export interface BookingTimeSlot {
+  id: string
+  providerId: string
+  date: Date
+  startTime: Date
+  endTime: Date
+  status: 'available' | 'booked' | 'blocked'
+  consultationModes: ('video' | 'phone' | 'in-person')[]
+  price: number
+  billingOverride?: {
+    price?: number
+    currency?: string
+    paymentRequired?: boolean
+    freeCancellationMinutes?: number
+  }
+}
+
+export interface BookingProvider {
+  id: string
+  name: string
+  email?: string
+  avatar?: string
+  biography?: string
+  yearsOfExperience?: number
+  specialties?: string[]
+  serviceLocations?: string[]
+  city?: string
+  state?: string
+  languages?: string[]
+}
+
+export interface BookingEventData {
+  id: string
+  timezone: string
+  locationTypes: ('video' | 'phone' | 'in-person')[]
+  billingConfig?: {
+    price: number
+    currency: string
+    cancellationThresholdMinutes: number
+  }
+}
+
+export interface ProviderWithSlots {
+  provider: BookingProvider
+  slots: BookingTimeSlot[]
+  event?: BookingEventData
+}
 
 // ============================================================================
 // API Type Aliases
@@ -17,19 +68,6 @@ type ApiBookingEvent = components["schemas"]["BookingEvent"]
 type ApiPersonWithSlots = ApiPerson & {
   slots?: ApiTimeSlot[]
   event?: ApiBookingEvent
-}
-
-// Paginated response structure
-type ApiPaginatedResponse<T> = {
-  data: T[]
-  pagination: {
-    total: number
-    offset: number
-    limit: number
-    page: number
-    pageSize: number
-    totalPages: number
-  }
 }
 
 // ============================================================================
@@ -103,19 +141,7 @@ export interface SearchProvidersParams {
   limit?: number
 }
 
-export interface PaginatedProviders {
-  data: BookingProvider[]
-  pagination: {
-    total: number
-    offset: number
-    limit: number
-    page: number
-    pageSize: number
-    totalPages: number
-  }
-}
-
-export async function searchProviders(params: SearchProvidersParams): Promise<PaginatedProviders> {
+export async function searchProviders(params: SearchProvidersParams): Promise<PaginatedResponse<BookingProvider>> {
   const queryParams = sanitizeObject({
     q: params.q,
     specialty: params.specialty,
@@ -128,7 +154,7 @@ export async function searchProviders(params: SearchProvidersParams): Promise<Pa
     expand: 'person',
   }, { nullable: [] })
 
-  const response = await apiGet<ApiPaginatedResponse<ApiPerson>>('/booking/providers', queryParams)
+  const response = await apiGet<PaginatedResponse<ApiPerson>>('/booking/providers', queryParams)
 
   return {
     data: response.data.map(mapApiPersonToProvider),
@@ -196,7 +222,7 @@ export interface GetAvailabilityParams {
   offset?: number
 }
 
-export async function getMyAvailability(params?: GetAvailabilityParams): Promise<ApiPaginatedResponse<BookingTimeSlot>> {
+export async function getMyAvailability(params?: GetAvailabilityParams): Promise<PaginatedResponse<BookingTimeSlot>> {
   const queryParams = sanitizeObject({
     startDate: params?.startDate ? formatDate(params.startDate, { format: 'iso' }) : undefined,
     endDate: params?.endDate ? formatDate(params.endDate, { format: 'iso' }) : undefined,
@@ -205,7 +231,7 @@ export async function getMyAvailability(params?: GetAvailabilityParams): Promise
     offset: params?.offset,
   }, { nullable: [] })
 
-  const response = await apiGet<ApiPaginatedResponse<ApiTimeSlot>>('/booking/availability/me', queryParams)
+  const response = await apiGet<PaginatedResponse<ApiTimeSlot>>('/booking/availability/me', queryParams)
   
   return {
     data: response.data.map(mapApiTimeSlotToFrontend),

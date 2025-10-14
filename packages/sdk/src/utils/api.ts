@@ -2,18 +2,7 @@
 // Paginated Response Types
 // ============================================================================
 
-/**
- * Generic interface for paginated API responses
- * Used for list endpoints that return data with pagination metadata
- */
-export interface PaginatedResponse<T> {
-  data: T[]
-  pagination: {
-    offset: number
-    limit: number
-    totalCount: number
-  }
-}
+import type { PaginatedResponse } from '../api'
 
 /**
  * Map a paginated API response to frontend types
@@ -28,7 +17,8 @@ export interface PaginatedResponse<T> {
  * const apiResponse = await apiGet<PaginatedResponse<ApiNotification>>('/notifications')
  * return mapPaginatedResponse(apiResponse, mapApiNotificationToFrontend)
  * ```
- */export function mapPaginatedResponse<TApi, TFrontend>(
+ */
+export function mapPaginatedResponse<TApi, TFrontend>(
   response: PaginatedResponse<TApi>,
   mapper: (item: TApi) => TFrontend
 ): PaginatedResponse<TFrontend> {
@@ -84,7 +74,8 @@ export interface SanitizeConfig {
  * sanitizeObject(data, {
  *   nullable: ['primaryAddress', 'primaryAddress.street2', 'primaryAddress.coordinates']
  * })
- */export function sanitizeObject<T extends Record<string, any>>(
+ */
+export function sanitizeObject<T extends Record<string, any>>(
   data: T,
   config: SanitizeConfig,
   prefix: string = ''

@@ -12,6 +12,24 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Generic paginated response matching TypeSpec OffsetPaginatedResponse
+ * Used for list endpoints that return data with pagination metadata
+ */
+export interface PaginatedResponse<T> {
+  data: T[]
+  pagination: {
+    offset: number
+    limit: number
+    count: number
+    totalCount: number
+    totalPages: number
+    currentPage: number
+    hasNextPage: boolean
+    hasPreviousPage: boolean
+  }
+}
+
 // Global API base URL - set by ApiProvider or manually
 let globalApiBaseUrl = 'http://localhost:7213'
 

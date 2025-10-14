@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthQueryProvider } from '@daveyplate/better-auth-tanstack'
 import { setApiBaseUrl } from '../api'
-import { initAuthClient, AuthClientContext } from './auth-client'
+import { initAuthClient, AuthClientContext } from './auth'
 import type { ReactNode } from 'react'
 import { useEffect, useRef, useMemo } from 'react'
 

@@ -2,11 +2,9 @@
 export const queryKeys = {
   all: [] as const,
 
-  // Person & Provider (adapted for provider app)
+  // Person
   person: () => [...queryKeys.all, 'person'] as const,
   personProfile: (id?: string) => [...queryKeys.person(), id] as const,
-  provider: () => [...queryKeys.all, 'provider'] as const,
-  providerProfile: (id?: string) => [...queryKeys.provider(), id] as const,
 
   // Notifications
   notifications: () => [...queryKeys.all, 'notifications'] as const,

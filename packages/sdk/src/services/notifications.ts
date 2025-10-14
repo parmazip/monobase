@@ -1,6 +1,6 @@
-import { apiGet, apiPost } from '../api'
+import { apiGet, apiPost, type PaginatedResponse } from '../api'
 import type { components } from '@monobase/api-spec/types'
-import { PaginatedResponse, mapPaginatedResponse } from '../utils/api'
+import { mapPaginatedResponse } from '../utils/api'
 
 // ============================================================================
 // API Type Aliases

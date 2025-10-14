@@ -3,7 +3,7 @@
  * Handles WebRTC signaling, ICE server configuration, and video call lifecycle
  */
 
-import { apiGet, apiPost, apiPatch } from '../api'
+import { apiGet, apiPost, apiPatch, type PaginatedResponse } from '../api'
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -162,21 +162,7 @@ export interface StartVideoCallRequest {
   }
 }
 
-/**
- * Paginated response wrapper
- */
-export interface PaginatedResponse<T> {
-  /** The items for the current page */
-  items: T[]
-  /** The total number of items */
-  total: number
-  /** The current page number (0-indexed) */
-  page: number
-  /** The number of items per page */
-  pageSize: number
-  /** The total number of pages */
-  totalPages: number
-}
+
 
 /**
  * ICE (Interactive Connectivity Establishment) server configuration for WebRTC

@@ -11,8 +11,7 @@
  */
 import { createAuthHooks } from '@daveyplate/better-auth-tanstack'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useAuthClient } from '../auth-client'
-import type { AuthClient } from '../../auth'
+import { useAuthClient, type AuthClient } from '../auth'
 
 export { useAuthClient }
 

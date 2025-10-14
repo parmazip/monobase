@@ -18,8 +18,8 @@ import {
   type GetChatMessagesParams,
   type SendTextMessageRequest,
   type StartVideoCallRequest,
-  type PaginatedResponse,
 } from '../../services/comms'
+import type { PaginatedResponse } from '../../types'
 import { queryKeys } from '../query-keys'
 import { ApiError } from '../../api'
 
@@ -231,8 +231,8 @@ export function useInfiniteChatMessages(
       }),
     initialPageParam: 0,
     getNextPageParam: (lastPage: PaginatedResponse<ChatMessage>, pages: PaginatedResponse<ChatMessage>[]) => {
-      const loadedCount = pages.reduce((sum, page) => sum + page.items.length, 0)
-      if (loadedCount < lastPage.total) {
+      const loadedCount = pages.reduce((sum, page) => sum + page.data.length, 0)
+      if (loadedCount < lastPage.pagination.totalCount) {
         return loadedCount
       }
       return undefined
@@ -501,8 +501,12 @@ export function useOptimisticSendMessage(options?: {
           queryKeys.chatMessagesList(roomId, {}),
           {
             ...previousMessages,
-            items: [tempMessage, ...previousMessages.items],
-            total: previousMessages.total + 1,
+            data: [tempMessage, ...previousMessages.data],
+            pagination: {
+              ...previousMessages.pagination,
+              count: previousMessages.pagination.count + 1,
+              totalCount: previousMessages.pagination.totalCount + 1,
+            },
           }
         )
       }
