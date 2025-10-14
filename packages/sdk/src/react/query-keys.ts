@@ -50,7 +50,11 @@ export const queryKeys = {
   emr: () => [...queryKeys.all, 'emr'] as const,
   emrPatients: (params?: any) => [...queryKeys.emr(), 'patients', params] as const,
   emrPatient: (id: string) => [...queryKeys.emr(), 'patients', id] as const,
+  emrRecords: (params?: any) => [...queryKeys.emr(), 'records', params] as const,
+  emrRecord: (id: string) => [...queryKeys.emr(), 'records', id] as const,
   emrConsultations: (params?: any) => [...queryKeys.emr(), 'consultations', params] as const,
   emrConsultation: (id: string) => [...queryKeys.emr(), 'consultations', id] as const,
+  emrDocuments: (params?: any) => [...queryKeys.emr(), 'documents', params] as const,
+  emrDocument: (id: string) => [...queryKeys.emr(), 'documents', id] as const,
 
 } as const

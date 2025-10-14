@@ -28,7 +28,6 @@ export const providers = pgTable('provider', {
 }, (table) => ({
   // Indexes for search and performance
   personIdx: index('providers_person_id_idx').on(table.person),
-  deletedAtIdx: index('providers_deleted_at_idx').on(table.deletedAt),
   providerTypeIdx: index('providers_provider_type_idx').on(table.providerType),
   // Ensure one provider per person
   uniquePersonId: unique('providers_person_id_unique').on(table.person),

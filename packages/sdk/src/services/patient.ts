@@ -1,6 +1,7 @@
 import { apiGet, apiPost, apiPatch, ApiError } from '../api'
 import { sanitizeObject } from '../utils/api'
 import type { components } from '@monobase/api-spec/types'
+import { mapApiPersonToFrontend, type Person as PersonType } from './person'
 
 // ============================================================================
 // API Type Aliases
@@ -34,16 +35,8 @@ export interface Patient {
   createdBy: string
   updatedAt: Date
   updatedBy: string
-  deletedAt: Date | null
-  deletedBy: string | null
   personId: string
-  person?: {
-    id: string
-    firstName: string
-    lastName?: string
-    middleName?: string
-    email?: string
-  } | null
+  person?: PersonType | null
   primaryProvider?: PrimaryProvider | null
   primaryPharmacy?: PrimaryPharmacy | null
 }
@@ -76,16 +69,8 @@ function mapApiPatientToFrontend(api: ApiPatient & { person?: ApiPerson | string
     createdBy: api.createdBy || '',
     updatedAt: new Date(api.updatedAt),
     updatedBy: api.updatedBy || '',
-    deletedAt: api.deletedAt ? new Date(api.deletedAt) : null,
-    deletedBy: api.deletedBy ?? null,
     personId: typeof api.person === 'string' ? api.person : api.person?.id || '',
-    person: personData ? {
-      id: personData.id,
-      firstName: personData.firstName,
-      lastName: personData.lastName,
-      middleName: personData.middleName,
-      email: personData.contactInfo?.email,
-    } : null,
+    person: personData ? mapApiPersonToFrontend(personData) : null,
     primaryProvider: api.primaryProvider || null,
     primaryPharmacy: api.primaryPharmacy || null,
   }

@@ -38,7 +38,6 @@ interface Patient {
   id: string;              // UUID, system-generated
   createdAt: Date;         // Automatic timestamp
   updatedAt: Date;         // Automatic timestamp
-  deletedAt?: Date;        // For soft deletion
   version: number;         // Optimistic locking
   createdBy: string;       // Audit trail
   updatedBy: string;       // Audit trail
@@ -293,7 +292,6 @@ class PatientRepository extends DatabaseRepository<Patient, NewPatient, PatientF
 The repository implements:
 - Person Join Support: Joining with Person table for demographic data
 - JSONB Field Management: Storing provider and pharmacy info as JSONB
-- Soft Delete Support: Logical deletion with deletedAt timestamp
 - Unique Constraint: One patient record per person
 
 ### Query Optimization
@@ -392,7 +390,7 @@ if (request.person) {
 
 // Check for existing patient
 const existingPatient = await patientRepo.findByPersonId(personId);
-if (existingPatient && !existingPatient.deletedAt) {
+if (existingPatient) {
   throw new ConflictError('Patient record already exists');
 }
 
@@ -461,11 +459,9 @@ return patient;
 - Indexes on person_id foreign key for joins
 - JSONB storage for provider and pharmacy info
 - Unique constraints to prevent duplicate patient records per person
-- Soft delete index on deletedAt for filtering active records
 
 #### Query Optimization
 - Person table joins when expand parameter is used
-- Filtering by deletedAt for active records
 - Pagination for list operations
 - Simple JSONB field updates
 

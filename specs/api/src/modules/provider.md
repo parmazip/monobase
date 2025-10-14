@@ -39,7 +39,6 @@ interface Provider {
   id: string;              // UUID, system-generated
   createdAt: Date;         // Automatic timestamp
   updatedAt: Date;         // Automatic timestamp
-  deletedAt?: Date;        // For soft deletion
   version: number;         // Optimistic locking
   createdBy: string;       // Audit trail
   updatedBy: string;       // Audit trail
@@ -317,7 +316,6 @@ The repository implements:
 - Person Join Support: Joining with Person table for demographic data
 - Text Search: Basic search across provider information
 - JSONB Field Management: Storing minor ailment arrays as JSONB
-- Soft Delete Support: Logical deletion with deletedAt timestamp
 - Unique Constraint: One provider record per person
 
 ### Query Optimization
@@ -462,7 +460,7 @@ if (request.person) {
 
 // Check for existing provider
 const existingProvider = await providerRepo.findByPersonId(personId);
-if (existingProvider && !existingProvider.deletedAt) {
+if (existingProvider) {
   throw new ConflictError('Provider record already exists');
 }
 
@@ -505,9 +503,6 @@ const searchProviders = async (filters: ProviderFilters) => {
   if (filters.minorAilmentsPracticeLocation) {
     query.whereJsonContains('minorAilmentsPracticeLocations', filters.minorAilmentsPracticeLocation);
   }
-  
-  // Filter active records
-  query.whereNull('provider.deletedAt');
   
   // Pagination
   return query.paginate(filters.offset, filters.limit);
@@ -572,7 +567,7 @@ if (providerId === 'me') {
 
 // Public access for regular provider IDs
 const provider = await providerRepo.findOneById(providerId);
-if (!provider || provider.deletedAt) {
+if (!provider) {
   throw new NotFoundError('Provider not found');
 }
 
@@ -584,7 +579,6 @@ return provider;
 #### Database Optimization
 - Person join index on person_id for efficient joins
 - Provider type index for filtering by provider type
-- Soft delete index on deletedAt for active record filtering
 - JSONB GIN indexes for minor ailment arrays
 - Unique constraint to prevent duplicate providers per person
 

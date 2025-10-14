@@ -94,38 +94,12 @@ export class PatientRepository extends DatabaseRepository<Patient, NewPatient, P
   }
 
   /**
-   * Delete a patient by ID (soft delete) with audit trail
+   * Delete a patient by ID (hard delete)
    */
-  async deleteOneById(id: string, deletedBy?: string): Promise<void> {
-    this.logger?.debug({ id, deletedBy }, 'Deleting patient by ID');
-
-    if (this.table.deletedAt) {
-      // Perform soft delete with audit trail
-      const whereConditions = [eq(this.table.id, id)];
-      const notDeletedCondition = this.getNotDeletedCondition();
-      if (notDeletedCondition) {
-        whereConditions.push(notDeletedCondition);
-      }
-
-      const [deleted] = await this.db
-        .update(this.table)
-        .set({
-          deletedAt: new Date(),
-          updatedAt: new Date(),
-          deletedBy: deletedBy
-        } as any)
-        .where(and(...whereConditions))
-        .returning();
-
-      if (!deleted) {
-        throw new Error(`Patient with id ${id} not found or already deleted`);
-      }
-
-      this.logger?.info({ id, deletedBy }, 'Patient soft deleted successfully');
-    } else {
-      // Fall back to parent implementation for hard delete
-      await super.deleteOneById(id);
-    }
+  async deleteOneById(id: string): Promise<void> {
+    this.logger?.debug({ id }, 'Deleting patient by ID');
+    await super.deleteOneById(id);
+    this.logger?.info({ id }, 'Patient deleted successfully');
   }
 
   /**

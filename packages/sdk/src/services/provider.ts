@@ -1,6 +1,14 @@
 import { apiGet, apiPost, apiPatch, apiDelete, ApiError, type PaginatedResponse } from '../api'
-import { sanitizeObject } from '../utils/api'
+import { sanitizeObject, mapPaginatedResponse } from '../utils/api'
 import type { components } from '@monobase/api-spec/types'
+import { mapApiPersonToFrontend, type Person as PersonType } from './person'
+
+// ============================================================================
+// API Type Aliases
+// ============================================================================
+
+type ApiProvider = components["schemas"]["Provider"]
+type ApiPerson = components["schemas"]["Person"]
 
 // ============================================================================
 // Provider Types
@@ -8,43 +16,14 @@ import type { components } from '@monobase/api-spec/types'
 
 export type ProviderType = 'pharmacist' | 'other'
 
-export interface Person {
-  id: string
-  firstName: string
-  lastName: string
-  middleName?: string
-  dateOfBirth: string
-  gender?: string
-  languagesSpoken?: string[]
-  timezone?: string
-  avatar?: {
-    file?: string
-    url: string
-  }
-  primaryAddress?: {
-    street1?: string
-    street2?: string
-    city?: string
-    state?: string
-    postalCode?: string
-    country?: string
-  }
-  contactInfo?: {
-    email?: string
-    phone?: string
-  }
-}
-
 export interface Provider {
   id: string
   version: number
-  createdAt: string
+  createdAt: Date
   createdBy: string
-  updatedAt: string
+  updatedAt: Date
   updatedBy: string
-  deletedAt: string | null
-  deletedBy: string | null
-  person: string | Person
+  person: string | PersonType
   providerType: ProviderType
   yearsOfExperience?: number
   biography?: string
@@ -86,6 +65,32 @@ export interface ProviderQueryParams {
 }
 
 // ============================================================================
+// Mapper Functions
+// ============================================================================
+
+/**
+ * Convert API Provider response to Frontend Provider
+ */
+function mapApiProviderToFrontend(api: ApiProvider & { person?: ApiPerson | string }): Provider {
+  const personData = typeof api.person === 'object' && api.person !== null ? api.person : null
+  
+  return {
+    id: api.id,
+    version: api.version,
+    createdAt: new Date(api.createdAt),
+    createdBy: api.createdBy || '',
+    updatedAt: new Date(api.updatedAt),
+    updatedBy: api.updatedBy || '',
+    person: personData ? mapApiPersonToFrontend(personData) : (typeof api.person === 'string' ? api.person : ''),
+    providerType: api.providerType as ProviderType,
+    yearsOfExperience: api.yearsOfExperience,
+    biography: api.biography,
+    minorAilmentsSpecialties: api.minorAilmentsSpecialties,
+    minorAilmentsPracticeLocations: api.minorAilmentsPracticeLocations,
+  }
+}
+
+// ============================================================================
 // Provider Service Functions
 // ============================================================================
 
@@ -95,7 +100,8 @@ export interface ProviderQueryParams {
 export async function listProviders(
   params?: ProviderQueryParams
 ): Promise<PaginatedResponse<Provider>> {
-  return apiGet<PaginatedResponse<Provider>>('/providers', params)
+  const response = await apiGet<PaginatedResponse<ApiProvider & { person?: ApiPerson | string }>>('/providers', params)
+  return mapPaginatedResponse(response, mapApiProviderToFrontend)
 }
 
 /**
@@ -106,7 +112,8 @@ export async function getProvider(
   id: string,
   expand?: string
 ): Promise<Provider> {
-  return apiGet<Provider>(`/providers/${id}`, expand ? { expand } : undefined)
+  const apiProvider = await apiGet<ApiProvider & { person?: ApiPerson | string }>(`/providers/${id}`, expand ? { expand } : undefined)
+  return mapApiProviderToFrontend(apiProvider)
 }
 
 /**
@@ -115,7 +122,8 @@ export async function getProvider(
 export async function createProvider(
   data: ProviderCreateRequest
 ): Promise<Provider> {
-  return apiPost<Provider>('/providers', sanitizeObject(data, { nullable: [] }))
+  const apiProvider = await apiPost<ApiProvider>('/providers', sanitizeObject(data, { nullable: [] }))
+  return mapApiProviderToFrontend(apiProvider)
 }
 
 /**
@@ -125,9 +133,10 @@ export async function updateProvider(
   id: string,
   updates: ProviderUpdateRequest
 ): Promise<Provider> {
-  return apiPatch<Provider>(`/providers/${id}`, sanitizeObject(updates, { 
+  const apiProvider = await apiPatch<ApiProvider>(`/providers/${id}`, sanitizeObject(updates, { 
     nullable: ['yearsOfExperience', 'biography', 'minorAilmentsSpecialties', 'minorAilmentsPracticeLocations']
   }))
+  return mapApiProviderToFrontend(apiProvider)
 }
 
 /**

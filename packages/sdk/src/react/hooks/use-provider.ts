@@ -6,8 +6,8 @@ import type {
   ProviderQueryParams,
   ProviderCreateRequest,
   ProviderUpdateRequest,
-  Person,
-} from '../../types'
+} from '../../services/provider'
+import type { Person } from '../../services/person'
 
 /**
  * Provider Hooks
