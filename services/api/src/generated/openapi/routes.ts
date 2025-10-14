@@ -430,27 +430,21 @@ export function registerRoutes(app: Hono) {
   app.post('/emr/consultations',
     authMiddleware({ roles: ["provider"] }),
     zValidator('json', validators.CreateConsultationBody, validationErrorHandler),
-    async (ctx) => {
-      return registry.createConsultation(ctx);
-    }
+    registry.createConsultation
   );
 
   // listConsultations
   app.get('/emr/consultations',
     authMiddleware({ roles: ["provider", "admin", "patient"] }),
     zValidator('query', validators.ListConsultationsQuery, validationErrorHandler),
-    async (ctx) => {
-      return registry.listConsultations(ctx);
-    }
+    registry.listConsultations
   );
 
   // getConsultation
   app.get('/emr/consultations/:consultation',
     authMiddleware({ roles: ["admin", "provider:owner", "patient:owner"] }),
     zValidator('param', validators.GetConsultationParams, validationErrorHandler),
-    async (ctx) => {
-      return registry.getConsultation(ctx);
-    }
+    registry.getConsultation
   );
 
   // updateConsultation
@@ -458,27 +452,21 @@ export function registerRoutes(app: Hono) {
     authMiddleware({ roles: ["provider:owner"] }),
     zValidator('param', validators.UpdateConsultationParams, validationErrorHandler),
     zValidator('json', validators.UpdateConsultationBody, validationErrorHandler),
-    async (ctx) => {
-      return registry.updateConsultation(ctx);
-    }
+    registry.updateConsultation
   );
 
   // finalizeConsultation
   app.post('/emr/consultations/:consultation/finalize',
     authMiddleware({ roles: ["provider:owner"] }),
     zValidator('param', validators.FinalizeConsultationParams, validationErrorHandler),
-    async (ctx) => {
-      return registry.finalizeConsultation(ctx);
-    }
+    registry.finalizeConsultation
   );
 
   // listEMRPatients
   app.get('/emr/patients',
     authMiddleware({ roles: ["provider", "admin"] }),
     zValidator('query', validators.ListEMRPatientsQuery, validationErrorHandler),
-    async (ctx) => {
-      return registry.listEMRPatients(ctx);
-    }
+    registry.listEMRPatients
   );
 
   // listNotifications
@@ -513,18 +501,15 @@ export function registerRoutes(app: Hono) {
   app.get('/patients',
     authMiddleware({ roles: ["admin", "support"] }),
     zValidator('query', validators.ListPatientsQuery, validationErrorHandler),
-    async (ctx) => {
-      return registry.listPatients(ctx);
-    }
+    registry.listPatients
   );
 
   // createPatient
   app.post('/patients',
     authMiddleware({ roles: ["user"] }),
     zValidator('json', validators.CreatePatientBody, validationErrorHandler),
-    async (ctx) => {
-      return registry.createPatient(ctx);
-    }
+    createExpandMiddleware("Patient"),
+    registry.createPatient
   );
 
   // getPatient
@@ -532,9 +517,8 @@ export function registerRoutes(app: Hono) {
     authMiddleware({ roles: ["admin", "support", "patient:owner"] }),
     zValidator('param', validators.GetPatientParams, validationErrorHandler),
     zValidator('query', validators.GetPatientQuery, validationErrorHandler),
-    async (ctx) => {
-      return registry.getPatient(ctx);
-    }
+    createExpandMiddleware("Patient"),
+    registry.getPatient
   );
 
   // updatePatient
@@ -542,18 +526,15 @@ export function registerRoutes(app: Hono) {
     authMiddleware({ roles: ["patient:owner"] }),
     zValidator('param', validators.UpdatePatientParams, validationErrorHandler),
     zValidator('json', validators.UpdatePatientBody, validationErrorHandler),
-    async (ctx) => {
-      return registry.updatePatient(ctx);
-    }
+    createExpandMiddleware("Patient"),
+    registry.updatePatient
   );
 
   // deletePatient
   app.delete('/patients/:patient',
     authMiddleware({ roles: ["patient:owner"] }),
     zValidator('param', validators.DeletePatientParams, validationErrorHandler),
-    async (ctx) => {
-      return registry.deletePatient(ctx);
-    }
+    registry.deletePatient
   );
 
   // createPerson
@@ -583,6 +564,46 @@ export function registerRoutes(app: Hono) {
     zValidator('param', validators.UpdatePersonParams, validationErrorHandler),
     zValidator('json', validators.UpdatePersonBody, validationErrorHandler),
     registry.updatePerson
+  );
+
+  // listProviders
+  app.get('/providers',
+    authMiddleware(),
+    zValidator('query', validators.ListProvidersQuery, validationErrorHandler),
+    registry.listProviders
+  );
+
+  // createProvider
+  app.post('/providers',
+    authMiddleware({ roles: ["user"] }),
+    zValidator('json', validators.CreateProviderBody, validationErrorHandler),
+    createExpandMiddleware("Provider"),
+    registry.createProvider
+  );
+
+  // getProvider
+  app.get('/providers/:provider',
+    authMiddleware(),
+    zValidator('param', validators.GetProviderParams, validationErrorHandler),
+    zValidator('query', validators.GetProviderQuery, validationErrorHandler),
+    createExpandMiddleware("Provider"),
+    registry.getProvider
+  );
+
+  // updateProvider
+  app.patch('/providers/:provider',
+    authMiddleware({ roles: ["provider:owner"] }),
+    zValidator('param', validators.UpdateProviderParams, validationErrorHandler),
+    zValidator('json', validators.UpdateProviderBody, validationErrorHandler),
+    createExpandMiddleware("Provider"),
+    registry.updateProvider
+  );
+
+  // deleteProvider
+  app.delete('/providers/:provider',
+    authMiddleware({ roles: ["provider:owner"] }),
+    zValidator('param', validators.DeleteProviderParams, validationErrorHandler),
+    registry.deleteProvider
   );
 
   // createReview
