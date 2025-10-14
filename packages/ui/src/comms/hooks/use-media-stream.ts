@@ -12,6 +12,11 @@ import {
   stopDisplayStream
 } from '../lib/media-devices'
 
+export interface UseMediaStreamOptions {
+  initialAudio?: boolean
+  initialVideo?: boolean
+}
+
 interface UseMediaStreamReturn {
   stream: MediaStream | null
   displayStream: MediaStream | null
@@ -26,9 +31,10 @@ interface UseMediaStreamReturn {
 }
 
 export function useMediaStream(
-  initialAudio: boolean = true,
-  initialVideo: boolean = true
+  options: UseMediaStreamOptions = {}
 ): UseMediaStreamReturn {
+  const { initialAudio = true, initialVideo = true } = options
+  
   const [stream, setStream] = useState<MediaStream | null>(null)
   const [displayStream, setDisplayStream] = useState<MediaStream | null>(null)
   const [error, setError] = useState<string | null>(null)

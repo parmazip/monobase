@@ -72,7 +72,7 @@ export function useVideoCall({
     toggleCamera,
     startScreenShare: startShare,
     stopScreenShare: stopShare
-  } = useMediaStream(true, true)
+  } = useMediaStream({ initialAudio: true, initialVideo: true })
 
   // Setup peer connection handlers
   useEffect(() => {

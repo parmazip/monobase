@@ -192,7 +192,7 @@ export function VideoCallPage({ roomId }: { roomId: string }) {
     toggleCamera,
     startScreenShare,
     stopScreenShare,
-  } = useMediaStream(true, true)
+  } = useMediaStream({ initialAudio: true, initialVideo: true })
 
   // Create peer connection (from SDK)
   const peerConnection = new VideoPeerConnection(
@@ -386,10 +386,10 @@ function VideoCallComponent() {
     startScreenShare,
     stopScreenShare,
     error,
-  } = useMediaStream(
-    true,  // initialAudio
-    true   // initialVideo
-  )
+  } = useMediaStream({
+    initialAudio: true,
+    initialVideo: true
+  })
 
   return (
     <div>

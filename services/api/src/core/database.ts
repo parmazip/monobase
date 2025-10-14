@@ -96,7 +96,7 @@ export async function checkDatabaseConnection(
     return true;
   } catch (error) {
     if (logger) {
-      logger.error('Database health check failed:', error);
+      logger.error({ error }, 'Database health check failed');
     }
     return false;
   }

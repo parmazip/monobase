@@ -88,7 +88,7 @@ export class BillingService {
     this.logger.debug('Initializing Stripe SDK with lazy loading');
     
     const stripeOptions: Stripe.StripeConfig = {
-      apiVersion: '2024-12-18.acacia',
+      apiVersion: '2025-09-30.clover',
       typescript: true,
       timeout: 10000, // 10 second timeout
     };
@@ -338,10 +338,12 @@ export class BillingService {
       const paymentIntent = await stripe.paymentIntents.capture(
         paymentIntentId,
         { metadata },
-        { stripeAccount: connectedAccountId }
+        { stripeAccount: connectedAccountId, expand: ['latest_charge'] }
       );
 
-      const chargeId = paymentIntent.charges?.data[0]?.id || '';
+      const chargeId = typeof paymentIntent.latest_charge === 'string' 
+        ? paymentIntent.latest_charge 
+        : paymentIntent.latest_charge?.id || '';
       let transferId: string | undefined;
 
       // Get transfer ID if payment was captured successfully
@@ -446,8 +448,8 @@ export class BillingService {
       );
 
       return {
-        refundId: refund.id,
-        status: refund.status,
+        refundId: refund.id || '',
+        status: refund.status || '',
         amount: refund.amount || 0,
       };
     } catch (error) {
@@ -501,20 +503,25 @@ export class BillingService {
       const stripe = this.ensureStripeInitialized();
       const paymentIntent = await stripe.paymentIntents.retrieve(
         paymentIntentId,
-        { expand: ['charges'] },
+        { expand: ['latest_charge'] },
         { stripeAccount: connectedAccountId }
       );
+
+      // In newer Stripe API versions, we need to fetch charges separately or use latest_charge
+      const latestCharge = typeof paymentIntent.latest_charge === 'string' 
+        ? await stripe.charges.retrieve(paymentIntent.latest_charge, { stripeAccount: connectedAccountId })
+        : paymentIntent.latest_charge;
 
       return {
         id: paymentIntent.id,
         status: paymentIntent.status,
         amount: paymentIntent.amount,
         currency: paymentIntent.currency,
-        charges: paymentIntent.charges?.data.map(charge => ({
-          id: charge.id,
-          status: charge.status,
-          amount: charge.amount,
-        })) || [],
+        charges: latestCharge ? [{
+          id: latestCharge.id,
+          status: latestCharge.status,
+          amount: latestCharge.amount,
+        }] : [],
       };
     } catch (error) {
       this.logger.error({ error, paymentIntentId, connectedAccountId }, 'Failed to get payment intent');

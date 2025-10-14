@@ -106,7 +106,10 @@ class SMTPProvider implements EmailProvider {
     try {
       const transporter = this.ensureInitialized();
       const result = await transporter.sendMail({
-        from: request.from ? `${request.from.name} <${request.from.email}>` : undefined,
+        from: request.from ? { 
+          name: request.from.name || '', 
+          address: request.from.email || '' 
+        } : undefined,
         to: request.to,
         subject: request.subject,
         html: request.html,
@@ -172,7 +175,7 @@ class PostmarkProvider implements EmailProvider {
         Subject: request.subject,
         HtmlBody: request.html,
         TextBody: request.text,
-        ReplyTo: request.replyTo,
+        ReplyTo: request.replyTo || undefined,
         MessageStream: messageStream
       });
       
@@ -217,7 +220,6 @@ class OneSignalProvider implements EmailProvider {
     }
     
     const configuration = OneSignal.createConfiguration({
-      appKey: this.config.onesignal.apiKey,
       userKey: this.config.onesignal.apiKey,
     });
     
@@ -422,9 +424,9 @@ class EmailServiceImpl implements EmailService {
       await this.queueRepo.markAsProcessing(email.id);
       
       // Resolve template by tags
-      const template = await this.resolveTemplateByTags(email.templateTags);
+      const template = await this.resolveTemplateByTags(email.templateTags || []);
       if (!template) {
-        throw new Error(`No active template found for tags: ${email.templateTags.join(', ')}`);
+        throw new Error(`No active template found for tags: ${email.templateTags?.join(', ') || 'none'}`);
       }
       
       // Render template with variables

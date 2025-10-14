@@ -282,7 +282,10 @@ export function createAuth(database: DatabaseInstance, config: Config, logger: L
       log: (level, message, ...args) => {
         // Use the pino logger if available
         if (logger) {
-          logger[level as keyof typeof logger](message, ...args);
+          const logFn = logger[level as keyof typeof logger];
+          if (typeof logFn === 'function') {
+            logFn.call(logger, message, ...args);
+          }
         }
       },
     },
