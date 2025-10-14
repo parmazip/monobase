@@ -59,7 +59,7 @@ export interface UpdatePatientData {
 /**
  * Convert API Patient response to Frontend Patient
  */
-function mapApiPatientToFrontend(api: ApiPatient & { person?: ApiPerson | string }): Patient {
+export function mapApiPatientToFrontend(api: ApiPatient & { person?: ApiPerson | string }): Patient {
   const personData = typeof api.person === 'object' && api.person !== null ? api.person : null
   
   return {

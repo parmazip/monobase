@@ -1,267 +1,177 @@
 /**
  * EMR (Electronic Medical Records) Service
- * 
- * Handles EMR-specific operations including:
- * - EMR patients (patients in medical records context, NOT general patient module)
- * - Medical records access and management
- * - Consultation history
- * - Document management
+ *
+ * Handles EMR-specific operations for telemedicine minor ailments:
+ * - Consultation notes (ConsultationNote)
+ * - EMR patient listing (reuses Patient from patient module)
+ *
+ * Note: This follows the actual TypeSpec API specification
  */
 
-import { apiGet, apiPost, apiPatch, apiDelete, type PaginatedResponse } from '../api'
+import { apiGet, apiPost, apiPatch, type PaginatedResponse } from '../api'
 import { mapPaginatedResponse } from '../utils/api'
+import type { components } from '@monobase/api-spec/types'
+import { mapApiPatientToFrontend, type Patient } from './patient'
 
 // ============================================================================
-// API Type Aliases (EMR types are custom, not from API spec)
+// API Type Aliases
 // ============================================================================
 
-// Note: EMR module types are defined below as they are custom types
-// not part of the generated API spec yet
+type ApiConsultationNote = components["schemas"]["ConsultationNote"]
+type ApiVitalsData = components["schemas"]["VitalsData"]
+type ApiSymptomsData = components["schemas"]["SymptomsData"]
+type ApiPrescriptionData = components["schemas"]["PrescriptionData"]
+type ApiFollowUpData = components["schemas"]["FollowUpData"]
+type ApiPatient = components["schemas"]["Patient"]
 
 // ============================================================================
-// Types
+// Frontend Types
 // ============================================================================
 
-export interface EmrPatient {
-  id: string
-  personId: string
-  firstName: string
-  lastName: string
-  dateOfBirth: Date
-  gender?: string
-  email?: string
-  phone?: string
-  address?: {
-    street?: string
-    city?: string
-    state?: string
-    postalCode?: string
-    country?: string
-  }
-  medicalHistory?: string
-  allergies?: string[]
-  medications?: string[]
-  createdAt: Date
-  updatedAt: Date
-}
+export type ConsultationStatus = 'draft' | 'finalized' | 'amended'
+export type SymptomSeverity = 'mild' | 'moderate' | 'severe'
 
-export interface MedicalRecord {
-  id: string
-  emrPatientId: string
-  providerId: string
-  type: 'consultation' | 'diagnosis' | 'prescription' | 'lab_result' | 'imaging' | 'note'
-  title: string
-  description?: string
-  diagnosis?: string
-  prescription?: string
-  attachments?: string[]
-  createdAt: Date
-  updatedAt: Date
-}
-
-export interface Consultation {
-  id: string
-  emrPatientId: string
-  providerId: string
-  bookingId?: string
-  appointmentDate: Date
-  duration: number
-  type: 'video' | 'phone' | 'in-person'
-  status: 'scheduled' | 'completed' | 'cancelled' | 'no_show'
-  chiefComplaint?: string
-  diagnosis?: string
-  treatment?: string
-  prescriptions?: string[]
-  followUpDate?: Date
+/**
+ * Vital signs data structure
+ */
+export interface VitalsData {
+  temperatureCelsius?: number
+  systolicBp?: number
+  diastolicBp?: number
+  heartRate?: number
+  weightKg?: number
+  heightCm?: number
+  respiratoryRate?: number
+  oxygenSaturation?: number
   notes?: string
-  recordIds?: string[] // Associated medical records
-  createdAt: Date
-  updatedAt: Date
 }
 
-export interface EmrDocument {
+/**
+ * Symptoms data structure
+ */
+export interface SymptomsData {
+  onset?: Date
+  durationHours?: number
+  severity?: SymptomSeverity
+  description?: string
+  associated?: string[]
+  denies?: string[]
+}
+
+/**
+ * Prescription data structure
+ */
+export interface PrescriptionData {
+  id?: string
+  medication: string
+  dosageAmount?: number
+  dosageUnit?: string
+  frequency?: string
+  durationDays?: number
+  instructions?: string
+  notes?: string
+}
+
+/**
+ * Follow-up data structure
+ */
+export interface FollowUpData {
+  needed: boolean
+  timeframeDays?: number
+  instructions?: string
+  specialistReferral?: string
+}
+
+/**
+ * Consultation note - Core EMR documentation model
+ */
+export interface ConsultationNote {
   id: string
-  emrPatientId: string
-  recordId?: string
-  consultationId?: string
-  type: 'lab_result' | 'imaging' | 'prescription' | 'referral' | 'other'
-  name: string
-  fileUrl: string
-  mimeType: string
-  size: number
-  uploadedBy: string
-  uploadedAt: Date
+  version: number
+  createdAt: Date
+  createdBy: string
+  updatedAt: Date
+  updatedBy: string
+  patient: string
+  provider: string
+  context?: string
+  chiefComplaint?: string
+  assessment?: string
+  plan?: string
+  vitals?: VitalsData
+  symptoms?: SymptomsData
+  prescriptions?: PrescriptionData[]
+  followUp?: FollowUpData
+  externalDocumentation?: Record<string, unknown>
+  status: ConsultationStatus
+  finalizedAt?: Date
+  finalizedBy?: string
+}
+
+/**
+ * Create consultation request
+ */
+export interface CreateConsultationRequest {
+  patient: string
+  provider: string
+  context?: string
+  chiefComplaint?: string
+  assessment?: string
+  plan?: string
+  vitals?: VitalsData
+  symptoms?: SymptomsData
+  prescriptions?: PrescriptionData[]
+  followUp?: FollowUpData
+}
+
+/**
+ * Update consultation request
+ */
+export interface UpdateConsultationRequest {
+  chiefComplaint?: string | null
+  assessment?: string | null
+  plan?: string | null
+  vitals?: VitalsData | null
+  symptoms?: SymptomsData | null
+  prescriptions?: PrescriptionData[] | null
+  followUp?: FollowUpData | null
+  externalDocumentation?: Record<string, unknown> | null
 }
 
 // ============================================================================
 // Mapper Functions
 // ============================================================================
 
-// Note: Since EMR types are not in the API spec yet, we'll map from any type
-// When EMR is added to the API spec, we should update these to use proper API types
-
 /**
- * Convert API EmrPatient to Frontend EmrPatient
+ * Convert API ConsultationNote to Frontend ConsultationNote
  */
-function mapApiEmrPatientToFrontend(api: any): EmrPatient {
+function mapApiConsultationNoteToFrontend(api: ApiConsultationNote): ConsultationNote {
   return {
     id: api.id,
-    personId: api.personId,
-    firstName: api.firstName,
-    lastName: api.lastName,
-    dateOfBirth: new Date(api.dateOfBirth),
-    gender: api.gender,
-    email: api.email,
-    phone: api.phone,
-    address: api.address,
-    medicalHistory: api.medicalHistory,
-    allergies: api.allergies,
-    medications: api.medications,
+    version: api.version,
     createdAt: new Date(api.createdAt),
+    createdBy: api.createdBy || '',
     updatedAt: new Date(api.updatedAt),
-  }
-}
-
-/**
- * Convert API MedicalRecord to Frontend MedicalRecord
- */
-function mapApiMedicalRecordToFrontend(api: any): MedicalRecord {
-  return {
-    id: api.id,
-    emrPatientId: api.emrPatientId,
-    providerId: api.providerId,
-    type: api.type,
-    title: api.title,
-    description: api.description,
-    diagnosis: api.diagnosis,
-    prescription: api.prescription,
-    attachments: api.attachments,
-    createdAt: new Date(api.createdAt),
-    updatedAt: new Date(api.updatedAt),
-  }
-}
-
-/**
- * Convert API Consultation to Frontend Consultation
- */
-function mapApiConsultationToFrontend(api: any): Consultation {
-  return {
-    id: api.id,
-    emrPatientId: api.emrPatientId,
-    providerId: api.providerId,
-    bookingId: api.bookingId,
-    appointmentDate: new Date(api.appointmentDate),
-    duration: api.duration,
-    type: api.type,
-    status: api.status,
+    updatedBy: api.updatedBy || '',
+    patient: api.patient,
+    provider: api.provider,
+    context: api.context,
     chiefComplaint: api.chiefComplaint,
-    diagnosis: api.diagnosis,
-    treatment: api.treatment,
+    assessment: api.assessment,
+    plan: api.plan,
+    vitals: api.vitals,
+    symptoms: api.symptoms ? {
+      ...api.symptoms,
+      onset: api.symptoms.onset ? new Date(api.symptoms.onset) : undefined,
+      severity: api.symptoms.severity as SymptomSeverity | undefined,
+    } : undefined,
     prescriptions: api.prescriptions,
-    followUpDate: api.followUpDate ? new Date(api.followUpDate) : undefined,
-    notes: api.notes,
-    recordIds: api.recordIds,
-    createdAt: new Date(api.createdAt),
-    updatedAt: new Date(api.updatedAt),
+    followUp: api.followUp,
+    externalDocumentation: api.externalDocumentation,
+    status: api.status as ConsultationStatus,
+    finalizedAt: api.finalizedAt ? new Date(api.finalizedAt) : undefined,
+    finalizedBy: api.finalizedBy,
   }
-}
-
-/**
- * Convert API EmrDocument to Frontend EmrDocument
- */
-function mapApiEmrDocumentToFrontend(api: any): EmrDocument {
-  return {
-    id: api.id,
-    emrPatientId: api.emrPatientId,
-    recordId: api.recordId,
-    consultationId: api.consultationId,
-    type: api.type,
-    name: api.name,
-    fileUrl: api.fileUrl,
-    mimeType: api.mimeType,
-    size: api.size,
-    uploadedBy: api.uploadedBy,
-    uploadedAt: new Date(api.uploadedAt),
-  }
-}
-
-// ============================================================================
-// EMR Patient Operations
-// ============================================================================
-
-export async function listEmrPatients(params?: {
-  page?: number
-  limit?: number
-  search?: string
-  providerId?: string
-}): Promise<PaginatedResponse<EmrPatient>> {
-  const response = await apiGet<PaginatedResponse<any>>('/emr/patients', params)
-  return mapPaginatedResponse(response, mapApiEmrPatientToFrontend)
-}
-
-/**
- * Get EMR patient by ID
- */
-export async function getEmrPatient(id: string): Promise<EmrPatient> {
-  const apiPatient = await apiGet<any>(`/emr/patients/${id}`)
-  return mapApiEmrPatientToFrontend(apiPatient)
-}
-
-/**
- * Create EMR patient record
- */
-export async function createEmrPatient(data: Partial<EmrPatient>): Promise<EmrPatient> {
-  const apiPatient = await apiPost<any>('/emr/patients', data)
-  return mapApiEmrPatientToFrontend(apiPatient)
-}
-
-/**
- * Update EMR patient
- */
-export async function updateEmrPatient(id: string, data: Partial<EmrPatient>): Promise<EmrPatient> {
-  const apiPatient = await apiPatch<any>(`/emr/patients/${id}`, data)
-  return mapApiEmrPatientToFrontend(apiPatient)
-}
-
-// ============================================================================
-// Medical Records Operations
-// ============================================================================
-
-/**
- * List medical records for a patient
- */
-export async function listMedicalRecords(params: {
-  emrPatientId: string
-  type?: MedicalRecord['type']
-  page?: number
-  limit?: number
-}): Promise<PaginatedResponse<MedicalRecord>> {
-  const response = await apiGet<PaginatedResponse<any>>('/emr/records', params)
-  return mapPaginatedResponse(response, mapApiMedicalRecordToFrontend)
-}
-
-/**
- * Get medical record by ID
- */
-export async function getMedicalRecord(id: string): Promise<MedicalRecord> {
-  const apiRecord = await apiGet<any>(`/emr/records/${id}`)
-  return mapApiMedicalRecordToFrontend(apiRecord)
-}
-
-/**
- * Create medical record
- */
-export async function createMedicalRecord(data: Partial<MedicalRecord>): Promise<MedicalRecord> {
-  const apiRecord = await apiPost<any>('/emr/records', data)
-  return mapApiMedicalRecordToFrontend(apiRecord)
-}
-
-/**
- * Update medical record
- */
-export async function updateMedicalRecord(id: string, data: Partial<MedicalRecord>): Promise<MedicalRecord> {
-  const apiRecord = await apiPatch<any>(`/emr/records/${id}`, data)
-  return mapApiMedicalRecordToFrontend(apiRecord)
 }
 
 // ============================================================================
@@ -270,80 +180,64 @@ export async function updateMedicalRecord(id: string, data: Partial<MedicalRecor
 
 /**
  * List consultations
+ * Results are automatically filtered by role: providers see their own, patients see their own, admins see all
  */
 export async function listConsultations(params?: {
-  emrPatientId?: string
-  providerId?: string
-  status?: Consultation['status']
-  page?: number
+  patient?: string
+  status?: ConsultationStatus
+  offset?: number
   limit?: number
-}): Promise<PaginatedResponse<Consultation>> {
-  const response = await apiGet<PaginatedResponse<any>>('/emr/consultations', params)
-  return mapPaginatedResponse(response, mapApiConsultationToFrontend)
+}): Promise<PaginatedResponse<ConsultationNote>> {
+  const response = await apiGet<PaginatedResponse<ApiConsultationNote>>('/emr/consultations', params)
+  return mapPaginatedResponse(response, mapApiConsultationNoteToFrontend)
 }
 
 /**
- * Get consultation by ID
+ * Get consultation note by ID
  */
-export async function getConsultation(id: string): Promise<Consultation> {
-  const apiConsultation = await apiGet<any>(`/emr/consultations/${id}`)
-  return mapApiConsultationToFrontend(apiConsultation)
+export async function getConsultation(id: string): Promise<ConsultationNote> {
+  const apiConsultation = await apiGet<ApiConsultationNote>(`/emr/consultations/${id}`)
+  return mapApiConsultationNoteToFrontend(apiConsultation)
 }
 
 /**
- * Create consultation record
+ * Create consultation note
  */
-export async function createConsultation(data: Partial<Consultation>): Promise<Consultation> {
-  const apiConsultation = await apiPost<any>('/emr/consultations', data)
-  return mapApiConsultationToFrontend(apiConsultation)
+export async function createConsultation(data: CreateConsultationRequest): Promise<ConsultationNote> {
+  const apiConsultation = await apiPost<ApiConsultationNote>('/emr/consultations', data)
+  return mapApiConsultationNoteToFrontend(apiConsultation)
 }
 
 /**
- * Update consultation
+ * Update consultation note
  */
-export async function updateConsultation(id: string, data: Partial<Consultation>): Promise<Consultation> {
-  const apiConsultation = await apiPatch<any>(`/emr/consultations/${id}`, data)
-  return mapApiConsultationToFrontend(apiConsultation)
+export async function updateConsultation(id: string, data: UpdateConsultationRequest): Promise<ConsultationNote> {
+  const apiConsultation = await apiPatch<ApiConsultationNote>(`/emr/consultations/${id}`, data)
+  return mapApiConsultationNoteToFrontend(apiConsultation)
+}
+
+/**
+ * Finalize consultation note
+ */
+export async function finalizeConsultation(id: string): Promise<ConsultationNote> {
+  const apiConsultation = await apiPost<ApiConsultationNote>(`/emr/consultations/${id}/finalize`, {})
+  return mapApiConsultationNoteToFrontend(apiConsultation)
 }
 
 // ============================================================================
-// Document Operations
+// EMR Patient Operations
 // ============================================================================
 
 /**
- * List documents for patient/record/consultation
+ * List patients who have consultations with the current authenticated provider
+ * Results are automatically filtered to the current provider
+ * Returns regular Patient[] type (reuses patient module)
  */
-export async function listEmrDocuments(params: {
-  emrPatientId?: string
-  recordId?: string
-  consultationId?: string
-  type?: EmrDocument['type']
-  page?: number
+export async function listEMRPatients(params?: {
+  expand?: string
+  offset?: number
   limit?: number
-}): Promise<PaginatedResponse<EmrDocument>> {
-  const response = await apiGet<PaginatedResponse<any>>('/emr/documents', params)
-  return mapPaginatedResponse(response, mapApiEmrDocumentToFrontend)
-}
-
-/**
- * Get document by ID
- */
-export async function getEmrDocument(id: string): Promise<EmrDocument> {
-  const apiDocument = await apiGet<any>(`/emr/documents/${id}`)
-  return mapApiEmrDocumentToFrontend(apiDocument)
-}
-
-/**
- * Upload EMR document
- */
-export async function uploadEmrDocument(data: FormData): Promise<EmrDocument> {
-  const apiDocument = await apiPost<any>('/emr/documents', data)
-  return mapApiEmrDocumentToFrontend(apiDocument)
-}
-
-/**
- * Delete document
- */
-export async function deleteEmrDocument(id: string): Promise<void> {
-  return apiDelete<void>(`/emr/documents/${id}`)
+}): Promise<PaginatedResponse<Patient>> {
+  const response = await apiGet<PaginatedResponse<ApiPatient>>('/emr/patients', params)
+  return mapPaginatedResponse(response, (api) => mapApiPatientToFrontend(api as any))
 }
