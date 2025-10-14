@@ -291,7 +291,7 @@ export const TimeSlotSchema = z.object({
   endTime: z.string().datetime().transform((str) => new Date(str)),
   locationTypes: z.array(LocationTypeSchema),
   status: z.enum(["available", "booked", "blocked"]),
-  billingOverride: z.object({
+  billingConfig: z.object({
   price: z.number().int().gte(0),
   currency: z.string(),
   cancellationThresholdMinutes: z.number().int().gte(0).lte(10080)
