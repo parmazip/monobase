@@ -16,7 +16,7 @@ import { useFileUpload } from '@monobase/sdk/react/hooks/use-storage'
 export const Route = createFileRoute('/_dashboard/settings/account')({
   component: AccountSettingsPage,
   beforeLoad: async ({ context }) => {
-    return { user: context.user }
+    return { user: context.auth.user }
   },
 })
 
@@ -24,13 +24,12 @@ function AccountSettingsPage() {
   const { user } = Route.useRouteContext()
   const { upload } = useFileUpload()
 
-  const { data: person, isLoading: isLoadingPerson } = usePersonProfile()
-  const { data: personFormData } = usePersonFormData()
+  const { data: person, isLoading: isLoadingPerson } = useMyPerson()
 
-  const updatePersonalInfo = useUpdatePersonalInfo(person?.id || '')
-  const updateContactInfo = useUpdateContactInfo(person?.id || '')
-  const updateAddress = useUpdateAddress(person?.id || '')
-  const updatePreferences = useUpdatePreferences(person?.id || '')
+  const updatePersonalInfo = useUpdateMyPersonalInfo()
+  const updateContactInfo = useUpdateMyContactInfo()
+  const updateAddress = useUpdateMyAddress()
+  const updatePreferences = useUpdateMyPreferences()
 
   const handleAvatarUpload = async (file: File): Promise<{ file?: string, url: string }> => {
     // Upload file to storage and get download URL
@@ -64,12 +63,11 @@ function AccountSettingsPage() {
         </CardHeader>
         <CardContent>
           <PersonalInfoForm
-            defaultValues={personFormData?.personalInfo}
+            defaultValues={person || undefined}
             onSubmit={async (data) => {
               await updatePersonalInfo.mutateAsync(data)
             }}
             mode="edit"
-            role="provider"
             memberSince={person?.createdAt}
             onAvatarUpload={handleAvatarUpload}
           />
@@ -83,7 +81,7 @@ function AccountSettingsPage() {
         </CardHeader>
         <CardContent>
           <ContactInfoForm
-            defaultValues={personFormData?.contactInfo}
+            defaultValues={person?.contactInfo}
             onSubmit={async (data) => {
               await updateContactInfo.mutateAsync(data)
             }}
@@ -98,7 +96,7 @@ function AccountSettingsPage() {
         </CardHeader>
         <CardContent>
           <AddressForm
-            defaultValues={personFormData?.address}
+            defaultValues={person?.primaryAddress}
             onSubmit={async (data) => {
               await updateAddress.mutateAsync(data)
             }}
@@ -113,7 +111,7 @@ function AccountSettingsPage() {
         </CardHeader>
         <CardContent>
           <PreferencesForm
-            defaultValues={personFormData?.preferences}
+            defaultValues={person || undefined}
             onSubmit={async (data) => {
               await updatePreferences.mutateAsync(data)
             }}

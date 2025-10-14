@@ -191,10 +191,13 @@ export async function createMyMerchantAccount(data: {
   refreshUrl: string
   returnUrl: string
 }): Promise<MerchantAccount> {
-  const apiAccount = await apiPost<ApiMerchantAccount>('/billing/merchant-accounts', {
+  const sanitized = sanitizeObject({
     refreshUrl: data.refreshUrl,
     returnUrl: data.returnUrl,
+  }, {
+    nullable: []  // CREATE operation: empty fields omitted, not sent as null
   })
+  const apiAccount = await apiPost<ApiMerchantAccount>('/billing/merchant-accounts', sanitized)
   return mapApiMerchantAccountToFrontend(apiAccount)
 }
 
@@ -267,14 +270,17 @@ export async function initiateInvoicePayment(
     metadata?: Record<string, any>
   }
 ): Promise<PaymentResponse> {
-  return apiPost<PaymentResponse>(`/billing/invoices/${invoiceId}/pay`, {
+  const sanitized = sanitizeObject({
     paymentMethod: options.paymentMethod,
     metadata: {
       ...options.metadata,
       ...(options.successUrl && { successUrl: options.successUrl }),
       ...(options.cancelUrl && { cancelUrl: options.cancelUrl }),
     }
+  }, {
+    nullable: []  // POST operation: empty fields omitted, not sent as null
   })
+  return apiPost<PaymentResponse>(`/billing/invoices/${invoiceId}/pay`, sanitized)
 }
 
 // ============================================================================

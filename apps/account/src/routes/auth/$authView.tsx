@@ -41,7 +41,7 @@ function RouteComponent() {
 
   return (
     <main className="h-screen overflow-y-auto flex items-center justify-center bg-background py-6 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full">
+      <div className="max-w-md w-full mx-auto">
         {headerContent && (
           <div className="text-center mb-6">
             <div className="flex justify-center mb-3">
@@ -51,7 +51,7 @@ function RouteComponent() {
             <p className="subtitle text-muted-foreground mt-2">{headerContent.subtitle}</p>
           </div>
         )}
-        <div className="w-full overflow-hidden [&_.flex.items-center.gap-2]:justify-center">
+        <div className="w-full overflow-hidden flex justify-center text-center [&_.flex.items-center.gap-2]:justify-center">
           <AuthView
             pathname={authView}
             callbackURL={callbackURL}

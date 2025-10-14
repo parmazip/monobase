@@ -34,11 +34,16 @@ export function useMyMerchantAccount() {
     queryFn: getMyMerchantAccount,
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: (failureCount, error) => {
-      // Don't retry 404 errors (no merchant account exists)
-      if (error instanceof ApiError && error.status === 404) {
+      // Max retries
+      if (failureCount >= 3) return false
+      
+      // Never retry 4xx client errors (validation, auth, not found, etc.)
+      if (error instanceof ApiError && error.status >= 400 && error.status < 500) {
         return false
       }
-      return failureCount < 2
+      
+      // Retry 5xx server errors and network errors
+      return true
     },
   })
 }

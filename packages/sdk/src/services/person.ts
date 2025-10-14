@@ -191,7 +191,7 @@ export async function createMyPerson(data: CreatePersonData): Promise<Person> {
     languagesSpoken: data.languagesSpoken,
     timezone: data.timezone,
   }, {
-    nullable: ['lastName', 'middleName', 'dateOfBirth', 'gender', 'contactInfo', 'primaryAddress', 'languagesSpoken', 'timezone']
+    nullable: []  // CREATE operations: empty fields are omitted, not sent as null
   }) as ApiPersonCreate
   
   const apiPerson = await apiPost<ApiPerson>('/persons', apiRequest)

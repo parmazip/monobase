@@ -100,7 +100,7 @@ function BillingPage() {
 
   // Fetch invoices from API
   const { data: invoicesData, isLoading, error, refetch } = useMyInvoices({
-    limit: 1000,
+    limit: 100,
   })
 
   const invoices = invoicesData?.items || []

@@ -126,7 +126,7 @@ function EarningsPage() {
   // Fetch real earnings data
   const { data: earningsOverview, isLoading: overviewLoading, error: overviewError } = useEarningsOverview()
   const { data: earningsStats, isLoading: statsLoading } = useEarningsStats(chartPeriod)
-  const { data: invoicesData, isLoading: invoicesLoading } = useMyInvoices({ limit: 1000 })
+  const { data: invoicesData, isLoading: invoicesLoading } = useMyInvoices({ limit: 100 })
 
   const isLoading = overviewLoading || invoicesLoading || accountLoading || statsLoading
 

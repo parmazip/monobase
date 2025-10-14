@@ -259,11 +259,6 @@ function NotificationsPage() {
     }
   }
 
-  const handleDeleteNotification = async (id: string) => {
-    // TODO: Implement delete notification when API is available
-    console.log('Delete notification:', id)
-  }
-
   const handleViewDetails = (notification: typeof uiNotifications[0]) => {
     // Mark as read when viewing
     if (notification.unread) {
@@ -491,16 +486,6 @@ function NotificationsPage() {
                         View Details
                       </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDeleteNotification(notification.id)
-                      }}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>

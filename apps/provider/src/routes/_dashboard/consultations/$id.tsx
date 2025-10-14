@@ -52,7 +52,7 @@ import {
   useCreateConsultation, 
   useUpdateConsultation, 
   useFinalizeConsultation,
-  useEmrPatients 
+  useEMRPatients 
 } from '@monobase/sdk/react/hooks/use-emr'
 import { Button } from "@monobase/ui/components/button"
 import { 
@@ -104,7 +104,7 @@ function ConsultationPage() {
   const { data: existingConsultation, isLoading: consultationLoading } = useConsultation(id)
   
   // Fetch patients to find patient details
-  const { data: patientsData } = useEmrPatients({ limit: 100 })
+  const { data: patientsData } = useEMRPatients({ limit: 100 })
   
   // Mutations
   const { mutate: createConsultation } = useCreateConsultation()

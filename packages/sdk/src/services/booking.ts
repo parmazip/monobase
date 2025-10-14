@@ -283,9 +283,14 @@ export async function getMyBookingEvent(): Promise<BookingEventData | null> {
  * Create or update provider's booking event
  */
 export async function upsertMyBookingEvent(data: Partial<ApiBookingEvent>): Promise<BookingEventData> {
+  // Note: This is likely a PUT/upsert operation - check API spec for nullable fields
+  // For now, treating as update operation with nullable fields
+  const sanitized = sanitizeObject(data, {
+    nullable: ['description', 'keywords', 'tags', 'formConfig', 'billingConfig', 'effectiveTo']
+  })
   const response = await apiGet<ApiBookingEvent>('/booking/event/me', {
     method: 'PUT',
-    body: JSON.stringify(data),
+    body: JSON.stringify(sanitized),
   })
   return mapApiEventToFrontend(response)
 }
@@ -329,16 +334,19 @@ export async function createAvailabilitySlot(data: {
   price?: number
   currency?: string
 }): Promise<BookingTimeSlot> {
-  const response = await apiPost<ApiTimeSlot>('/booking/availability', {
-      startTime: data.startTime.toISOString(),
-      endTime: data.endTime.toISOString(),
-      locationTypes: data.locationTypes,
-      billingConfig: data.price ? {
-        price: data.price,
-        currency: data.currency || 'CAD',
-        cancellationThresholdMinutes: 24 * 60, // 24 hours default
-      } : undefined,
+  const sanitized = sanitizeObject({
+    startTime: data.startTime.toISOString(),
+    endTime: data.endTime.toISOString(),
+    locationTypes: data.locationTypes,
+    billingConfig: data.price ? {
+      price: data.price,
+      currency: data.currency || 'CAD',
+      cancellationThresholdMinutes: 24 * 60, // 24 hours default
+    } : undefined,
+  }, {
+    nullable: []  // CREATE operation: empty fields omitted, not sent as null
   })
+  const response = await apiPost<ApiTimeSlot>('/booking/availability', sanitized)
   return mapApiTimeSlotToFrontend(response)
 }
 
@@ -356,19 +364,22 @@ export async function updateAvailabilitySlot(
     currency: string
   }>
 ): Promise<BookingTimeSlot> {
+  const sanitized = sanitizeObject({
+    startTime: data.startTime?.toISOString(),
+    endTime: data.endTime?.toISOString(),
+    locationTypes: data.locationTypes,
+    status: data.status,
+    billingConfig: data.price !== undefined ? {
+      price: data.price,
+      currency: data.currency || 'CAD',
+      cancellationThresholdMinutes: 24 * 60,
+    } : undefined,
+  }, {
+    nullable: ['billingConfig']  // PATCH operation: allow clearing billing config
+  })
   const response = await apiGet<ApiTimeSlot>(`/booking/availability/${slotId}`, {
     method: 'PATCH',
-    body: JSON.stringify({
-      startTime: data.startTime?.toISOString(),
-      endTime: data.endTime?.toISOString(),
-      locationTypes: data.locationTypes,
-      status: data.status,
-      billingConfig: data.price !== undefined ? {
-        price: data.price,
-        currency: data.currency || 'CAD',
-        cancellationThresholdMinutes: 24 * 60,
-      } : undefined,
-    }),
+    body: JSON.stringify(sanitized),
   })
   return mapApiTimeSlotToFrontend(response)
 }
@@ -397,18 +408,21 @@ export async function createRecurringAvailability(data: {
   price?: number
   currency?: string
 }): Promise<{ created: number }> {
-  const response = await apiPost<{ created: number }>('/booking/availability/bulk', {
-      startDate: formatDate(data.startDate, { format: 'iso' }),
-      endDate: formatDate(data.endDate, { format: 'iso' }),
-      daysOfWeek: data.daysOfWeek,
-      timeSlots: data.timeSlots,
-      locationTypes: data.locationTypes,
-      billingConfig: data.price ? {
-        price: data.price,
-        currency: data.currency || 'CAD',
-        cancellationThresholdMinutes: 24 * 60,
-      } : undefined,
+  const sanitized = sanitizeObject({
+    startDate: formatDate(data.startDate, { format: 'iso' }),
+    endDate: formatDate(data.endDate, { format: 'iso' }),
+    daysOfWeek: data.daysOfWeek,
+    timeSlots: data.timeSlots,
+    locationTypes: data.locationTypes,
+    billingConfig: data.price ? {
+      price: data.price,
+      currency: data.currency || 'CAD',
+      cancellationThresholdMinutes: 24 * 60,
+    } : undefined,
+  }, {
+    nullable: []  // CREATE operation: empty fields omitted, not sent as null
   })
+  const response = await apiPost<{ created: number }>('/booking/availability/bulk', sanitized)
   return response
 }
 
@@ -499,11 +513,14 @@ export interface CreateBookingData {
  * Create a new booking (patient action)
  */
 export async function createBooking(data: CreateBookingData): Promise<Booking> {
-  const response = await apiPost<ApiBooking>('/booking/bookings', {
+  const sanitized = sanitizeObject({
     slot: data.slot,
     locationType: data.locationType,
     reason: data.reason,
     formResponses: data.formResponses ? { data: data.formResponses } : undefined,
+  }, {
+    nullable: []  // CREATE operation: empty fields omitted, not sent as null
   })
+  const response = await apiPost<ApiBooking>('/booking/bookings', sanitized)
   return mapApiBookingToFrontend(response)
 }

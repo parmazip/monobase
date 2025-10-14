@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@monobase/ui/components/card'
 import { Activity, Users, Calendar, DollarSign } from 'lucide-react'
-import { useEmrPatients, useConsultations } from '@monobase/sdk/react/hooks/use-emr'
+import { useEMRPatients, useConsultations } from '@monobase/sdk/react/hooks/use-emr'
 import { useEarningsOverview } from '@/hooks/use-earnings'
 
 export const Route = createFileRoute('/_dashboard/dashboard')({
@@ -9,7 +9,7 @@ export const Route = createFileRoute('/_dashboard/dashboard')({
 })
 
 function DashboardPage() {
-  const { data: patientsData } = useEmrPatients({ limit: 1 })
+  const { data: patientsData } = useEMRPatients({ limit: 1 })
   const { data: consultationsData } = useConsultations({ status: 'completed', limit: 1 })
   const { data: earnings } = useEarningsOverview()
 
