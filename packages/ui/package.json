@@ -9,11 +9,9 @@
     "./hooks/*": "./src/hooks/*",
     "./components/*": "./src/components/*",
     "./person/*": "./src/person/*",
+    "./patient/*": "./src/patient/*",
     "./provider/*": "./src/provider/*",
     "./emr/*": "./src/emr/*",
-    "./emr/utils/consultation-helpers": "./src/emr/utils/consultation-helpers.ts",
-    "./constants/minor-ailments": "./src/constants/minor-ailments.ts",
-    "./constants/minor-ailments-practice-locations": "./src/constants/minor-ailments-practice-locations.ts",
     "./comms/*": "./src/comms/*",
     "./booking/*": "./src/booking/*",
     "./billing/*": "./src/billing/*"
