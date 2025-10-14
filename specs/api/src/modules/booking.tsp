@@ -667,9 +667,10 @@ namespace BookingModule {
    * Handles booking event availability schedules with atomic operations.
    */
   interface BookingEventManagement {
-    @doc("List booking events. Public endpoint - no authentication required. Use for discovery.")
+    @doc("List booking events. Public endpoint with optional authentication for personalization.")
     @operationId("listBookingEvents")
     @get
+    @useAuth([bearerAuth, Http.NoAuth])
     @route("/events")
     listBookingEvents(
       @doc("Filter by event owner (person ID)")
@@ -824,9 +825,10 @@ namespace BookingModule {
    * Public endpoints for viewing slot availability.
    */
   interface SlotDiscovery {
-    @doc("Get individual time slot details. Public endpoint - no authentication required.")
+    @doc("Get individual time slot details. Public endpoint with optional authentication.")
     @operationId("getTimeSlot")
     @get
+    @useAuth([bearerAuth, Http.NoAuth])
     @route("/slots/{slotId}")
     getTimeSlot(
       @path slotId: UUID,
