@@ -76,6 +76,11 @@ import { createPerson } from '../../handlers/person/createPerson';
 import { listPersons } from '../../handlers/person/listPersons';
 import { getPerson } from '../../handlers/person/getPerson';
 import { updatePerson } from '../../handlers/person/updatePerson';
+import { listProviders } from '../../handlers/provider/listProviders';
+import { createProvider } from '../../handlers/provider/createProvider';
+import { getProvider } from '../../handlers/provider/getProvider';
+import { updateProvider } from '../../handlers/provider/updateProvider';
+import { deleteProvider } from '../../handlers/provider/deleteProvider';
 import { createReview } from '../../handlers/reviews/createReview';
 import { listReviews } from '../../handlers/reviews/listReviews';
 import { getReview } from '../../handlers/reviews/getReview';
@@ -178,6 +183,13 @@ export const registry = {
   listPersons,
   getPerson,
   updatePerson,
+
+  // Provider handlers
+  listProviders,
+  createProvider,
+  getProvider,
+  updateProvider,
+  deleteProvider,
 
   // Reviews handlers
   createReview,

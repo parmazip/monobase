@@ -55,28 +55,18 @@ const validateTimezone = (tz: string): boolean => {
   return timezoneNames.includes(tz);
 };
 
-export const CountryCodeSchema = z.string().regex(/^[A-Z]{2}$/).refine(val => validateCountryCode(val), { message: "Invalid ISO 3166-1 country code" });
-
-export const GeoCoordinatesSchema = z.object({
-  latitude: z.number().gte(-90).lte(90),
-  longitude: z.number().gte(-180).lte(180),
-  accuracy: z.number().gte(0).optional()
-});
-
 export const AddressSchema = z.object({
   street1: z.string().min(1).max(100),
   street2: z.string().max(100).optional(),
   city: z.string().min(1).max(50),
   state: z.string().min(1).max(50),
   postalCode: z.string().min(1).max(20),
-  country: CountryCodeSchema,
-  coordinates: GeoCoordinatesSchema.optional()
-});
-
-export const GeoCoordinatesUpdateSchema = z.object({
-  latitude: z.number().gte(-90).lte(90).optional(),
-  longitude: z.number().gte(-180).lte(180).optional(),
+  country: z.string().regex(/^[A-Z]{2}$/).refine(val => validateCountryCode(val), { message: "Invalid ISO 3166-1 country code" }),
+  coordinates: z.object({
+  latitude: z.number().gte(-90).lte(90),
+  longitude: z.number().gte(-180).lte(180),
   accuracy: z.number().gte(0).optional()
+}).optional()
 });
 
 export const AddressUpdateSchema = z.object({
@@ -85,8 +75,12 @@ export const AddressUpdateSchema = z.object({
   city: z.string().min(1).max(50).optional(),
   state: z.string().min(1).max(50).optional(),
   postalCode: z.string().min(1).max(20).optional(),
-  country: CountryCodeSchema.optional(),
-  coordinates: z.union([GeoCoordinatesUpdateSchema, z.null()]).optional()
+  country: z.string().regex(/^[A-Z]{2}$/).refine(val => validateCountryCode(val), { message: "Invalid ISO 3166-1 country code" }).optional(),
+  coordinates: z.union([z.object({
+  latitude: z.number().gte(-90).lte(90).optional(),
+  longitude: z.number().gte(-180).lte(180).optional(),
+  accuracy: z.number().gte(0).optional()
+}), z.null()]).optional()
 });
 
 export const AuditActionSchema = z.enum(["create", "read", "update", "delete", "login", "logout"]);
@@ -95,32 +89,21 @@ export const AuditCategorySchema = z.enum(["regulatory", "security", "privacy", 
 
 export const AuditEventTypeSchema = z.enum(["authentication", "data-access", "data-modification", "system-config", "security", "compliance"]);
 
-export const UUIDSchema = z.string().uuid();
-
-export const AuditOutcomeSchema = z.enum(["success", "failure", "partial", "denied"]);
-
-export const AuditRetentionStatusSchema = z.enum(["active", "archived", "pending-purge"]);
-
-export const BaseEntitySchema = z.object({
-  id: UUIDSchema,
+export const AuditLogEntrySchema = z.object({
+  id: z.string().uuid(),
   version: z.number().int(),
   createdAt: z.string().datetime().transform((str) => new Date(str)),
-  createdBy: UUIDSchema.optional(),
+  createdBy: z.string().uuid().optional(),
   updatedAt: z.string().datetime().transform((str) => new Date(str)),
-  updatedBy: UUIDSchema.optional(),
-  deletedAt: z.string().datetime().transform((str) => new Date(str)).optional(),
-  deletedBy: UUIDSchema.optional()
-});
-
-export const AuditLogEntrySchema = z.intersection(BaseEntitySchema, z.object({
-  eventType: AuditEventTypeSchema,
-  category: AuditCategorySchema,
-  user: UUIDSchema.optional(),
+  updatedBy: z.string().uuid().optional(),
+  eventType: z.enum(["authentication", "data-access", "data-modification", "system-config", "security", "compliance"]),
+  category: z.enum(["regulatory", "security", "privacy", "administrative", "domain", "financial"]),
+  user: z.string().uuid().optional(),
   userType: z.enum(["client", "service_provider", "admin", "system"]).optional(),
   resourceType: z.string(),
   resource: z.string(),
-  action: AuditActionSchema,
-  outcome: AuditOutcomeSchema,
+  action: z.enum(["create", "read", "update", "delete", "login", "logout"]),
+  outcome: z.enum(["success", "failure", "partial", "denied"]),
   description: z.string(),
   details: z.record(z.string(), z.unknown()).optional(),
   ipAddress: z.string().optional(),
@@ -128,15 +111,17 @@ export const AuditLogEntrySchema = z.intersection(BaseEntitySchema, z.object({
   session: z.string().optional(),
   request: z.string().optional(),
   integrityHash: z.string().optional(),
-  retentionStatus: AuditRetentionStatusSchema,
+  retentionStatus: z.enum(["active", "archived", "pending-purge"]),
   archivedAt: z.string().datetime().transform((str) => new Date(str)).optional(),
-  archivedBy: UUIDSchema.optional(),
+  archivedBy: z.string().uuid().optional(),
   purgeAfter: z.string().datetime().transform((str) => new Date(str)).optional()
-}));
+});
 
-export const UrlSchema = z.string().url();
+export const AuditOutcomeSchema = z.enum(["success", "failure", "partial", "denied"]);
 
-export const ErrorDetailSchema = z.object({
+export const AuditRetentionStatusSchema = z.enum(["active", "archived", "pending-purge"]);
+
+export const AuthenticationErrorSchema = z.object({
   code: z.string(),
   message: z.string(),
   details: z.record(z.string(), z.unknown()).optional(),
@@ -145,115 +130,109 @@ export const ErrorDetailSchema = z.object({
   path: z.string(),
   method: z.string(),
   statusCode: z.number().int(),
-  helpUrl: UrlSchema.optional()
-});
-
-export const AuthenticationErrorSchema = z.intersection(ErrorDetailSchema, z.object({
+  helpUrl: z.string().url().optional(),
   scheme: z.enum(["bearer", "api-key", "oauth2"]).optional(),
   supportedSchemes: z.array(z.string()).optional()
-}));
+});
 
-export const AuthorizationErrorSchema = z.intersection(ErrorDetailSchema, z.object({
+export const AuthorizationErrorSchema = z.object({
+  code: z.string(),
+  message: z.string(),
+  details: z.record(z.string(), z.unknown()).optional(),
+  requestId: z.string(),
+  timestamp: z.string().datetime().transform((str) => new Date(str)),
+  path: z.string(),
+  method: z.string(),
+  statusCode: z.number().int(),
+  helpUrl: z.string().url().optional(),
   requiredPermission: z.string().optional(),
   userPermissions: z.array(z.string()).optional(),
   resource: z.string().optional()
-}));
+});
 
-export const CurrencyAmountSchema = z.number().int().gte(0);
+export const BaseEntitySchema = z.object({
+  id: z.string().uuid(),
+  version: z.number().int(),
+  createdAt: z.string().datetime().transform((str) => new Date(str)),
+  createdBy: z.string().uuid().optional(),
+  updatedAt: z.string().datetime().transform((str) => new Date(str)),
+  updatedBy: z.string().uuid().optional()
+});
 
 export const BillingConfigSchema = z.object({
-  price: CurrencyAmountSchema,
+  price: z.number().int().gte(0),
   currency: z.string(),
   cancellationThresholdMinutes: z.number().int().gte(0).lte(10080)
 });
 
 export const BillingConfigUpdateSchema = z.object({
-  price: CurrencyAmountSchema.optional(),
+  price: z.number().int().gte(0).optional(),
   currency: z.string().optional(),
   cancellationThresholdMinutes: z.number().int().gte(0).lte(10080).optional()
 });
 
+export const LanguageCodeSchema = z.string().regex(/^[a-z]{2}$/).refine(val => validateLanguageCode(val), { message: "Invalid ISO 639-1 language code" });
+
+export const PersonSchema = z.object({
+  id: z.string().uuid(),
+  version: z.number().int(),
+  createdAt: z.string().datetime().transform((str) => new Date(str)),
+  createdBy: z.string().uuid().optional(),
+  updatedAt: z.string().datetime().transform((str) => new Date(str)),
+  updatedBy: z.string().uuid().optional(),
+  firstName: z.string().min(1).max(50),
+  lastName: z.string().min(1).max(50).optional(),
+  middleName: z.string().max(50).optional(),
+  dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(val => { const parsed = new Date(val + "T00:00:00Z"); return !isNaN(parsed.getTime()) && parsed.toISOString().split("T")[0] === val; }, { message: "Invalid calendar date" }).optional(),
+  gender: z.enum(["male", "female", "non-binary", "other", "prefer-not-to-say"]).optional(),
+  primaryAddress: z.object({
+  street1: z.string().min(1).max(100),
+  street2: z.string().max(100).optional(),
+  city: z.string().min(1).max(50),
+  state: z.string().min(1).max(50),
+  postalCode: z.string().min(1).max(20),
+  country: z.string().regex(/^[A-Z]{2}$/).refine(val => validateCountryCode(val), { message: "Invalid ISO 3166-1 country code" }),
+  coordinates: z.object({
+  latitude: z.number().gte(-90).lte(90),
+  longitude: z.number().gte(-180).lte(180),
+  accuracy: z.number().gte(0).optional()
+}).optional()
+}).optional(),
+  contactInfo: z.object({
+  email: z.string().email().optional(),
+  phone: z.string().regex(/^\+[1-9]\d{1,14}$/).refine(val => validatePhoneNumber(val), { message: "Invalid phone number in E.164 format" }).optional()
+}).optional(),
+  avatar: z.object({
+  file: z.string().uuid().optional(),
+  url: z.string().url()
+}).optional(),
+  languagesSpoken: z.array(LanguageCodeSchema).optional(),
+  timezone: z.string().regex(/^[A-Za-z_]+\/[A-Za-z_]+$/).refine(val => validateTimezone(val), { message: "Invalid IANA timezone identifier" }).optional()
+});
+
 export const LocationTypeSchema = z.enum(["video", "phone", "in-person"]);
-
-export const BookingStatusSchema = z.enum(["pending", "confirmed", "rejected", "cancelled", "completed", "no_show_client", "no_show_provider"]);
-
-export const FormResponseMetaDataSchema = z.object({
-  submittedAt: z.string().datetime().transform((str) => new Date(str)).optional(),
-  completionTimeSeconds: z.number().int().optional(),
-  ipAddress: z.string().optional()
-});
-
-export const FormResponsesSchema = z.object({
-  data: z.record(z.string(), z.unknown()),
-  metadata: FormResponseMetaDataSchema.optional()
-});
-
-export const BookingSchema = z.intersection(BaseEntitySchema, z.object({
-  client: UUIDSchema,
-  provider: UUIDSchema,
-  slot: UUIDSchema,
-  locationType: LocationTypeSchema,
-  reason: z.string().max(500),
-  status: BookingStatusSchema,
-  bookedAt: z.string().datetime().transform((str) => new Date(str)),
-  confirmationTimestamp: z.string().datetime().transform((str) => new Date(str)).optional(),
-  scheduledAt: z.string().datetime().transform((str) => new Date(str)),
-  durationMinutes: z.number().int().gte(15).lte(480),
-  cancellationReason: z.string().optional(),
-  cancelledBy: z.string().optional(),
-  cancelledAt: z.string().datetime().transform((str) => new Date(str)).optional(),
-  noShowMarkedBy: z.string().optional(),
-  noShowMarkedAt: z.string().datetime().transform((str) => new Date(str)).optional(),
-  formResponses: FormResponsesSchema.optional(),
-  invoice: UUIDSchema.optional()
-}));
-
-export const BookingActionRequestSchema = z.object({
-  reason: z.string().max(500)
-});
-
-export const FormResponseDataSchema = z.object({
-  data: z.record(z.string(), z.unknown())
-});
-
-export const BookingCreateRequestSchema = z.object({
-  slot: UUIDSchema,
-  locationType: LocationTypeSchema.optional(),
-  reason: z.string().max(500).optional(),
-  formResponses: FormResponseDataSchema.optional()
-});
-
-export const FormFieldTypeSchema = z.enum(["text", "textarea", "email", "phone", "number", "datetime", "select", "multiselect", "checkbox", "display"]);
 
 export const FormFieldOptionSchema = z.object({
   label: z.string(),
   value: z.string()
 });
 
-export const FormFieldValidationSchema = z.object({
-  minLength: z.number().int().optional(),
-  maxLength: z.number().int().optional(),
-  min: z.number().optional(),
-  max: z.number().optional(),
-  pattern: z.string().optional()
-});
-
 export const FormFieldConfigSchema = z.object({
-  id: z.string(),
-  type: FormFieldTypeSchema,
+  name: z.string(),
+  type: z.enum(["text", "textarea", "email", "phone", "number", "date", "datetime", "url", "select", "multiselect", "checkbox", "display"]),
   label: z.string(),
   required: z.boolean().optional(),
   options: z.array(FormFieldOptionSchema).optional(),
-  validation: FormFieldValidationSchema.optional(),
+  validation: z.object({
+  minLength: z.number().int().optional(),
+  maxLength: z.number().int().optional(),
+  min: z.union([z.number(), z.string()]).optional(),
+  max: z.union([z.number(), z.string()]).optional(),
+  pattern: z.string().optional()
+}).optional(),
   placeholder: z.string().optional(),
   helpText: z.string().optional()
 });
-
-export const FormConfigSchema = z.object({
-  fields: z.array(FormFieldConfigSchema).optional()
-});
-
-export const BookingEventStatusSchema = z.enum(["draft", "active", "paused", "archived"]);
 
 export const TimeBlockSchema = z.object({
   startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
@@ -267,9 +246,15 @@ export const DailyConfigSchema = z.object({
   timeBlocks: z.array(TimeBlockSchema)
 });
 
-export const BookingEventSchema = z.intersection(BaseEntitySchema, z.object({
-  owner: UUIDSchema,
-  context: UUIDSchema.optional(),
+export const BookingEventSchema = z.object({
+  id: z.string().uuid(),
+  version: z.number().int(),
+  createdAt: z.string().datetime().transform((str) => new Date(str)),
+  createdBy: z.string().uuid().optional(),
+  updatedAt: z.string().datetime().transform((str) => new Date(str)),
+  updatedBy: z.string().uuid().optional(),
+  owner: z.union([z.string(), PersonSchema]),
+  context: z.string().optional(),
   title: z.string(),
   description: z.string().optional(),
   keywords: z.array(z.string()).optional(),
@@ -278,31 +263,113 @@ export const BookingEventSchema = z.intersection(BaseEntitySchema, z.object({
   locationTypes: z.array(LocationTypeSchema),
   maxBookingDays: z.number().int().gte(0).lte(365),
   minBookingMinutes: z.number().int().gte(0).lte(4320),
-  formConfig: FormConfigSchema.optional(),
-  billingConfig: BillingConfigSchema.optional(),
-  status: BookingEventStatusSchema,
+  formConfig: z.object({
+  fields: z.array(FormFieldConfigSchema).optional()
+}).optional(),
+  billingConfig: z.object({
+  price: z.number().int().gte(0),
+  currency: z.string(),
+  cancellationThresholdMinutes: z.number().int().gte(0).lte(10080)
+}).optional(),
+  status: z.enum(["draft", "active", "paused", "archived"]),
   effectiveFrom: z.string().datetime().transform((str) => new Date(str)),
   effectiveTo: z.string().datetime().transform((str) => new Date(str)).optional(),
   dailyConfigs: z.record(z.string(), z.unknown())
-}));
+});
+
+export const TimeSlotSchema = z.object({
+  id: z.string().uuid(),
+  version: z.number().int(),
+  createdAt: z.string().datetime().transform((str) => new Date(str)),
+  createdBy: z.string().uuid().optional(),
+  updatedAt: z.string().datetime().transform((str) => new Date(str)),
+  updatedBy: z.string().uuid().optional(),
+  owner: z.string().uuid(),
+  event: z.union([z.string(), BookingEventSchema]),
+  context: z.string().optional(),
+  startTime: z.string().datetime().transform((str) => new Date(str)),
+  endTime: z.string().datetime().transform((str) => new Date(str)),
+  locationTypes: z.array(LocationTypeSchema),
+  status: z.enum(["available", "booked", "blocked"]),
+  billingConfig: z.object({
+  price: z.number().int().gte(0),
+  currency: z.string(),
+  cancellationThresholdMinutes: z.number().int().gte(0).lte(10080)
+}).optional(),
+  booking: z.string().uuid().optional()
+});
+
+export const BookingSchema = z.object({
+  id: z.string().uuid(),
+  version: z.number().int(),
+  createdAt: z.string().datetime().transform((str) => new Date(str)),
+  createdBy: z.string().uuid().optional(),
+  updatedAt: z.string().datetime().transform((str) => new Date(str)),
+  updatedBy: z.string().uuid().optional(),
+  client: z.union([z.string(), PersonSchema]),
+  provider: z.union([z.string(), PersonSchema]),
+  slot: z.union([z.string(), TimeSlotSchema]),
+  locationType: z.enum(["video", "phone", "in-person"]),
+  reason: z.string().max(500),
+  status: z.enum(["pending", "confirmed", "rejected", "cancelled", "completed", "no_show_client", "no_show_provider"]),
+  bookedAt: z.string().datetime().transform((str) => new Date(str)),
+  confirmationTimestamp: z.string().datetime().transform((str) => new Date(str)).optional(),
+  scheduledAt: z.string().datetime().transform((str) => new Date(str)),
+  durationMinutes: z.number().int().gte(15).lte(480),
+  cancellationReason: z.string().optional(),
+  cancelledBy: z.string().optional(),
+  cancelledAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  noShowMarkedBy: z.string().optional(),
+  noShowMarkedAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  formResponses: z.object({
+  data: z.record(z.string(), z.unknown()),
+  metadata: z.object({
+  submittedAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  completionTimeSeconds: z.number().int().optional(),
+  ipAddress: z.string().optional()
+}).optional()
+}).optional(),
+  invoice: z.string().uuid().optional()
+});
+
+export const BookingActionRequestSchema = z.object({
+  reason: z.string().max(500)
+});
+
+export const BookingCreateRequestSchema = z.object({
+  slot: z.string().uuid(),
+  locationType: z.enum(["video", "phone", "in-person"]).optional(),
+  reason: z.string().max(500).optional(),
+  formResponses: z.object({
+  data: z.record(z.string(), z.unknown())
+}).optional()
+});
 
 export const BookingEventCreateRequestSchema = z.object({
   title: z.string(),
   description: z.string().optional(),
   keywords: z.array(z.string()).optional(),
   tags: z.array(z.string()).optional(),
-  context: UUIDSchema.optional(),
+  context: z.string().optional(),
   timezone: z.string().optional(),
   locationTypes: z.array(LocationTypeSchema).optional(),
   maxBookingDays: z.number().int().gte(0).lte(365).optional(),
   minBookingMinutes: z.number().int().gte(0).lte(4320).optional(),
-  formConfig: FormConfigSchema.optional(),
-  billingConfig: BillingConfigSchema.optional(),
-  status: BookingEventStatusSchema.optional(),
+  formConfig: z.object({
+  fields: z.array(FormFieldConfigSchema).optional()
+}).optional(),
+  billingConfig: z.object({
+  price: z.number().int().gte(0),
+  currency: z.string(),
+  cancellationThresholdMinutes: z.number().int().gte(0).lte(10080)
+}).optional(),
+  status: z.enum(["draft", "active", "paused", "archived"]).optional(),
   effectiveFrom: z.string().datetime().transform((str) => new Date(str)).optional(),
   effectiveTo: z.string().datetime().transform((str) => new Date(str)).optional(),
   dailyConfigs: z.record(z.string(), z.unknown())
 });
+
+export const BookingEventStatusSchema = z.enum(["draft", "active", "paused", "archived"]);
 
 export const DailyConfigUpdateSchema = z.object({
   enabled: z.boolean().optional(),
@@ -318,15 +385,23 @@ export const BookingEventUpdateRequestSchema = z.object({
   locationTypes: z.array(LocationTypeSchema).optional(),
   maxBookingDays: z.number().int().optional(),
   minBookingMinutes: z.number().int().optional(),
-  formConfig: z.union([FormConfigSchema, z.null()]).optional(),
-  billingConfig: z.union([BillingConfigUpdateSchema, z.null()]).optional(),
-  status: BookingEventStatusSchema.optional(),
+  formConfig: z.union([z.object({
+  fields: z.array(FormFieldConfigSchema).optional()
+}), z.null()]).optional(),
+  billingConfig: z.union([z.object({
+  price: z.number().int().gte(0).optional(),
+  currency: z.string().optional(),
+  cancellationThresholdMinutes: z.number().int().gte(0).lte(10080).optional()
+}), z.null()]).optional(),
+  status: z.enum(["draft", "active", "paused", "archived"]).optional(),
   effectiveTo: z.union([z.string().datetime().transform((str) => new Date(str)), z.null()]).optional(),
   dailyConfigs: z.record(z.string(), z.unknown()).optional()
 });
 
+export const BookingStatusSchema = z.enum(["pending", "confirmed", "rejected", "cancelled", "completed", "no_show_client", "no_show_provider"]);
+
 export const CallParticipantSchema = z.object({
-  user: UUIDSchema,
+  user: z.string().uuid(),
   displayName: z.string().max(100),
   joinedAt: z.string().datetime().transform((str) => new Date(str)).optional(),
   leftAt: z.string().datetime().transform((str) => new Date(str)).optional(),
@@ -340,71 +415,65 @@ export const CancelEmailRequestSchema = z.object({
 
 export const CaptureMethodSchema = z.enum(["automatic", "manual"]);
 
-export const MessageTypeSchema = z.enum(["text", "system", "video_call"]);
-
-export const VideoCallStatusSchema = z.enum(["starting", "active", "ended", "cancelled"]);
-
-export const VideoCallDataSchema = z.object({
-  status: VideoCallStatusSchema,
+export const ChatMessageSchema = z.object({
+  id: z.string().uuid(),
+  version: z.number().int(),
+  createdAt: z.string().datetime().transform((str) => new Date(str)),
+  createdBy: z.string().uuid().optional(),
+  updatedAt: z.string().datetime().transform((str) => new Date(str)),
+  updatedBy: z.string().uuid().optional(),
+  chatRoom: z.string().uuid(),
+  sender: z.string().uuid(),
+  timestamp: z.string().datetime().transform((str) => new Date(str)),
+  messageType: z.enum(["text", "system", "video_call"]),
+  message: z.string().max(5000).optional(),
+  videoCallData: z.object({
+  status: z.enum(["starting", "active", "ended", "cancelled"]),
   roomUrl: z.string().optional(),
   token: z.string().optional(),
   startedAt: z.string().datetime().transform((str) => new Date(str)).optional(),
-  startedBy: UUIDSchema.optional(),
+  startedBy: z.string().uuid().optional(),
   endedAt: z.string().datetime().transform((str) => new Date(str)).optional(),
-  endedBy: UUIDSchema.optional(),
+  endedBy: z.string().uuid().optional(),
   durationMinutes: z.number().int().optional(),
   participants: z.array(CallParticipantSchema)
+}).optional()
 });
 
-export const ChatMessageSchema = z.intersection(BaseEntitySchema, z.object({
-  chatRoom: UUIDSchema,
-  sender: UUIDSchema,
-  timestamp: z.string().datetime().transform((str) => new Date(str)),
-  messageType: MessageTypeSchema,
-  message: z.string().max(5000).optional(),
-  videoCallData: VideoCallDataSchema.optional()
-}));
+export const UUIDSchema = z.string().uuid();
+
+export const ChatRoomSchema = z.object({
+  id: z.string().uuid(),
+  version: z.number().int(),
+  createdAt: z.string().datetime().transform((str) => new Date(str)),
+  createdBy: z.string().uuid().optional(),
+  updatedAt: z.string().datetime().transform((str) => new Date(str)),
+  updatedBy: z.string().uuid().optional(),
+  participants: z.array(UUIDSchema),
+  admins: z.array(UUIDSchema),
+  context: z.string().uuid().optional(),
+  status: z.enum(["active", "archived"]),
+  lastMessageAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  messageCount: z.number().int(),
+  activeVideoCallMessage: z.string().uuid().optional()
+});
 
 export const ChatRoomStatusSchema = z.enum(["active", "archived"]);
 
-export const ChatRoomSchema = z.intersection(BaseEntitySchema, z.object({
-  participants: z.array(UUIDSchema),
-  admins: z.array(UUIDSchema),
-  context: UUIDSchema.optional(),
-  status: ChatRoomStatusSchema,
-  lastMessageAt: z.string().datetime().transform((str) => new Date(str)).optional(),
-  messageCount: z.number().int(),
-  activeVideoCallMessage: UUIDSchema.optional()
-}));
-
-export const ConflictErrorSchema = z.intersection(ErrorDetailSchema, z.object({
+export const ConflictErrorSchema = z.object({
+  code: z.string(),
+  message: z.string(),
+  details: z.record(z.string(), z.unknown()).optional(),
+  requestId: z.string(),
+  timestamp: z.string().datetime().transform((str) => new Date(str)),
+  path: z.string(),
+  method: z.string(),
+  statusCode: z.number().int(),
+  helpUrl: z.string().url().optional(),
   conflictingResource: z.string().optional(),
   reason: z.enum(["duplicate", "version-mismatch", "state-conflict", "dependency"]).optional(),
   currentState: z.record(z.string(), z.unknown()).optional(),
   resolution: z.array(z.string()).optional()
-}));
-
-export const VitalsDataSchema = z.object({
-  temperatureCelsius: z.number().optional(),
-  systolicBp: z.number().int().optional(),
-  diastolicBp: z.number().int().optional(),
-  heartRate: z.number().int().optional(),
-  weightKg: z.number().optional(),
-  heightCm: z.number().optional(),
-  respiratoryRate: z.number().int().optional(),
-  oxygenSaturation: z.number().int().optional(),
-  notes: z.string().optional()
-});
-
-export const SymptomSeveritySchema = z.union([z.string(), z.enum(["mild", "moderate", "severe"])]);
-
-export const SymptomsDataSchema = z.object({
-  onset: z.string().datetime().transform((str) => new Date(str)).optional(),
-  durationHours: z.number().int().optional(),
-  severity: SymptomSeveritySchema.optional(),
-  description: z.string().optional(),
-  associated: z.array(z.string()).optional(),
-  denies: z.array(z.string()).optional()
 });
 
 export const PrescriptionDataSchema = z.object({
@@ -418,76 +487,115 @@ export const PrescriptionDataSchema = z.object({
   notes: z.string().optional()
 });
 
-export const FollowUpDataSchema = z.object({
+export const ConsultationNoteSchema = z.object({
+  id: z.string().uuid(),
+  version: z.number().int(),
+  createdAt: z.string().datetime().transform((str) => new Date(str)),
+  createdBy: z.string().uuid().optional(),
+  updatedAt: z.string().datetime().transform((str) => new Date(str)),
+  updatedBy: z.string().uuid().optional(),
+  patient: z.string().uuid(),
+  provider: z.string().uuid(),
+  context: z.string().max(255).optional(),
+  chiefComplaint: z.string().min(1).max(500).optional(),
+  assessment: z.string().min(1).max(2000).optional(),
+  plan: z.string().min(1).max(2000).optional(),
+  vitals: z.object({
+  temperatureCelsius: z.number().optional(),
+  systolicBp: z.number().int().optional(),
+  diastolicBp: z.number().int().optional(),
+  heartRate: z.number().int().optional(),
+  weightKg: z.number().optional(),
+  heightCm: z.number().optional(),
+  respiratoryRate: z.number().int().optional(),
+  oxygenSaturation: z.number().int().optional(),
+  notes: z.string().optional()
+}).optional(),
+  symptoms: z.object({
+  onset: z.string().datetime().transform((str) => new Date(str)).optional(),
+  durationHours: z.number().int().optional(),
+  severity: z.union([z.string(), z.enum(["mild", "moderate", "severe"])]).optional(),
+  description: z.string().optional(),
+  associated: z.array(z.string()).optional(),
+  denies: z.array(z.string()).optional()
+}).optional(),
+  prescriptions: z.array(PrescriptionDataSchema).optional(),
+  followUp: z.object({
   needed: z.boolean(),
   timeframeDays: z.number().int().optional(),
   instructions: z.string().optional(),
   specialistReferral: z.string().optional()
+}).optional(),
+  externalDocumentation: z.record(z.string(), z.unknown()).optional(),
+  status: z.union([z.string(), z.enum(["draft", "finalized", "amended"])]),
+  finalizedAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  finalizedBy: z.string().uuid().optional()
 });
 
 export const ConsultationStatusSchema = z.union([z.string(), z.enum(["draft", "finalized", "amended"])]);
 
-export const ConsultationNoteSchema = z.intersection(BaseEntitySchema, z.object({
-  patient: UUIDSchema,
-  provider: UUIDSchema,
-  context: z.string().max(255).optional(),
-  chiefComplaint: z.string().min(1).max(500).optional(),
-  assessment: z.string().min(1).max(2000).optional(),
-  plan: z.string().min(1).max(2000).optional(),
-  vitals: VitalsDataSchema.optional(),
-  symptoms: SymptomsDataSchema.optional(),
-  prescriptions: z.array(PrescriptionDataSchema).optional(),
-  followUp: FollowUpDataSchema.optional(),
-  externalDocumentation: z.record(z.string(), z.unknown()).optional(),
-  status: ConsultationStatusSchema,
-  finalizedAt: z.string().datetime().transform((str) => new Date(str)).optional(),
-  finalizedBy: UUIDSchema.optional()
-}));
-
-export const EmailSchema = z.string().email();
-
-export const PhoneNumberSchema = z.string().regex(/^\+[1-9]\d{1,14}$/).refine(val => validatePhoneNumber(val), { message: "Invalid phone number in E.164 format" });
-
 export const ContactInfoSchema = z.object({
-  email: EmailSchema.optional(),
-  phone: PhoneNumberSchema.optional()
+  email: z.string().email().optional(),
+  phone: z.string().regex(/^\+[1-9]\d{1,14}$/).refine(val => validatePhoneNumber(val), { message: "Invalid phone number in E.164 format" }).optional()
 });
+
+export const CountryCodeSchema = z.string().regex(/^[A-Z]{2}$/).refine(val => validateCountryCode(val), { message: "Invalid ISO 3166-1 country code" });
 
 export const CreateChatRoomRequestSchema = z.object({
   participants: z.array(UUIDSchema),
   admins: z.array(UUIDSchema).optional(),
-  context: UUIDSchema.optional(),
+  context: z.string().uuid().optional(),
   upsert: z.boolean().optional()
 });
 
 export const CreateConsultationRequestSchema = z.object({
-  patient: UUIDSchema,
-  provider: UUIDSchema,
+  patient: z.string().uuid(),
+  provider: z.string().uuid(),
   context: z.string().max(255).optional(),
   chiefComplaint: z.string().min(1).max(500).optional(),
   assessment: z.string().min(1).max(2000).optional(),
   plan: z.string().min(1).max(2000).optional(),
-  vitals: VitalsDataSchema.optional(),
-  symptoms: SymptomsDataSchema.optional(),
+  vitals: z.object({
+  temperatureCelsius: z.number().optional(),
+  systolicBp: z.number().int().optional(),
+  diastolicBp: z.number().int().optional(),
+  heartRate: z.number().int().optional(),
+  weightKg: z.number().optional(),
+  heightCm: z.number().optional(),
+  respiratoryRate: z.number().int().optional(),
+  oxygenSaturation: z.number().int().optional(),
+  notes: z.string().optional()
+}).optional(),
+  symptoms: z.object({
+  onset: z.string().datetime().transform((str) => new Date(str)).optional(),
+  durationHours: z.number().int().optional(),
+  severity: z.union([z.string(), z.enum(["mild", "moderate", "severe"])]).optional(),
+  description: z.string().optional(),
+  associated: z.array(z.string()).optional(),
+  denies: z.array(z.string()).optional()
+}).optional(),
   prescriptions: z.array(PrescriptionDataSchema).optional(),
-  followUp: FollowUpDataSchema.optional()
+  followUp: z.object({
+  needed: z.boolean(),
+  timeframeDays: z.number().int().optional(),
+  instructions: z.string().optional(),
+  specialistReferral: z.string().optional()
+}).optional()
 });
-
-export const CurrencyCodeSchema = z.string().regex(/^[A-Z]{3}$/);
 
 export const CreateLineItemRequestSchema = z.object({
   description: z.string().max(500),
   quantity: z.number().int().gte(1).optional(),
-  unitPrice: CurrencyAmountSchema,
+  unitPrice: z.number().int().gte(0),
   metadata: z.record(z.string(), z.unknown()).optional()
 });
 
 export const CreateInvoiceRequestSchema = z.object({
-  customer: UUIDSchema,
-  merchant: UUIDSchema,
+  customer: z.string().uuid(),
+  merchant: z.string().uuid(),
   context: z.string().max(255).optional(),
-  currency: CurrencyCodeSchema.optional(),
-  paymentCaptureMethod: CaptureMethodSchema.optional(),
+  currency: z.string().regex(/^[A-Z]{3}$/).optional(),
+  paymentCaptureMethod: z.enum(["automatic", "manual"]).optional(),
   paymentDueAt: z.string().datetime().transform((str) => new Date(str)).optional(),
   voidThresholdMinutes: z.number().int().optional(),
   lineItems: z.array(CreateLineItemRequestSchema),
@@ -495,25 +603,23 @@ export const CreateInvoiceRequestSchema = z.object({
 });
 
 export const CreateMerchantAccountRequestSchema = z.object({
-  person: UUIDSchema.optional(),
+  person: z.string().uuid().optional(),
   refreshUrl: z.string().url(),
   returnUrl: z.string().url(),
   metadata: z.record(z.string(), z.unknown()).optional()
 });
 
 export const CreateReviewRequestSchema = z.object({
-  context: UUIDSchema,
+  context: z.string().uuid(),
   reviewType: z.string().max(50),
-  reviewedEntity: UUIDSchema.optional(),
+  reviewedEntity: z.string().uuid().optional(),
   npsScore: z.number().int().gte(0).lte(10),
   comment: z.string().max(1000).optional()
 });
 
-export const VariableTypeSchema = z.enum(["string", "number", "boolean", "date", "datetime", "url", "email", "array"]);
-
 export const TemplateVariableSchema = z.object({
   id: z.string().max(100),
-  type: VariableTypeSchema,
+  type: z.enum(["string", "number", "boolean", "date", "datetime", "url", "email", "array"]),
   label: z.string().max(255).optional(),
   required: z.boolean().optional(),
   defaultValue: z.string().optional(),
@@ -525,8 +631,6 @@ export const TemplateVariableSchema = z.object({
   options: z.array(z.string()).optional()
 });
 
-export const TemplateStatusSchema = z.enum(["draft", "active", "archived"]);
-
 export const CreateTemplateRequestSchema = z.object({
   tags: z.array(z.string()).optional(),
   name: z.string().max(255),
@@ -536,29 +640,39 @@ export const CreateTemplateRequestSchema = z.object({
   bodyText: z.string().optional(),
   variables: z.array(TemplateVariableSchema).optional(),
   fromName: z.string().optional(),
-  fromEmail: EmailSchema.optional(),
-  replyToEmail: EmailSchema.optional(),
+  fromEmail: z.string().email().optional(),
+  replyToEmail: z.string().email().optional(),
   replyToName: z.string().optional(),
-  status: TemplateStatusSchema.optional()
+  status: z.enum(["draft", "active", "archived"]).optional()
 });
+
+export const CurrencyAmountSchema = z.number().int().gte(0);
+
+export const CurrencyCodeSchema = z.string().regex(/^[A-Z]{3}$/);
 
 export const DashboardResponseSchema = z.object({
   dashboardUrl: z.string().url(),
   expiresAt: z.string().datetime().transform((str) => new Date(str))
 });
 
+export const EmailSchema = z.string().email();
+
 export const EmailProviderSchema = z.enum(["smtp", "postmark"]);
 
-export const EmailQueueStatusSchema = z.enum(["pending", "processing", "sent", "failed", "cancelled"]);
-
-export const EmailQueueItemSchema = z.intersection(BaseEntitySchema, z.object({
-  template: UUIDSchema.optional(),
+export const EmailQueueItemSchema = z.object({
+  id: z.string().uuid(),
+  version: z.number().int(),
+  createdAt: z.string().datetime().transform((str) => new Date(str)),
+  createdBy: z.string().uuid().optional(),
+  updatedAt: z.string().datetime().transform((str) => new Date(str)),
+  updatedBy: z.string().uuid().optional(),
+  template: z.string().uuid().optional(),
   templateTags: z.array(z.string()).optional(),
-  recipientEmail: EmailSchema,
+  recipientEmail: z.string().email(),
   recipientName: z.string().max(255).optional(),
   variables: z.record(z.string(), z.unknown()).optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
-  status: EmailQueueStatusSchema,
+  status: z.enum(["pending", "processing", "sent", "failed", "cancelled"]),
   priority: z.number().int().gte(1).lte(10),
   scheduledAt: z.string().datetime().transform((str) => new Date(str)).optional(),
   attempts: z.number().int().gte(0),
@@ -566,14 +680,22 @@ export const EmailQueueItemSchema = z.intersection(BaseEntitySchema, z.object({
   nextRetryAt: z.string().datetime().transform((str) => new Date(str)).optional(),
   lastError: z.string().optional(),
   sentAt: z.string().datetime().transform((str) => new Date(str)).optional(),
-  provider: EmailProviderSchema.optional(),
+  provider: z.enum(["smtp", "postmark"]).optional(),
   providerMessageId: z.string().max(255).optional(),
   cancelledAt: z.string().datetime().transform((str) => new Date(str)).optional(),
-  cancelledBy: UUIDSchema.optional(),
+  cancelledBy: z.string().uuid().optional(),
   cancellationReason: z.string().max(500).optional()
-}));
+});
 
-export const EmailTemplateSchema = z.intersection(BaseEntitySchema, z.object({
+export const EmailQueueStatusSchema = z.enum(["pending", "processing", "sent", "failed", "cancelled"]);
+
+export const EmailTemplateSchema = z.object({
+  id: z.string().uuid(),
+  version: z.number().int().gte(1),
+  createdAt: z.string().datetime().transform((str) => new Date(str)),
+  createdBy: z.string().uuid().optional(),
+  updatedAt: z.string().datetime().transform((str) => new Date(str)),
+  updatedBy: z.string().uuid().optional(),
   tags: z.array(z.string()).optional(),
   name: z.string().max(255),
   description: z.string().max(500).optional(),
@@ -582,12 +704,23 @@ export const EmailTemplateSchema = z.intersection(BaseEntitySchema, z.object({
   bodyText: z.string().optional(),
   variables: z.array(TemplateVariableSchema).optional(),
   fromName: z.string().max(255).optional(),
-  fromEmail: EmailSchema.optional(),
-  replyToEmail: EmailSchema.optional(),
+  fromEmail: z.string().email().optional(),
+  replyToEmail: z.string().email().optional(),
   replyToName: z.string().max(255).optional(),
-  status: TemplateStatusSchema,
-  version: z.number().int().gte(1)
-}));
+  status: z.enum(["draft", "active", "archived"])
+});
+
+export const ErrorDetailSchema = z.object({
+  code: z.string(),
+  message: z.string(),
+  details: z.record(z.string(), z.unknown()).optional(),
+  requestId: z.string(),
+  timestamp: z.string().datetime().transform((str) => new Date(str)),
+  path: z.string(),
+  method: z.string(),
+  statusCode: z.number().int(),
+  helpUrl: z.string().url().optional()
+});
 
 export const FaxNumberSchema = z.string().regex(/^\+?[0-9\s\-\(\)\,\.ext]+$/).max(50);
 
@@ -599,22 +732,26 @@ export const FieldErrorSchema = z.object({
   context: z.record(z.string(), z.unknown()).optional()
 });
 
-export const FileStatusSchema = z.enum(["uploading", "processing", "available", "failed"]);
-
-export const StoredFileSchema = z.intersection(BaseEntitySchema, z.object({
+export const FileDownloadResponseSchema = z.object({
+  downloadUrl: z.string().url(),
+  expiresAt: z.string().datetime().transform((str) => new Date(str)),
+  file: z.object({
+  id: z.string().uuid(),
+  version: z.number().int(),
+  createdAt: z.string().datetime().transform((str) => new Date(str)),
+  createdBy: z.string().uuid().optional(),
+  updatedAt: z.string().datetime().transform((str) => new Date(str)),
+  updatedBy: z.string().uuid().optional(),
   filename: z.string().max(255),
   mimeType: z.string().max(100),
   size: z.number().int().gte(0),
-  status: FileStatusSchema,
-  owner: UUIDSchema,
+  status: z.enum(["uploading", "processing", "available", "failed"]),
+  owner: z.string().uuid(),
   uploadedAt: z.string().datetime().transform((str) => new Date(str))
-}));
-
-export const FileDownloadResponseSchema = z.object({
-  downloadUrl: UrlSchema,
-  expiresAt: z.string().datetime().transform((str) => new Date(str)),
-  file: StoredFileSchema
+})
 });
+
+export const FileStatusSchema = z.enum(["uploading", "processing", "available", "failed"]);
 
 export const FileUploadRequestSchema = z.object({
   filename: z.string().max(255),
@@ -623,10 +760,17 @@ export const FileUploadRequestSchema = z.object({
 });
 
 export const FileUploadResponseSchema = z.object({
-  file: UUIDSchema,
-  uploadUrl: UrlSchema,
+  file: z.string().uuid(),
+  uploadUrl: z.string().url(),
   uploadMethod: z.enum(["PUT"]),
   expiresAt: z.string().datetime().transform((str) => new Date(str))
+});
+
+export const FollowUpDataSchema = z.object({
+  needed: z.boolean(),
+  timeframeDays: z.number().int().optional(),
+  instructions: z.string().optional(),
+  specialistReferral: z.string().optional()
 });
 
 export const FollowUpDataUpdateSchema = z.object({
@@ -636,7 +780,52 @@ export const FollowUpDataUpdateSchema = z.object({
   specialistReferral: z.string().optional()
 });
 
+export const FormConfigSchema = z.object({
+  fields: z.array(FormFieldConfigSchema).optional()
+});
+
+export const FormFieldTypeSchema = z.enum(["text", "textarea", "email", "phone", "number", "date", "datetime", "url", "select", "multiselect", "checkbox", "display"]);
+
+export const FormFieldValidationSchema = z.object({
+  minLength: z.number().int().optional(),
+  maxLength: z.number().int().optional(),
+  min: z.union([z.number(), z.string()]).optional(),
+  max: z.union([z.number(), z.string()]).optional(),
+  pattern: z.string().optional()
+});
+
+export const FormResponseDataSchema = z.object({
+  data: z.record(z.string(), z.unknown())
+});
+
+export const FormResponseMetaDataSchema = z.object({
+  submittedAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  completionTimeSeconds: z.number().int().optional(),
+  ipAddress: z.string().optional()
+});
+
+export const FormResponsesSchema = z.object({
+  data: z.record(z.string(), z.unknown()),
+  metadata: z.object({
+  submittedAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  completionTimeSeconds: z.number().int().optional(),
+  ipAddress: z.string().optional()
+}).optional()
+});
+
 export const GenderSchema = z.enum(["male", "female", "non-binary", "other", "prefer-not-to-say"]);
+
+export const GeoCoordinatesSchema = z.object({
+  latitude: z.number().gte(-90).lte(90),
+  longitude: z.number().gte(-180).lte(180),
+  accuracy: z.number().gte(0).optional()
+});
+
+export const GeoCoordinatesUpdateSchema = z.object({
+  latitude: z.number().gte(-90).lte(90).optional(),
+  longitude: z.number().gte(-180).lte(180).optional(),
+  accuracy: z.number().gte(0).optional()
+});
 
 export const IceServerSchema = z.object({
   urls: z.union([z.string(), z.array(z.string())]),
@@ -648,55 +837,78 @@ export const IceServersResponseSchema = z.object({
   iceServers: z.array(IceServerSchema)
 });
 
-export const InternalServerErrorSchema = z.intersection(ErrorDetailSchema, z.object({
+export const InternalServerErrorSchema = z.object({
+  code: z.string(),
+  message: z.string(),
+  details: z.record(z.string(), z.unknown()).optional(),
+  requestId: z.string(),
+  timestamp: z.string().datetime().transform((str) => new Date(str)),
+  path: z.string(),
+  method: z.string(),
+  statusCode: z.number().int(),
+  helpUrl: z.string().url().optional(),
   trackingId: z.string().optional(),
   reported: z.boolean().optional()
-}));
+});
 
-export const InvoiceStatusSchema = z.enum(["draft", "open", "paid", "void", "uncollectible"]);
+export const MerchantAccountSchema = z.object({
+  id: z.string().uuid(),
+  version: z.number().int(),
+  createdAt: z.string().datetime().transform((str) => new Date(str)),
+  createdBy: z.string().uuid().optional(),
+  updatedAt: z.string().datetime().transform((str) => new Date(str)),
+  updatedBy: z.string().uuid().optional(),
+  person: z.union([z.string(), PersonSchema]),
+  active: z.boolean(),
+  metadata: z.record(z.string(), z.unknown())
+});
 
 export const InvoiceLineItemSchema = z.object({
   description: z.string().max(500),
   quantity: z.number().int().gte(1),
-  unitPrice: CurrencyAmountSchema,
-  amount: CurrencyAmountSchema,
+  unitPrice: z.number().int().gte(0),
+  amount: z.number().int().gte(0),
   metadata: z.record(z.string(), z.unknown()).optional()
 });
 
-export const PaymentStatusSchema = z.enum(["pending", "requires_capture", "processing", "succeeded", "failed", "canceled"]);
-
-export const InvoiceSchema = z.intersection(BaseEntitySchema, z.object({
+export const InvoiceSchema = z.object({
+  id: z.string().uuid(),
+  version: z.number().int(),
+  createdAt: z.string().datetime().transform((str) => new Date(str)),
+  createdBy: z.string().uuid().optional(),
+  updatedAt: z.string().datetime().transform((str) => new Date(str)),
+  updatedBy: z.string().uuid().optional(),
   invoiceNumber: z.string().max(50),
-  customer: UUIDSchema,
-  merchant: UUIDSchema,
-  merchantAccount: UUIDSchema.optional(),
+  customer: z.union([z.string(), PersonSchema]),
+  merchant: z.union([z.string(), PersonSchema]),
+  merchantAccount: z.union([z.string(), MerchantAccountSchema]).optional(),
   context: z.string().max(255).optional(),
-  status: InvoiceStatusSchema,
-  subtotal: CurrencyAmountSchema,
-  tax: CurrencyAmountSchema.optional(),
-  total: CurrencyAmountSchema,
-  currency: CurrencyCodeSchema,
-  paymentCaptureMethod: CaptureMethodSchema,
+  status: z.enum(["draft", "open", "paid", "void", "uncollectible"]),
+  subtotal: z.number().int().gte(0),
+  tax: z.number().int().gte(0).optional(),
+  total: z.number().int().gte(0),
+  currency: z.string().regex(/^[A-Z]{3}$/),
+  paymentCaptureMethod: z.enum(["automatic", "manual"]),
   paymentDueAt: z.string().datetime().transform((str) => new Date(str)).optional(),
   lineItems: z.array(InvoiceLineItemSchema),
-  paymentStatus: PaymentStatusSchema.optional(),
+  paymentStatus: z.enum(["pending", "requires_capture", "processing", "succeeded", "failed", "canceled"]).optional(),
   paidAt: z.string().datetime().transform((str) => new Date(str)).optional(),
-  paidBy: UUIDSchema.optional(),
+  paidBy: z.string().uuid().optional(),
   voidedAt: z.string().datetime().transform((str) => new Date(str)).optional(),
-  voidedBy: UUIDSchema.optional(),
+  voidedBy: z.string().uuid().optional(),
   voidThresholdMinutes: z.number().int().optional(),
   authorizedAt: z.string().datetime().transform((str) => new Date(str)).optional(),
-  authorizedBy: UUIDSchema.optional(),
+  authorizedBy: z.string().uuid().optional(),
   metadata: z.record(z.string(), z.unknown()).optional()
-}));
+});
+
+export const InvoiceStatusSchema = z.enum(["draft", "open", "paid", "void", "uncollectible"]);
 
 export const JoinVideoCallRequestSchema = z.object({
   displayName: z.string().max(100),
   audioEnabled: z.boolean(),
   videoEnabled: z.boolean()
 });
-
-export const LanguageCodeSchema = z.string().regex(/^[a-z]{2}$/).refine(val => validateLanguageCode(val), { message: "Invalid ISO 639-1 language code" });
 
 export const LeaveVideoCallResponseSchema = z.object({
   message: z.string(),
@@ -705,47 +917,58 @@ export const LeaveVideoCallResponseSchema = z.object({
 });
 
 export const MaybeStoredFileSchema = z.object({
-  file: UUIDSchema.optional(),
+  file: z.string().uuid().optional(),
   url: z.string().url()
 });
 
 export const MaybeStoredFileUpdateSchema = z.object({
-  file: z.union([z.intersection(UUIDSchema, z.string()), z.null()]).optional(),
+  file: z.union([z.string().uuid(), z.null()]).optional(),
   url: z.string().url().optional()
 });
 
-export const MerchantAccountSchema = z.intersection(BaseEntitySchema, z.object({
-  person: UUIDSchema,
-  active: z.boolean(),
-  metadata: z.record(z.string(), z.unknown())
-}));
+export const MessageTypeSchema = z.enum(["text", "system", "video_call"]);
 
-export const NotFoundErrorSchema = z.intersection(ErrorDetailSchema, z.object({
+export const NotFoundErrorSchema = z.object({
+  code: z.string(),
+  message: z.string(),
+  details: z.record(z.string(), z.unknown()).optional(),
+  requestId: z.string(),
+  timestamp: z.string().datetime().transform((str) => new Date(str)),
+  path: z.string(),
+  method: z.string(),
+  statusCode: z.number().int(),
+  helpUrl: z.string().url().optional(),
   resourceType: z.string().optional(),
   resource: z.string().optional(),
   suggestions: z.array(z.string()).optional()
-}));
+});
 
-export const NotificationTypeSchema = z.enum(["billing", "security", "system", "booking.created", "booking.confirmed", "booking.rejected", "booking.cancelled", "booking.no-show-client", "booking.no-show-provider", "comms.video-call-started", "comms.video-call-joined", "comms.video-call-left", "comms.video-call-ended", "comms.chat-message"]);
+export const NotificationSchema = z.object({
+  id: z.string().uuid(),
+  version: z.number().int(),
+  createdAt: z.string().datetime().transform((str) => new Date(str)),
+  createdBy: z.string().uuid().optional(),
+  updatedAt: z.string().datetime().transform((str) => new Date(str)),
+  updatedBy: z.string().uuid().optional(),
+  recipient: z.string().uuid(),
+  type: z.enum(["billing", "security", "system", "booking.created", "booking.confirmed", "booking.rejected", "booking.cancelled", "booking.no-show-client", "booking.no-show-provider", "comms.video-call-started", "comms.video-call-joined", "comms.video-call-left", "comms.video-call-ended", "comms.chat-message"]),
+  channel: z.enum(["email", "push", "in-app"]),
+  title: z.string().max(200),
+  message: z.string().max(1000),
+  scheduledAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  relatedEntityType: z.string().optional(),
+  relatedEntity: z.string().uuid().optional(),
+  status: z.enum(["queued", "sent", "delivered", "read", "failed", "expired", "unread"]),
+  sentAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  readAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  consentValidated: z.boolean()
+});
 
 export const NotificationChannelSchema = z.enum(["email", "push", "in-app"]);
 
 export const NotificationStatusSchema = z.enum(["queued", "sent", "delivered", "read", "failed", "expired", "unread"]);
 
-export const NotificationSchema = z.intersection(BaseEntitySchema, z.object({
-  recipient: UUIDSchema,
-  type: NotificationTypeSchema,
-  channel: NotificationChannelSchema,
-  title: z.string().max(200),
-  message: z.string().max(1000),
-  scheduledAt: z.string().datetime().transform((str) => new Date(str)).optional(),
-  relatedEntityType: z.string().optional(),
-  relatedEntity: UUIDSchema.optional(),
-  status: NotificationStatusSchema,
-  sentAt: z.string().datetime().transform((str) => new Date(str)).optional(),
-  readAt: z.string().datetime().transform((str) => new Date(str)).optional(),
-  consentValidated: z.boolean()
-}));
+export const NotificationTypeSchema = z.enum(["billing", "security", "system", "booking.created", "booking.confirmed", "booking.rejected", "booking.cancelled", "booking.no-show-client", "booking.no-show-provider", "comms.video-call-started", "comms.video-call-joined", "comms.video-call-left", "comms.video-call-ended", "comms.chat-message"]);
 
 export const OffsetPaginationMetaSchema = z.object({
   offset: z.number().int(),
@@ -768,77 +991,86 @@ export const OnboardingResponseSchema = z.object({
   metadata: z.record(z.string(), z.unknown()).optional()
 });
 
-export const TimezoneIdSchema = z.string().regex(/^[A-Za-z_]+\/[A-Za-z_]+$/).refine(val => validateTimezone(val), { message: "Invalid IANA timezone identifier" });
-
-export const PersonSchema = z.intersection(BaseEntitySchema, z.object({
-  firstName: z.string().min(1).max(50),
-  lastName: z.string().min(1).max(50).optional(),
-  middleName: z.string().max(50).optional(),
-  dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(val => { const parsed = new Date(val + "T00:00:00Z"); return !isNaN(parsed.getTime()) && parsed.toISOString().split("T")[0] === val; }, { message: "Invalid calendar date" }).optional(),
-  gender: GenderSchema.optional(),
-  primaryAddress: AddressSchema.optional(),
-  contactInfo: ContactInfoSchema.optional(),
-  avatar: MaybeStoredFileSchema.optional(),
-  languagesSpoken: z.array(LanguageCodeSchema).optional(),
-  timezone: TimezoneIdSchema.optional()
-}));
-
-export const ProviderInfoSchema = z.object({
+export const PatientSchema = z.object({
+  id: z.string().uuid(),
+  version: z.number().int(),
+  createdAt: z.string().datetime().transform((str) => new Date(str)),
+  createdBy: z.string().uuid().optional(),
+  updatedAt: z.string().datetime().transform((str) => new Date(str)),
+  updatedBy: z.string().uuid().optional(),
+  person: z.union([UUIDSchema, PersonSchema]),
+  primaryProvider: z.object({
   name: z.string().min(1).max(100),
   specialty: z.string().max(100).optional(),
-  phone: PhoneNumberSchema.optional(),
-  fax: FaxNumberSchema.optional()
-});
-
-export const PharmacyInfoSchema = z.object({
+  phone: z.string().regex(/^\+[1-9]\d{1,14}$/).refine(val => validatePhoneNumber(val), { message: "Invalid phone number in E.164 format" }).optional(),
+  fax: z.string().regex(/^\+?[0-9\s\-\(\)\,\.ext]+$/).max(50).optional()
+}).optional(),
+  primaryPharmacy: z.object({
   name: z.string().min(1).max(100),
   address: z.string().max(500).optional(),
-  phone: PhoneNumberSchema.optional(),
-  fax: FaxNumberSchema.optional()
-});
-
-export const PatientSchema = z.intersection(BaseEntitySchema, z.object({
-  person: z.union([UUIDSchema, PersonSchema]),
-  primaryProvider: ProviderInfoSchema.optional(),
-  primaryPharmacy: PharmacyInfoSchema.optional()
-}));
-
-export const PersonCreateRequestSchema = z.object({
-  firstName: z.string().min(1).max(50),
-  lastName: z.string().min(1).max(50).optional(),
-  middleName: z.string().max(50).optional(),
-  dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(val => { const parsed = new Date(val + "T00:00:00Z"); return !isNaN(parsed.getTime()) && parsed.toISOString().split("T")[0] === val; }, { message: "Invalid calendar date" }).optional(),
-  gender: GenderSchema.optional(),
-  primaryAddress: AddressSchema.optional(),
-  contactInfo: ContactInfoSchema.optional(),
-  avatar: MaybeStoredFileSchema.optional(),
-  languagesSpoken: z.array(LanguageCodeSchema).optional(),
-  timezone: TimezoneIdSchema.optional()
+  phone: z.string().regex(/^\+[1-9]\d{1,14}$/).refine(val => validatePhoneNumber(val), { message: "Invalid phone number in E.164 format" }).optional(),
+  fax: z.string().regex(/^\+?[0-9\s\-\(\)\,\.ext]+$/).max(50).optional()
+}).optional()
 });
 
 export const PatientCreateRequestSchema = z.object({
-  person: PersonCreateRequestSchema.optional(),
-  primaryProvider: ProviderInfoSchema.optional(),
-  primaryPharmacy: PharmacyInfoSchema.optional()
-});
-
-export const ProviderInfoUpdateSchema = z.object({
-  name: z.string().min(1).max(100).optional(),
-  specialty: z.union([z.string().max(100), z.null()]).optional(),
-  phone: z.union([z.intersection(PhoneNumberSchema, z.string()), z.null()]).optional(),
-  fax: z.union([z.intersection(FaxNumberSchema, z.string()), z.null()]).optional()
-});
-
-export const PharmacyInfoUpdateSchema = z.object({
-  name: z.string().min(1).max(100).optional(),
-  address: z.union([z.string().max(500), z.null()]).optional(),
-  phone: z.union([z.intersection(PhoneNumberSchema, z.string()), z.null()]).optional(),
-  fax: z.union([z.intersection(FaxNumberSchema, z.string()), z.null()]).optional()
+  person: z.object({
+  firstName: z.string().min(1).max(50),
+  lastName: z.string().min(1).max(50).optional(),
+  middleName: z.string().max(50).optional(),
+  dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(val => { const parsed = new Date(val + "T00:00:00Z"); return !isNaN(parsed.getTime()) && parsed.toISOString().split("T")[0] === val; }, { message: "Invalid calendar date" }).optional(),
+  gender: z.enum(["male", "female", "non-binary", "other", "prefer-not-to-say"]).optional(),
+  primaryAddress: z.object({
+  street1: z.string().min(1).max(100),
+  street2: z.string().max(100).optional(),
+  city: z.string().min(1).max(50),
+  state: z.string().min(1).max(50),
+  postalCode: z.string().min(1).max(20),
+  country: z.string().regex(/^[A-Z]{2}$/).refine(val => validateCountryCode(val), { message: "Invalid ISO 3166-1 country code" }),
+  coordinates: z.object({
+  latitude: z.number().gte(-90).lte(90),
+  longitude: z.number().gte(-180).lte(180),
+  accuracy: z.number().gte(0).optional()
+}).optional()
+}).optional(),
+  contactInfo: z.object({
+  email: z.string().email().optional(),
+  phone: z.string().regex(/^\+[1-9]\d{1,14}$/).refine(val => validatePhoneNumber(val), { message: "Invalid phone number in E.164 format" }).optional()
+}).optional(),
+  avatar: z.object({
+  file: z.string().uuid().optional(),
+  url: z.string().url()
+}).optional(),
+  languagesSpoken: z.array(LanguageCodeSchema).optional(),
+  timezone: z.string().regex(/^[A-Za-z_]+\/[A-Za-z_]+$/).refine(val => validateTimezone(val), { message: "Invalid IANA timezone identifier" }).optional()
+}).optional(),
+  primaryProvider: z.object({
+  name: z.string().min(1).max(100),
+  specialty: z.string().max(100).optional(),
+  phone: z.string().regex(/^\+[1-9]\d{1,14}$/).refine(val => validatePhoneNumber(val), { message: "Invalid phone number in E.164 format" }).optional(),
+  fax: z.string().regex(/^\+?[0-9\s\-\(\)\,\.ext]+$/).max(50).optional()
+}).optional(),
+  primaryPharmacy: z.object({
+  name: z.string().min(1).max(100),
+  address: z.string().max(500).optional(),
+  phone: z.string().regex(/^\+[1-9]\d{1,14}$/).refine(val => validatePhoneNumber(val), { message: "Invalid phone number in E.164 format" }).optional(),
+  fax: z.string().regex(/^\+?[0-9\s\-\(\)\,\.ext]+$/).max(50).optional()
+}).optional()
 });
 
 export const PatientUpdateRequestSchema = z.object({
-  primaryProvider: z.union([ProviderInfoUpdateSchema, z.null()]).optional(),
-  primaryPharmacy: z.union([PharmacyInfoUpdateSchema, z.null()]).optional()
+  primaryProvider: z.union([z.object({
+  name: z.string().min(1).max(100).optional(),
+  specialty: z.union([z.string().max(100), z.null()]).optional(),
+  phone: z.union([z.string().regex(/^\+[1-9]\d{1,14}$/).refine(val => validatePhoneNumber(val), { message: "Invalid phone number in E.164 format" }), z.null()]).optional(),
+  fax: z.union([z.string().regex(/^\+?[0-9\s\-\(\)\,\.ext]+$/).max(50), z.null()]).optional()
+}), z.null()]).optional(),
+  primaryPharmacy: z.union([z.object({
+  name: z.string().min(1).max(100).optional(),
+  address: z.union([z.string().max(500), z.null()]).optional(),
+  phone: z.union([z.string().regex(/^\+[1-9]\d{1,14}$/).refine(val => validatePhoneNumber(val), { message: "Invalid phone number in E.164 format" }), z.null()]).optional(),
+  fax: z.union([z.string().regex(/^\+?[0-9\s\-\(\)\,\.ext]+$/).max(50), z.null()]).optional()
+}), z.null()]).optional()
 });
 
 export const PaymentRequestSchema = z.object({
@@ -851,38 +1083,154 @@ export const PaymentResponseSchema = z.object({
   metadata: z.record(z.string(), z.unknown()).optional()
 });
 
+export const PaymentStatusSchema = z.enum(["pending", "requires_capture", "processing", "succeeded", "failed", "canceled"]);
+
+export const PersonCreateRequestSchema = z.object({
+  firstName: z.string().min(1).max(50),
+  lastName: z.string().min(1).max(50).optional(),
+  middleName: z.string().max(50).optional(),
+  dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(val => { const parsed = new Date(val + "T00:00:00Z"); return !isNaN(parsed.getTime()) && parsed.toISOString().split("T")[0] === val; }, { message: "Invalid calendar date" }).optional(),
+  gender: z.enum(["male", "female", "non-binary", "other", "prefer-not-to-say"]).optional(),
+  primaryAddress: z.object({
+  street1: z.string().min(1).max(100),
+  street2: z.string().max(100).optional(),
+  city: z.string().min(1).max(50),
+  state: z.string().min(1).max(50),
+  postalCode: z.string().min(1).max(20),
+  country: z.string().regex(/^[A-Z]{2}$/).refine(val => validateCountryCode(val), { message: "Invalid ISO 3166-1 country code" }),
+  coordinates: z.object({
+  latitude: z.number().gte(-90).lte(90),
+  longitude: z.number().gte(-180).lte(180),
+  accuracy: z.number().gte(0).optional()
+}).optional()
+}).optional(),
+  contactInfo: z.object({
+  email: z.string().email().optional(),
+  phone: z.string().regex(/^\+[1-9]\d{1,14}$/).refine(val => validatePhoneNumber(val), { message: "Invalid phone number in E.164 format" }).optional()
+}).optional(),
+  avatar: z.object({
+  file: z.string().uuid().optional(),
+  url: z.string().url()
+}).optional(),
+  languagesSpoken: z.array(LanguageCodeSchema).optional(),
+  timezone: z.string().regex(/^[A-Za-z_]+\/[A-Za-z_]+$/).refine(val => validateTimezone(val), { message: "Invalid IANA timezone identifier" }).optional()
+});
+
 export const PersonUpdateRequestSchema = z.object({
   firstName: z.string().min(1).max(50).optional(),
   lastName: z.union([z.string().min(1).max(50), z.null()]).optional(),
   middleName: z.union([z.string().max(50), z.null()]).optional(),
   dateOfBirth: z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(val => { const parsed = new Date(val + "T00:00:00Z"); return !isNaN(parsed.getTime()) && parsed.toISOString().split("T")[0] === val; }, { message: "Invalid calendar date" }), z.null()]).optional(),
-  gender: z.union([GenderSchema, z.null()]).optional(),
-  primaryAddress: z.union([AddressUpdateSchema, z.null()]).optional(),
-  contactInfo: z.union([ContactInfoSchema, z.null()]).optional(),
-  avatar: z.union([MaybeStoredFileUpdateSchema, z.null()]).optional(),
+  gender: z.union([z.enum(["male", "female", "non-binary", "other", "prefer-not-to-say"]), z.null()]).optional(),
+  primaryAddress: z.union([z.object({
+  street1: z.string().min(1).max(100).optional(),
+  street2: z.union([z.string().max(100), z.null()]).optional(),
+  city: z.string().min(1).max(50).optional(),
+  state: z.string().min(1).max(50).optional(),
+  postalCode: z.string().min(1).max(20).optional(),
+  country: z.string().regex(/^[A-Z]{2}$/).refine(val => validateCountryCode(val), { message: "Invalid ISO 3166-1 country code" }).optional(),
+  coordinates: z.union([z.object({
+  latitude: z.number().gte(-90).lte(90).optional(),
+  longitude: z.number().gte(-180).lte(180).optional(),
+  accuracy: z.number().gte(0).optional()
+}), z.null()]).optional()
+}), z.null()]).optional(),
+  contactInfo: z.union([z.object({
+  email: z.string().email().optional(),
+  phone: z.string().regex(/^\+[1-9]\d{1,14}$/).refine(val => validatePhoneNumber(val), { message: "Invalid phone number in E.164 format" }).optional()
+}), z.null()]).optional(),
+  avatar: z.union([z.object({
+  file: z.union([z.string().uuid(), z.null()]).optional(),
+  url: z.string().url().optional()
+}), z.null()]).optional(),
   languagesSpoken: z.union([z.array(LanguageCodeSchema), z.null()]).optional(),
-  timezone: z.union([z.intersection(TimezoneIdSchema, z.string()), z.null()]).optional()
+  timezone: z.union([z.string().regex(/^[A-Za-z_]+\/[A-Za-z_]+$/).refine(val => validateTimezone(val), { message: "Invalid IANA timezone identifier" }), z.null()]).optional()
+});
+
+export const PharmacyInfoSchema = z.object({
+  name: z.string().min(1).max(100),
+  address: z.string().max(500).optional(),
+  phone: z.string().regex(/^\+[1-9]\d{1,14}$/).refine(val => validatePhoneNumber(val), { message: "Invalid phone number in E.164 format" }).optional(),
+  fax: z.string().regex(/^\+?[0-9\s\-\(\)\,\.ext]+$/).max(50).optional()
+});
+
+export const PharmacyInfoUpdateSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  address: z.union([z.string().max(500), z.null()]).optional(),
+  phone: z.union([z.string().regex(/^\+[1-9]\d{1,14}$/).refine(val => validatePhoneNumber(val), { message: "Invalid phone number in E.164 format" }), z.null()]).optional(),
+  fax: z.union([z.string().regex(/^\+?[0-9\s\-\(\)\,\.ext]+$/).max(50), z.null()]).optional()
+});
+
+export const PhoneNumberSchema = z.string().regex(/^\+[1-9]\d{1,14}$/).refine(val => validatePhoneNumber(val), { message: "Invalid phone number in E.164 format" });
+
+export const ProviderSchema = z.object({
+  id: z.string().uuid(),
+  version: z.number().int(),
+  createdAt: z.string().datetime().transform((str) => new Date(str)),
+  createdBy: z.string().uuid().optional(),
+  updatedAt: z.string().datetime().transform((str) => new Date(str)),
+  updatedBy: z.string().uuid().optional(),
+  person: z.union([UUIDSchema, PersonSchema]),
+  providerType: z.enum(["pharmacist", "other"]),
+  yearsOfExperience: z.number().int().gte(0).lte(70).optional(),
+  biography: z.string().max(2000).optional(),
+  minorAilmentsSpecialties: z.array(z.string()).optional(),
+  minorAilmentsPracticeLocations: z.array(z.string()).optional()
+});
+
+export const ProviderCreateRequestSchema = z.object({
+  person: z.object({
+  firstName: z.string().min(1).max(50),
+  lastName: z.string().min(1).max(50).optional(),
+  middleName: z.string().max(50).optional(),
+  dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(val => { const parsed = new Date(val + "T00:00:00Z"); return !isNaN(parsed.getTime()) && parsed.toISOString().split("T")[0] === val; }, { message: "Invalid calendar date" }).optional(),
+  gender: z.enum(["male", "female", "non-binary", "other", "prefer-not-to-say"]).optional(),
+  primaryAddress: z.object({
+  street1: z.string().min(1).max(100),
+  street2: z.string().max(100).optional(),
+  city: z.string().min(1).max(50),
+  state: z.string().min(1).max(50),
+  postalCode: z.string().min(1).max(20),
+  country: z.string().regex(/^[A-Z]{2}$/).refine(val => validateCountryCode(val), { message: "Invalid ISO 3166-1 country code" }),
+  coordinates: z.object({
+  latitude: z.number().gte(-90).lte(90),
+  longitude: z.number().gte(-180).lte(180),
+  accuracy: z.number().gte(0).optional()
+}).optional()
+}).optional(),
+  contactInfo: z.object({
+  email: z.string().email().optional(),
+  phone: z.string().regex(/^\+[1-9]\d{1,14}$/).refine(val => validatePhoneNumber(val), { message: "Invalid phone number in E.164 format" }).optional()
+}).optional(),
+  avatar: z.object({
+  file: z.string().uuid().optional(),
+  url: z.string().url()
+}).optional(),
+  languagesSpoken: z.array(LanguageCodeSchema).optional(),
+  timezone: z.string().regex(/^[A-Za-z_]+\/[A-Za-z_]+$/).refine(val => validateTimezone(val), { message: "Invalid IANA timezone identifier" }).optional()
+}).optional(),
+  providerType: z.enum(["pharmacist", "other"]),
+  yearsOfExperience: z.number().int().gte(0).lte(70).optional(),
+  biography: z.string().max(2000).optional(),
+  minorAilmentsSpecialties: z.array(z.string()).optional(),
+  minorAilmentsPracticeLocations: z.array(z.string()).optional()
+});
+
+export const ProviderInfoSchema = z.object({
+  name: z.string().min(1).max(100),
+  specialty: z.string().max(100).optional(),
+  phone: z.string().regex(/^\+[1-9]\d{1,14}$/).refine(val => validatePhoneNumber(val), { message: "Invalid phone number in E.164 format" }).optional(),
+  fax: z.string().regex(/^\+?[0-9\s\-\(\)\,\.ext]+$/).max(50).optional()
+});
+
+export const ProviderInfoUpdateSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  specialty: z.union([z.string().max(100), z.null()]).optional(),
+  phone: z.union([z.string().regex(/^\+[1-9]\d{1,14}$/).refine(val => validatePhoneNumber(val), { message: "Invalid phone number in E.164 format" }), z.null()]).optional(),
+  fax: z.union([z.string().regex(/^\+?[0-9\s\-\(\)\,\.ext]+$/).max(50), z.null()]).optional()
 });
 
 export const ProviderTypeSchema = z.enum(["pharmacist", "other"]);
-
-export const ProviderSchema = z.intersection(BaseEntitySchema, z.object({
-  person: z.union([UUIDSchema, PersonSchema]),
-  providerType: ProviderTypeSchema,
-  yearsOfExperience: z.number().int().gte(0).lte(70).optional(),
-  biography: z.string().max(2000).optional(),
-  minorAilmentsSpecialties: z.array(z.string()).optional(),
-  minorAilmentsPracticeLocations: z.array(z.string()).optional()
-}));
-
-export const ProviderCreateRequestSchema = z.object({
-  person: PersonCreateRequestSchema.optional(),
-  providerType: ProviderTypeSchema,
-  yearsOfExperience: z.number().int().gte(0).lte(70).optional(),
-  biography: z.string().max(2000).optional(),
-  minorAilmentsSpecialties: z.array(z.string()).optional(),
-  minorAilmentsPracticeLocations: z.array(z.string()).optional()
-});
 
 export const ProviderUpdateRequestSchema = z.object({
   yearsOfExperience: z.union([z.number().int().gte(0).lte(70), z.null()]).optional(),
@@ -891,56 +1239,86 @@ export const ProviderUpdateRequestSchema = z.object({
   minorAilmentsPracticeLocations: z.union([z.array(z.string()), z.null()]).optional()
 });
 
-export const RateLimitErrorSchema = z.intersection(ErrorDetailSchema, z.object({
+export const RateLimitErrorSchema = z.object({
+  code: z.string(),
+  message: z.string(),
+  details: z.record(z.string(), z.unknown()).optional(),
+  requestId: z.string(),
+  timestamp: z.string().datetime().transform((str) => new Date(str)),
+  path: z.string(),
+  method: z.string(),
+  statusCode: z.number().int(),
+  helpUrl: z.string().url().optional(),
   limitType: z.enum(["requests", "bandwidth", "concurrent"]),
   limit: z.number().int(),
   usage: z.number().int(),
   resetTime: z.number().int(),
   windowSize: z.number().int()
-}));
-
-export const RecurrenceTypeSchema = z.enum(["daily", "weekly", "monthly", "yearly"]);
+});
 
 export const RecurrencePatternSchema = z.object({
-  type: RecurrenceTypeSchema,
+  type: z.enum(["daily", "weekly", "monthly", "yearly"]),
   interval: z.number().int().gte(1).optional(),
   daysOfWeek: z.array(z.number().int()).optional(),
   dayOfMonth: z.number().int().gte(1).lte(31).optional(),
+  monthOfYear: z.number().int().gte(1).lte(12).optional(),
   endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(val => { const parsed = new Date(val + "T00:00:00Z"); return !isNaN(parsed.getTime()) && parsed.toISOString().split("T")[0] === val; }, { message: "Invalid calendar date" }).optional(),
   maxOccurrences: z.number().int().gte(1).optional()
 });
 
+export const RecurrenceTypeSchema = z.enum(["daily", "weekly", "monthly", "yearly"]);
+
 export const RefundRequestSchema = z.object({
-  amount: CurrencyAmountSchema.optional(),
+  amount: z.number().int().gte(0).optional(),
   reason: z.string().max(500).optional(),
   metadata: z.record(z.string(), z.unknown()).optional()
 });
 
 export const RefundResponseSchema = z.object({
-  refundedAmount: CurrencyAmountSchema,
+  refundedAmount: z.number().int().gte(0),
   metadata: z.record(z.string(), z.unknown()).optional()
 });
 
-export const ReviewSchema = z.intersection(BaseEntitySchema, z.object({
-  context: UUIDSchema,
-  reviewer: UUIDSchema,
+export const ReviewSchema = z.object({
+  id: z.string().uuid(),
+  version: z.number().int(),
+  createdAt: z.string().datetime().transform((str) => new Date(str)),
+  createdBy: z.string().uuid().optional(),
+  updatedAt: z.string().datetime().transform((str) => new Date(str)),
+  updatedBy: z.string().uuid().optional(),
+  context: z.string().uuid(),
+  reviewer: z.string().uuid(),
   reviewType: z.string().max(50),
-  reviewedEntity: UUIDSchema.optional(),
+  reviewedEntity: z.string().uuid().optional(),
   npsScore: z.number().int().gte(0).lte(10),
   comment: z.string().max(1000).optional()
-}));
+});
 
-export const ScheduleExceptionSchema = z.intersection(BaseEntitySchema, z.object({
-  event: UUIDSchema,
-  owner: UUIDSchema,
-  context: UUIDSchema.optional(),
+export const ScheduleExceptionSchema = z.object({
+  id: z.string().uuid(),
+  version: z.number().int(),
+  createdAt: z.string().datetime().transform((str) => new Date(str)),
+  createdBy: z.string().uuid().optional(),
+  updatedAt: z.string().datetime().transform((str) => new Date(str)),
+  updatedBy: z.string().uuid().optional(),
+  event: z.string().uuid(),
+  owner: z.string().uuid(),
+  context: z.string().optional(),
   timezone: z.string(),
   startDatetime: z.string().datetime().transform((str) => new Date(str)),
   endDatetime: z.string().datetime().transform((str) => new Date(str)),
   reason: z.string().max(500),
   recurring: z.boolean(),
-  recurrencePattern: RecurrencePatternSchema.optional()
-}));
+  recurrencePattern: z.object({
+  type: z.enum(["daily", "weekly", "monthly", "yearly"]),
+  interval: z.number().int().gte(1).optional(),
+  daysOfWeek: z.array(z.number().int()).optional(),
+  dayOfMonth: z.number().int().gte(1).lte(31).optional(),
+  monthOfYear: z.number().int().gte(1).lte(12).optional(),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(val => { const parsed = new Date(val + "T00:00:00Z"); return !isNaN(parsed.getTime()) && parsed.toISOString().split("T")[0] === val; }, { message: "Invalid calendar date" }).optional(),
+  maxOccurrences: z.number().int().gte(1).optional()
+}).optional()
+});
 
 export const ScheduleExceptionCreateRequestSchema = z.object({
   timezone: z.string().optional(),
@@ -948,7 +1326,15 @@ export const ScheduleExceptionCreateRequestSchema = z.object({
   endDatetime: z.string().datetime().transform((str) => new Date(str)),
   reason: z.string().max(500),
   recurring: z.boolean().optional(),
-  recurrencePattern: RecurrencePatternSchema.optional()
+  recurrencePattern: z.object({
+  type: z.enum(["daily", "weekly", "monthly", "yearly"]),
+  interval: z.number().int().gte(1).optional(),
+  daysOfWeek: z.array(z.number().int()).optional(),
+  dayOfMonth: z.number().int().gte(1).lte(31).optional(),
+  monthOfYear: z.number().int().gte(1).lte(12).optional(),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(val => { const parsed = new Date(val + "T00:00:00Z"); return !isNaN(parsed.getTime()) && parsed.toISOString().split("T")[0] === val; }, { message: "Invalid calendar date" }).optional(),
+  maxOccurrences: z.number().int().gte(1).optional()
+}).optional()
 });
 
 export const SendTextMessageRequestSchema = z.object({
@@ -965,46 +1351,113 @@ export const StartVideoCallDataSchema = z.object({
 
 export const StartVideoCallRequestSchema = z.object({
   messageType: z.enum(["video_call"]),
-  videoCallData: StartVideoCallDataSchema
+  videoCallData: z.object({
+  status: z.enum(["starting"]),
+  participants: z.array(CallParticipantSchema)
+})
 });
 
+export const StoredFileSchema = z.object({
+  id: z.string().uuid(),
+  version: z.number().int(),
+  createdAt: z.string().datetime().transform((str) => new Date(str)),
+  createdBy: z.string().uuid().optional(),
+  updatedAt: z.string().datetime().transform((str) => new Date(str)),
+  updatedBy: z.string().uuid().optional(),
+  filename: z.string().max(255),
+  mimeType: z.string().max(100),
+  size: z.number().int().gte(0),
+  status: z.enum(["uploading", "processing", "available", "failed"]),
+  owner: z.string().uuid(),
+  uploadedAt: z.string().datetime().transform((str) => new Date(str))
+});
+
+export const SymptomSeveritySchema = z.union([z.string(), z.enum(["mild", "moderate", "severe"])]);
+
+export const SymptomsDataSchema = z.object({
+  onset: z.string().datetime().transform((str) => new Date(str)).optional(),
+  durationHours: z.number().int().optional(),
+  severity: z.union([z.string(), z.enum(["mild", "moderate", "severe"])]).optional(),
+  description: z.string().optional(),
+  associated: z.array(z.string()).optional(),
+  denies: z.array(z.string()).optional()
+});
+
+export const TemplateStatusSchema = z.enum(["draft", "active", "archived"]);
+
 export const TestTemplateRequestSchema = z.object({
-  recipientEmail: EmailSchema,
+  recipientEmail: z.string().email(),
   recipientName: z.string().max(255).optional(),
   variables: z.record(z.string(), z.unknown()).optional()
 });
 
 export const TestTemplateResultSchema = z.object({
-  queue: EmailQueueItemSchema
+  queue: z.object({
+  id: z.string().uuid(),
+  version: z.number().int(),
+  createdAt: z.string().datetime().transform((str) => new Date(str)),
+  createdBy: z.string().uuid().optional(),
+  updatedAt: z.string().datetime().transform((str) => new Date(str)),
+  updatedBy: z.string().uuid().optional(),
+  template: z.string().uuid().optional(),
+  templateTags: z.array(z.string()).optional(),
+  recipientEmail: z.string().email(),
+  recipientName: z.string().max(255).optional(),
+  variables: z.record(z.string(), z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+  status: z.enum(["pending", "processing", "sent", "failed", "cancelled"]),
+  priority: z.number().int().gte(1).lte(10),
+  scheduledAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  attempts: z.number().int().gte(0),
+  lastAttemptAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  nextRetryAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  lastError: z.string().optional(),
+  sentAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  provider: z.enum(["smtp", "postmark"]).optional(),
+  providerMessageId: z.string().max(255).optional(),
+  cancelledAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  cancelledBy: z.string().uuid().optional(),
+  cancellationReason: z.string().max(500).optional()
+})
 });
 
-export const TimeSlotSchema = z.intersection(BaseEntitySchema, z.object({
-  id: UUIDSchema,
-  owner: UUIDSchema,
-  event: UUIDSchema,
-  context: UUIDSchema.optional(),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(val => { const parsed = new Date(val + "T00:00:00Z"); return !isNaN(parsed.getTime()) && parsed.toISOString().split("T")[0] === val; }, { message: "Invalid calendar date" }),
-  startTime: z.string().datetime().transform((str) => new Date(str)),
-  endTime: z.string().datetime().transform((str) => new Date(str)),
-  locationTypes: z.array(LocationTypeSchema),
-  status: SlotStatusSchema,
-  billingOverride: BillingConfigSchema.optional(),
-  booking: UUIDSchema.optional()
-}));
+export const TimezoneIdSchema = z.string().regex(/^[A-Za-z_]+\/[A-Za-z_]+$/).refine(val => validateTimezone(val), { message: "Invalid IANA timezone identifier" });
 
 export const UpdateConsultationRequestSchema = z.object({
   chiefComplaint: z.union([z.string().max(500), z.null()]).optional(),
   assessment: z.union([z.string().max(2000), z.null()]).optional(),
   plan: z.union([z.string().max(2000), z.null()]).optional(),
-  vitals: z.union([VitalsDataSchema, z.null()]).optional(),
-  symptoms: z.union([SymptomsDataSchema, z.null()]).optional(),
+  vitals: z.union([z.object({
+  temperatureCelsius: z.number().optional(),
+  systolicBp: z.number().int().optional(),
+  diastolicBp: z.number().int().optional(),
+  heartRate: z.number().int().optional(),
+  weightKg: z.number().optional(),
+  heightCm: z.number().optional(),
+  respiratoryRate: z.number().int().optional(),
+  oxygenSaturation: z.number().int().optional(),
+  notes: z.string().optional()
+}), z.null()]).optional(),
+  symptoms: z.union([z.object({
+  onset: z.string().datetime().transform((str) => new Date(str)).optional(),
+  durationHours: z.number().int().optional(),
+  severity: z.union([z.string(), z.enum(["mild", "moderate", "severe"])]).optional(),
+  description: z.string().optional(),
+  associated: z.array(z.string()).optional(),
+  denies: z.array(z.string()).optional()
+}), z.null()]).optional(),
   prescriptions: z.union([z.array(PrescriptionDataSchema), z.null()]).optional(),
-  followUp: z.union([FollowUpDataUpdateSchema, z.null()]).optional(),
+  followUp: z.union([z.object({
+  needed: z.boolean().optional(),
+  timeframeDays: z.number().int().optional(),
+  instructions: z.string().optional(),
+  specialistReferral: z.string().optional()
+}), z.null()]).optional(),
   externalDocumentation: z.union([z.record(z.string(), z.unknown()), z.null()]).optional()
 });
 
 export const UpdateInvoiceRequestSchema = z.object({
-  paymentCaptureMethod: CaptureMethodSchema.optional(),
+  paymentCaptureMethod: z.enum(["automatic", "manual"]).optional(),
   paymentDueAt: z.string().datetime().transform((str) => new Date(str)).optional(),
   voidThresholdMinutes: z.number().int().optional(),
   lineItems: z.array(CreateLineItemRequestSchema).optional(),
@@ -1025,16 +1478,41 @@ export const UpdateTemplateRequestSchema = z.object({
   bodyText: z.string().optional(),
   variables: z.array(TemplateVariableSchema).optional(),
   fromName: z.string().optional(),
-  fromEmail: EmailSchema.optional(),
-  replyToEmail: EmailSchema.optional(),
+  fromEmail: z.string().email().optional(),
+  replyToEmail: z.string().email().optional(),
   replyToName: z.string().optional(),
-  status: TemplateStatusSchema.optional()
+  status: z.enum(["draft", "active", "archived"]).optional()
 });
 
-export const ValidationErrorSchema = z.intersection(ErrorDetailSchema, z.object({
+export const UrlSchema = z.string().url();
+
+export const ValidationErrorSchema = z.object({
+  code: z.string(),
+  message: z.string(),
+  details: z.record(z.string(), z.unknown()).optional(),
+  requestId: z.string(),
+  timestamp: z.string().datetime().transform((str) => new Date(str)),
+  path: z.string(),
+  method: z.string(),
+  statusCode: z.number().int(),
+  helpUrl: z.string().url().optional(),
   fieldErrors: z.array(FieldErrorSchema).optional(),
   globalErrors: z.array(z.string()).optional()
-}));
+});
+
+export const VariableTypeSchema = z.enum(["string", "number", "boolean", "date", "datetime", "url", "email", "array"]);
+
+export const VideoCallDataSchema = z.object({
+  status: z.enum(["starting", "active", "ended", "cancelled"]),
+  roomUrl: z.string().optional(),
+  token: z.string().optional(),
+  startedAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  startedBy: z.string().uuid().optional(),
+  endedAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  endedBy: z.string().uuid().optional(),
+  durationMinutes: z.number().int().optional(),
+  participants: z.array(CallParticipantSchema)
+});
 
 export const VideoCallEndResponseSchema = z.object({
   message: z.string(),
@@ -1044,8 +1522,22 @@ export const VideoCallEndResponseSchema = z.object({
 export const VideoCallJoinResponseSchema = z.object({
   roomUrl: z.string(),
   token: z.string(),
-  callStatus: VideoCallStatusSchema,
+  callStatus: z.enum(["starting", "active", "ended", "cancelled"]),
   participants: z.array(CallParticipantSchema)
+});
+
+export const VideoCallStatusSchema = z.enum(["starting", "active", "ended", "cancelled"]);
+
+export const VitalsDataSchema = z.object({
+  temperatureCelsius: z.number().optional(),
+  systolicBp: z.number().int().optional(),
+  diastolicBp: z.number().int().optional(),
+  heartRate: z.number().int().optional(),
+  weightKg: z.number().optional(),
+  heightCm: z.number().optional(),
+  respiratoryRate: z.number().int().optional(),
+  oxygenSaturation: z.number().int().optional(),
+  notes: z.string().optional()
 });
 
 export const ListAuditLogsQuery = z.object({
@@ -1065,7 +1557,16 @@ export const ListAuditLogsQuery = z.object({
 
 export const ListAuditLogsResponse = z.object({
   data: z.array(AuditLogEntrySchema),
-  pagination: OffsetPaginationMetaSchema
+  pagination: z.object({
+  offset: z.number().int(),
+  limit: z.number().int(),
+  count: z.number().int(),
+  totalCount: z.number().int(),
+  totalPages: z.number().int(),
+  currentPage: z.number().int(),
+  hasNextPage: z.boolean(),
+  hasPreviousPage: z.boolean()
+})
 });
 
 export const CreateInvoiceBody = CreateInvoiceRequestSchema;
@@ -1087,11 +1588,24 @@ export const ListInvoicesQuery = z.object({
 
 export const ListInvoicesResponse = z.object({
   data: z.array(InvoiceSchema),
-  pagination: OffsetPaginationMetaSchema
+  pagination: z.object({
+  offset: z.number().int(),
+  limit: z.number().int(),
+  count: z.number().int(),
+  totalCount: z.number().int(),
+  totalPages: z.number().int(),
+  currentPage: z.number().int(),
+  hasNextPage: z.boolean(),
+  hasPreviousPage: z.boolean()
+})
 });
 
 export const GetInvoiceParams = z.object({
   invoice: UUIDSchema,
+});
+
+export const GetInvoiceQuery = z.object({
+  expand: z.string().optional(),
 });
 
 export const GetInvoiceResponse = InvoiceSchema;
@@ -1158,6 +1672,10 @@ export const GetMerchantAccountParams = z.object({
   merchantAccount: z.union([UUIDSchema, z.enum(["me"])]),
 });
 
+export const GetMerchantAccountQuery = z.object({
+  expand: z.string().optional(),
+});
+
 export const GetMerchantAccountResponse = MerchantAccountSchema;
 
 export const GetMerchantDashboardParams = z.object({
@@ -1199,7 +1717,16 @@ export const ListBookingsQuery = z.object({
 
 export const ListBookingsResponse = z.object({
   data: z.array(BookingSchema),
-  pagination: OffsetPaginationMetaSchema
+  pagination: z.object({
+  offset: z.number().int(),
+  limit: z.number().int(),
+  count: z.number().int(),
+  totalCount: z.number().int(),
+  totalPages: z.number().int(),
+  currentPage: z.number().int(),
+  hasNextPage: z.boolean(),
+  hasPreviousPage: z.boolean()
+})
 });
 
 export const GetBookingParams = z.object({
@@ -1246,7 +1773,7 @@ export const RejectBookingResponse = BookingSchema;
 
 export const ListBookingEventsQuery = z.object({
   owner: UUIDSchema.optional(),
-  context: UUIDSchema.optional(),
+  context: z.string().optional(),
   locationType: LocationTypeSchema.optional(),
   status: BookingEventStatusSchema.optional(),
   availableFrom: z.string().datetime().transform((str) => new Date(str)).optional(),
@@ -1263,7 +1790,16 @@ export const ListBookingEventsQuery = z.object({
 
 export const ListBookingEventsResponse = z.object({
   data: z.array(BookingEventSchema),
-  pagination: OffsetPaginationMetaSchema
+  pagination: z.object({
+  offset: z.number().int(),
+  limit: z.number().int(),
+  count: z.number().int(),
+  totalCount: z.number().int(),
+  totalPages: z.number().int(),
+  currentPage: z.number().int(),
+  hasNextPage: z.boolean(),
+  hasPreviousPage: z.boolean()
+})
 });
 
 export const CreateBookingEventBody = BookingEventCreateRequestSchema;
@@ -1317,7 +1853,16 @@ export const ListScheduleExceptionsQuery = z.object({
 
 export const ListScheduleExceptionsResponse = z.object({
   data: z.array(ScheduleExceptionSchema),
-  pagination: OffsetPaginationMetaSchema
+  pagination: z.object({
+  offset: z.number().int(),
+  limit: z.number().int(),
+  count: z.number().int(),
+  totalCount: z.number().int(),
+  totalPages: z.number().int(),
+  currentPage: z.number().int(),
+  hasNextPage: z.boolean(),
+  hasPreviousPage: z.boolean()
+})
 });
 
 export const GetScheduleExceptionParams = z.object({
@@ -1333,6 +1878,18 @@ export const DeleteScheduleExceptionParams = z.object({
 });
 
 export const DeleteScheduleExceptionResponse = z.void();
+
+export const ListEventSlotsParams = z.object({
+  event: UUIDSchema,
+});
+
+export const ListEventSlotsQuery = z.object({
+  startTime: z.string().datetime().transform((str) => new Date(str)).optional(),
+  endTime: z.string().datetime().transform((str) => new Date(str)).optional(),
+  status: SlotStatusSchema.optional(),
+});
+
+export const ListEventSlotsResponse = z.array(TimeSlotSchema);
 
 export const GetTimeSlotParams = z.object({
   slotId: UUIDSchema,
@@ -1363,7 +1920,16 @@ export const ListChatRoomsQuery = z.object({
 
 export const ListChatRoomsResponse = z.object({
   data: z.array(ChatRoomSchema),
-  pagination: OffsetPaginationMetaSchema
+  pagination: z.object({
+  offset: z.number().int(),
+  limit: z.number().int(),
+  count: z.number().int(),
+  totalCount: z.number().int(),
+  totalPages: z.number().int(),
+  currentPage: z.number().int(),
+  hasNextPage: z.boolean(),
+  hasPreviousPage: z.boolean()
+})
 });
 
 export const GetChatRoomParams = z.object({
@@ -1388,7 +1954,16 @@ export const GetChatMessagesQuery = z.object({
 
 export const GetChatMessagesResponse = z.object({
   data: z.array(ChatMessageSchema),
-  pagination: OffsetPaginationMetaSchema
+  pagination: z.object({
+  offset: z.number().int(),
+  limit: z.number().int(),
+  count: z.number().int(),
+  totalCount: z.number().int(),
+  totalPages: z.number().int(),
+  currentPage: z.number().int(),
+  hasNextPage: z.boolean(),
+  hasPreviousPage: z.boolean()
+})
 });
 
 export const SendChatMessageParams = z.object({
@@ -1446,7 +2021,16 @@ export const ListEmailQueueItemsQuery = z.object({
 
 export const ListEmailQueueItemsResponse = z.object({
   data: z.array(EmailQueueItemSchema),
-  pagination: OffsetPaginationMetaSchema
+  pagination: z.object({
+  offset: z.number().int(),
+  limit: z.number().int(),
+  count: z.number().int(),
+  totalCount: z.number().int(),
+  totalPages: z.number().int(),
+  currentPage: z.number().int(),
+  hasNextPage: z.boolean(),
+  hasPreviousPage: z.boolean()
+})
 });
 
 export const GetEmailQueueItemParams = z.object({
@@ -1482,7 +2066,16 @@ export const ListEmailTemplatesQuery = z.object({
 
 export const ListEmailTemplatesResponse = z.object({
   data: z.array(EmailTemplateSchema),
-  pagination: OffsetPaginationMetaSchema
+  pagination: z.object({
+  offset: z.number().int(),
+  limit: z.number().int(),
+  count: z.number().int(),
+  totalCount: z.number().int(),
+  totalPages: z.number().int(),
+  currentPage: z.number().int(),
+  hasNextPage: z.boolean(),
+  hasPreviousPage: z.boolean()
+})
 });
 
 export const CreateEmailTemplateBody = CreateTemplateRequestSchema;
@@ -1528,7 +2121,16 @@ export const ListConsultationsQuery = z.object({
 
 export const ListConsultationsResponse = z.object({
   data: z.array(ConsultationNoteSchema),
-  pagination: OffsetPaginationMetaSchema
+  pagination: z.object({
+  offset: z.number().int(),
+  limit: z.number().int(),
+  count: z.number().int(),
+  totalCount: z.number().int(),
+  totalPages: z.number().int(),
+  currentPage: z.number().int(),
+  hasNextPage: z.boolean(),
+  hasPreviousPage: z.boolean()
+})
 });
 
 export const GetConsultationParams = z.object({
@@ -1563,7 +2165,16 @@ export const ListEMRPatientsQuery = z.object({
 
 export const ListEMRPatientsResponse = z.object({
   data: z.array(PatientSchema),
-  pagination: OffsetPaginationMetaSchema
+  pagination: z.object({
+  offset: z.number().int(),
+  limit: z.number().int(),
+  count: z.number().int(),
+  totalCount: z.number().int(),
+  totalPages: z.number().int(),
+  currentPage: z.number().int(),
+  hasNextPage: z.boolean(),
+  hasPreviousPage: z.boolean()
+})
 });
 
 export const ListNotificationsQuery = z.object({
@@ -1582,7 +2193,16 @@ export const ListNotificationsQuery = z.object({
 
 export const ListNotificationsResponse = z.object({
   data: z.array(NotificationSchema),
-  pagination: OffsetPaginationMetaSchema
+  pagination: z.object({
+  offset: z.number().int(),
+  limit: z.number().int(),
+  count: z.number().int(),
+  totalCount: z.number().int(),
+  totalPages: z.number().int(),
+  currentPage: z.number().int(),
+  hasNextPage: z.boolean(),
+  hasPreviousPage: z.boolean()
+})
 });
 
 export const MarkAllNotificationsAsReadQuery = z.object({
@@ -1617,7 +2237,16 @@ export const ListPatientsQuery = z.object({
 
 export const ListPatientsResponse = z.object({
   data: z.array(PatientSchema),
-  pagination: OffsetPaginationMetaSchema
+  pagination: z.object({
+  offset: z.number().int(),
+  limit: z.number().int(),
+  count: z.number().int(),
+  totalCount: z.number().int(),
+  totalPages: z.number().int(),
+  currentPage: z.number().int(),
+  hasNextPage: z.boolean(),
+  hasPreviousPage: z.boolean()
+})
 });
 
 export const CreatePatientBody = PatientCreateRequestSchema;
@@ -1663,7 +2292,16 @@ export const ListPersonsQuery = z.object({
 
 export const ListPersonsResponse = z.object({
   data: z.array(PersonSchema),
-  pagination: OffsetPaginationMetaSchema
+  pagination: z.object({
+  offset: z.number().int(),
+  limit: z.number().int(),
+  count: z.number().int(),
+  totalCount: z.number().int(),
+  totalPages: z.number().int(),
+  currentPage: z.number().int(),
+  hasNextPage: z.boolean(),
+  hasPreviousPage: z.boolean()
+})
 });
 
 export const GetPersonParams = z.object({
@@ -1679,6 +2317,61 @@ export const UpdatePersonParams = z.object({
 export const UpdatePersonBody = PersonUpdateRequestSchema;
 
 export const UpdatePersonResponse = PersonSchema;
+
+export const ListProvidersQuery = z.object({
+  minorAilmentsSpecialty: z.string().optional(),
+  minorAilmentsPracticeLocation: z.string().optional(),
+  languageSpoken: LanguageCodeSchema.optional(),
+  expand: z.string().optional(),
+  offset: z.coerce.number().int().gte(0).optional(),
+  limit: z.coerce.number().int().gte(1).lte(100).optional(),
+  page: z.coerce.number().int().gte(1).optional(),
+  pageSize: z.coerce.number().int().gte(1).lte(100).optional(),
+  q: z.string().max(500).optional(),
+  sort: z.string().optional(),
+});
+
+export const ListProvidersResponse = z.object({
+  data: z.array(ProviderSchema),
+  pagination: z.object({
+  offset: z.number().int(),
+  limit: z.number().int(),
+  count: z.number().int(),
+  totalCount: z.number().int(),
+  totalPages: z.number().int(),
+  currentPage: z.number().int(),
+  hasNextPage: z.boolean(),
+  hasPreviousPage: z.boolean()
+})
+});
+
+export const CreateProviderBody = ProviderCreateRequestSchema;
+
+export const CreateProviderResponse = ProviderSchema;
+
+export const GetProviderParams = z.object({
+  provider: z.union([UUIDSchema, z.enum(["me"])]),
+});
+
+export const GetProviderQuery = z.object({
+  expand: z.string().optional(),
+});
+
+export const GetProviderResponse = ProviderSchema;
+
+export const UpdateProviderParams = z.object({
+  provider: UUIDSchema,
+});
+
+export const UpdateProviderBody = ProviderUpdateRequestSchema;
+
+export const UpdateProviderResponse = ProviderSchema;
+
+export const DeleteProviderParams = z.object({
+  provider: UUIDSchema,
+});
+
+export const DeleteProviderResponse = z.void();
 
 export const CreateReviewBody = CreateReviewRequestSchema;
 
@@ -1699,7 +2392,16 @@ export const ListReviewsQuery = z.object({
 
 export const ListReviewsResponse = z.object({
   data: z.array(ReviewSchema),
-  pagination: OffsetPaginationMetaSchema
+  pagination: z.object({
+  offset: z.number().int(),
+  limit: z.number().int(),
+  count: z.number().int(),
+  totalCount: z.number().int(),
+  totalPages: z.number().int(),
+  currentPage: z.number().int(),
+  hasNextPage: z.boolean(),
+  hasPreviousPage: z.boolean()
+})
 });
 
 export const GetReviewParams = z.object({
@@ -1727,7 +2429,16 @@ export const ListFilesQuery = z.object({
 
 export const ListFilesResponse = z.object({
   data: z.array(StoredFileSchema),
-  pagination: OffsetPaginationMetaSchema
+  pagination: z.object({
+  offset: z.number().int(),
+  limit: z.number().int(),
+  count: z.number().int(),
+  totalCount: z.number().int(),
+  totalPages: z.number().int(),
+  currentPage: z.number().int(),
+  hasNextPage: z.boolean(),
+  hasPreviousPage: z.boolean()
+})
 });
 
 export const UploadFileBody = FileUploadRequestSchema;
