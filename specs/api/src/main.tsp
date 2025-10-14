@@ -20,6 +20,7 @@ import "./modules/storage.tsp";
 import "./modules/email.tsp";
 import "./modules/booking.tsp";
 import "./modules/reviews.tsp";
+import "./modules/emr.tsp";
 
 using TypeSpec.Http;
 using TypeSpec.Versioning;
@@ -74,6 +75,9 @@ using TypeSpec.OpenAPI;
 })
 @tagMetadata("Reviews", #{
   description: "Flexible NPS review system for feedback collection. Enables users to submit Net Promoter Score (0-10) reviews with optional comments for any context (appointments, sessions, orders). Supports application-defined review types and optional reviewed entities for maximum flexibility. Features immutable reviews, role-based access control, and duplicate prevention."
+})
+@tagMetadata("EMR", #{
+  description: "Electronic Medical Records for telemedicine consultations. Simplified documentation system for minor ailment consultations with structured clinical data capture. Manages consultation notes with chief complaints, clinical assessments, treatment plans, vital signs, symptoms, prescriptions, and follow-up instructions. Features draft/finalized workflow, role-based access control (provider creates/updates, patient views own records), and flexible integration support for external documentation systems."
 })
 namespace MonobaseAPI {
 
@@ -157,6 +161,11 @@ namespace MonobaseAPI {
   @tag("Reviews")
   @route("/reviews")
   interface ReviewsManagement extends ReviewsModule.ReviewsManagement {}
+
+  // EMR Management
+  @tag("EMR")
+  @route("/emr")
+  interface EMRManagement extends EMRModule.EMRManagement {}
 
 }
 
