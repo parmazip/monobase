@@ -17,6 +17,7 @@ import { PersonalInfoForm } from '@monobase/ui/person/components/personal-info-f
 import { AddressForm } from '@monobase/ui/person/components/address-form'
 import { ProviderForm } from '@monobase/ui/provider/components/provider-form'
 import { MerchantAccountSetup } from '@monobase/ui/billing/components/merchant-account-setup'
+import { type PersonCreateRequest } from '@monobase/sdk/services/person'
 import type { PersonalInfo, OptionalAddress } from '@monobase/ui/person/schemas'
 import type { ProviderFormData } from '@monobase/ui/provider/schemas'
 
@@ -50,7 +51,20 @@ function OnboardingPage() {
     address?: OptionalAddress
   }>({})
 
-  const createPersonMutation = useCreateMyPerson()
+  const createPersonMutation = useCreateMyPerson({
+    onError: (error) => {
+      // Suppress toast for "already exists" error - we handle it gracefully
+      if (error instanceof ApiError && error.message?.includes('already has a person profile')) {
+        return
+      }
+      // For other errors, show the toast
+      if (error instanceof ApiError) {
+        toast.error(error.message || 'Failed to create profile')
+      } else {
+        toast.error('Failed to create profile. Please try again.')
+      }
+    }
+  })
   const createProviderMutation = useCreateMyProvider()
   
   const { data: merchantAccount, isLoading: merchantLoading } = useMyMerchantAccountStatus()
@@ -93,6 +107,14 @@ function OnboardingPage() {
         primaryAddress: formData.address,
         languagesSpoken: [detectedLanguage],
         timezone: detectedTimezone,
+      }).catch(error => {
+        // If person already exists, that's okay - continue to create patient
+        if (error instanceof ApiError && error.message?.includes('already has a person profile')) {
+          console.log('Person profile already exists, proceeding with provider creation')
+        } else {
+          // If it's a different error, rethrow it
+          throw error
+        }
       })
 
       // Create provider profile

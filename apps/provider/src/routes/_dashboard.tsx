@@ -1,6 +1,7 @@
 import { createFileRoute, Link, Outlet } from '@tanstack/react-router'
 import { requireAuth, requireEmailVerified, requirePerson, composeGuards } from '@/utils/guards'
 import { AppSidebar, type NavGroup } from '@/components/app-sidebar'
+import { VisibilityStatusBanner } from '@/components/visibility-status-banner'
 import {
   SidebarProvider,
   SidebarInset,
@@ -126,6 +127,9 @@ function DashboardLayout() {
             disableDefaultLinks
           />
         </header>
+        <div className="px-6 pt-4">
+          <VisibilityStatusBanner />
+        </div>
         <main className="flex-1 p-6">
           <Outlet />
         </main>
