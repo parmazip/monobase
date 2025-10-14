@@ -707,7 +707,7 @@ namespace BookingModule {
     @doc("Get booking event. Optional authentication - supports 'me' parameter when authenticated.")
     @operationId("getBookingEvent")
     @get
-    @useAuth(bearerAuth | TypeSpec.Http.NoAuth)
+    @useAuth(bearerAuth | Http.NoAuth)
     @route("/events/{event}")
     getBookingEvent(
       @path event: UUID | "me",
@@ -718,7 +718,7 @@ namespace BookingModule {
     @doc("List available time slots for a booking event. Default: available slots from now to +7 days.")
     @operationId("listEventSlots")
     @get
-    @useAuth(bearerAuth | TypeSpec.Http.NoAuth)
+    @useAuth(bearerAuth | Http.NoAuth)
     @route("/events/{event}/slots")
     listEventSlots(
       @path event: UUID,
