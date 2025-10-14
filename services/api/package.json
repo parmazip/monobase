@@ -45,7 +45,7 @@
     "postmark": "^4.0.5",
     "stripe": "^19.1.0",
     "uuid": "^11.1.0",
-    "zod": "^3.23.8"
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@faker-js/faker": "^9.0.0",
