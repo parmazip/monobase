@@ -1,4 +1,4 @@
-import { apiGet, ApiError } from '../api'
+import { apiGet, apiPost, ApiError } from '../api'
 import { sanitizeObject } from '../utils/api'
 import type { BookingProvider, BookingTimeSlot, BookingEventData, ProviderWithSlots } from '../types'
 import { formatDate } from '../utils/format'
@@ -153,4 +153,227 @@ export async function getProviderWithSlots(providerId: string): Promise<Provider
     slots,
     event,
   }
+}
+
+// ============================================================================
+// Provider Availability Management
+// ============================================================================
+
+/**
+ * Get provider's own booking event configuration
+ */
+export async function getMyBookingEvent(): Promise<BookingEventData | null> {
+  try {
+    const response = await apiGet<ApiBookingEvent>('/booking/event/me')
+    return mapApiEventToFrontend(response)
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return null
+    }
+    throw error
+  }
+}
+
+/**
+ * Create or update provider's booking event
+ */
+export async function upsertMyBookingEvent(data: Partial<ApiBookingEvent>): Promise<BookingEventData> {
+  const response = await apiGet<ApiBookingEvent>('/booking/event/me', {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })
+  return mapApiEventToFrontend(response)
+}
+
+/**
+ * Get provider's availability slots
+ */
+export interface GetAvailabilityParams {
+  startDate?: Date
+  endDate?: Date
+  status?: 'available' | 'booked' | 'blocked'
+  limit?: number
+  offset?: number
+}
+
+export async function getMyAvailability(params?: GetAvailabilityParams): Promise<ApiPaginatedResponse<BookingTimeSlot>> {
+  const queryParams = sanitizeObject({
+    startDate: params?.startDate ? formatDate(params.startDate, { format: 'iso' }) : undefined,
+    endDate: params?.endDate ? formatDate(params.endDate, { format: 'iso' }) : undefined,
+    status: params?.status,
+    limit: params?.limit,
+    offset: params?.offset,
+  }, { nullable: [] })
+
+  const response = await apiGet<ApiPaginatedResponse<ApiTimeSlot>>('/booking/availability/me', queryParams)
+  
+  return {
+    data: response.data.map(mapApiTimeSlotToFrontend),
+    pagination: response.pagination,
+  }
+}
+
+/**
+ * Create availability slot
+ */
+export async function createAvailabilitySlot(data: {
+  date: Date
+  startTime: Date
+  endTime: Date
+  locationTypes: ('video' | 'phone' | 'in-person')[]
+  price?: number
+}): Promise<BookingTimeSlot> {
+  const response = await apiPost<ApiTimeSlot>('/booking/availability', {
+      date: formatDate(data.date, { format: 'iso' }),
+      startTime: data.startTime.toISOString(),
+      endTime: data.endTime.toISOString(),
+      locationTypes: data.locationTypes,
+      billingOverride: data.price ? { price: data.price } : undefined,
+  })
+  return mapApiTimeSlotToFrontend(response)
+}
+
+/**
+ * Update availability slot
+ */
+export async function updateAvailabilitySlot(
+  slotId: string,
+  data: Partial<{
+    startTime: Date
+    endTime: Date
+    locationTypes: ('video' | 'phone' | 'in-person')[]
+    status: 'available' | 'booked' | 'blocked'
+    price: number
+  }>
+): Promise<BookingTimeSlot> {
+  const response = await apiGet<ApiTimeSlot>(`/booking/availability/${slotId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({
+      startTime: data.startTime?.toISOString(),
+      endTime: data.endTime?.toISOString(),
+      locationTypes: data.locationTypes,
+      status: data.status,
+      billingOverride: data.price !== undefined ? { price: data.price } : undefined,
+    }),
+  })
+  return mapApiTimeSlotToFrontend(response)
+}
+
+/**
+ * Delete availability slot
+ */
+export async function deleteAvailabilitySlot(slotId: string): Promise<void> {
+  await apiGet(`/booking/availability/${slotId}`, {
+    method: 'DELETE',
+  })
+}
+
+/**
+ * Bulk create availability slots (recurring schedule)
+ */
+export async function createRecurringAvailability(data: {
+  startDate: Date
+  endDate: Date
+  daysOfWeek: number[] // 0 = Sunday, 6 = Saturday
+  timeSlots: Array<{
+    startTime: string // HH:mm format
+    endTime: string // HH:mm format
+  }>
+  locationTypes: ('video' | 'phone' | 'in-person')[]
+  price?: number
+}): Promise<{ created: number }> {
+  const response = await apiPost<{ created: number }>('/booking/availability/bulk', {
+      startDate: formatDate(data.startDate, { format: 'iso' }),
+      endDate: formatDate(data.endDate, { format: 'iso' }),
+      daysOfWeek: data.daysOfWeek,
+      timeSlots: data.timeSlots,
+      locationTypes: data.locationTypes,
+      billingOverride: data.price ? { price: data.price } : undefined,
+  })
+  return response
+}
+
+// ============================================================================
+// Booking Instance CRUD Operations (Provider Side)
+// ============================================================================
+
+export interface ListBookingsParams {
+  status?: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'rejected' | 'no_show_client' | 'no_show_provider'
+  startDate?: Date
+  endDate?: Date
+  limit?: number
+  offset?: number
+}
+
+/**
+ * List bookings for provider
+ */
+export async function listBookings(params?: ListBookingsParams) {
+  const queryParams = sanitizeObject({
+    status: params?.status,
+    startDate: params?.startDate ? formatDate(params.startDate, { format: 'iso' }) : undefined,
+    endDate: params?.endDate ? formatDate(params.endDate, { format: 'iso' }) : undefined,
+    limit: params?.limit,
+    offset: params?.offset,
+  }, { nullable: [] })
+
+  return await apiGet('/booking/bookings', queryParams)
+}
+
+/**
+ * Get single booking by ID
+ */
+export async function getBooking(bookingId: string) {
+  return await apiGet(`/booking/bookings/${bookingId}`)
+}
+
+/**
+ * Confirm a booking request (provider action)
+ */
+export async function confirmBooking(bookingId: string, reason?: string) {
+  return await apiPost(`/booking/bookings/${bookingId}/confirm`, { reason })
+}
+
+/**
+ * Reject a booking request (provider action)
+ */
+export async function rejectBooking(bookingId: string, reason?: string) {
+  return await apiPost(`/booking/bookings/${bookingId}/reject`, { reason })
+}
+
+/**
+ * Cancel a booking
+ */
+export async function cancelBooking(bookingId: string, reason?: string) {
+  return await apiPost(`/booking/bookings/${bookingId}/cancel`, { reason })
+}
+
+/**
+ * Mark booking as no-show (provider action)
+ */
+export async function markBookingNoShow(bookingId: string) {
+  return await apiPost(`/booking/bookings/${bookingId}/no-show`, {})
+}
+
+// ============================================================================
+// Patient-Side Booking Creation
+// ============================================================================
+
+export interface CreateBookingData {
+  slot: string
+  locationType?: 'video' | 'phone' | 'in_person'
+  reason?: string
+  formResponses?: Record<string, any>
+}
+
+/**
+ * Create a new booking (patient action)
+ */
+export async function createBooking(data: CreateBookingData) {
+  return await apiPost('/booking/bookings', {
+    slot: data.slot,
+    locationType: data.locationType,
+    reason: data.reason,
+    formResponses: data.formResponses ? { data: data.formResponses } : undefined,
+  })
 }
