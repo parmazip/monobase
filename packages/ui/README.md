@@ -141,17 +141,14 @@ import type { User } from "@monobase/sdk/services/auth"
 // Billing UI components
 import { MerchantAccountSetup } from "@monobase/ui/billing/components/merchant-account-setup"
 
-// Billing types
+// Component prop types (exported from component)
 import type {
   MerchantAccountSetupStatus,
   MerchantAccountFormProps,
-  InvoiceStatusVariant,
-  PaymentMethodDisplay,
-  InvoiceStatusBadgeProps,
-} from "@monobase/ui/billing/types"
+} from "@monobase/ui/billing/components/merchant-account-setup"
 
-// For invoice data, use SDK types
-import type { Invoice } from "@monobase/sdk/services/billing"
+// For invoice/merchant account data, use SDK types
+import type { Invoice, MerchantAccount } from "@monobase/sdk/services/billing"
 ```
 
 ## Usage Examples

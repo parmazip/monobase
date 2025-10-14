@@ -1,7 +1,58 @@
 import { Button } from "../../components/button"
 import { CreditCard, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
 import { formatDate } from '../../lib/format-date'
-import type { MerchantAccountFormProps } from '../types'
+
+/**
+ * Merchant account setup status for UI display
+ */
+export type MerchantAccountSetupStatus = 'none' | 'incomplete' | 'complete'
+
+/**
+ * Props for merchant account setup form component
+ */
+export interface MerchantAccountFormProps {
+  /**
+   * Current merchant account data (null if not created yet)
+   */
+  account: {
+    id: string
+    metadata?: {
+      onboardingStartedAt?: string
+    }
+  } | null
+
+  /**
+   * Setup status derived from account state
+   */
+  status: MerchantAccountSetupStatus
+
+  /**
+   * Loading state for async operations
+   */
+  isLoading: boolean
+
+  /**
+   * Called when user clicks "Set Up" or "Continue Setup"
+   * Should handle creating account and opening Stripe onboarding
+   */
+  onSetupAccount: () => void
+
+  /**
+   * Called when user clicks "Continue" after completing setup
+   */
+  onSubmit: () => void
+
+  /**
+   * Called when user clicks "Skip for now"
+   */
+  onSkip: () => void
+
+  /**
+   * Whether to show action buttons (Submit/Skip)
+   * Default: true
+   */
+  showButtons?: boolean
+}
 
 /**
  * Merchant Account Setup Form
