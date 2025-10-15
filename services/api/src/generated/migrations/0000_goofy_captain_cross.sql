@@ -20,7 +20,6 @@ CREATE TYPE "public"."email_provider" AS ENUM('smtp', 'postmark', 'onesignal');-
 CREATE TYPE "public"."email_queue_status" AS ENUM('pending', 'processing', 'sent', 'failed', 'cancelled');--> statement-breakpoint
 CREATE TYPE "public"."template_status" AS ENUM('draft', 'active', 'archived');--> statement-breakpoint
 CREATE TYPE "public"."variable_type" AS ENUM('string', 'number', 'boolean', 'date', 'datetime', 'url', 'email', 'array');--> statement-breakpoint
-CREATE TYPE "public"."consultation_status" AS ENUM('draft', 'finalized', 'amended');--> statement-breakpoint
 CREATE TYPE "public"."notification_channel" AS ENUM('email', 'push', 'in-app');--> statement-breakpoint
 CREATE TYPE "public"."notification_status" AS ENUM('queued', 'sent', 'delivered', 'read', 'failed', 'expired');--> statement-breakpoint
 CREATE TYPE "public"."notification_type" AS ENUM('billing', 'security', 'system', 'booking.created', 'booking.confirmed', 'booking.rejected', 'booking.cancelled', 'booking.no-show-client', 'booking.no-show-provider', 'comms.video-call-started', 'comms.video-call-joined', 'comms.video-call-left', 'comms.video-call-ended', 'comms.chat-message');--> statement-breakpoint
@@ -387,34 +386,6 @@ CREATE TABLE IF NOT EXISTS "email_template" (
 	"status" "template_status" DEFAULT 'draft' NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "consultation_note" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"created_at" timestamp DEFAULT now() NOT NULL,
-	"updated_at" timestamp DEFAULT now() NOT NULL,
-	"version" integer DEFAULT 1 NOT NULL,
-	"created_by" uuid,
-	"updated_by" uuid,
-	"patient_id" uuid NOT NULL,
-	"provider_id" uuid NOT NULL,
-	"context" varchar(255),
-	"chief_complaint" text,
-	"assessment" text,
-	"plan" text,
-	"vitals" jsonb,
-	"symptoms" jsonb,
-	"prescriptions" jsonb,
-	"follow_up" jsonb,
-	"external_documentation" jsonb,
-	"status" "consultation_status" DEFAULT 'draft' NOT NULL,
-	"finalized_at" timestamp,
-	"finalized_by" uuid,
-	CONSTRAINT "consultation_notes_context_unique" UNIQUE("context"),
-	CONSTRAINT "consultation_notes_chief_complaint_length_check" CHECK ("consultation_note"."chief_complaint" IS NULL OR (LENGTH("consultation_note"."chief_complaint") >= 1 AND LENGTH("consultation_note"."chief_complaint") <= 500)),
-	CONSTRAINT "consultation_notes_assessment_length_check" CHECK ("consultation_note"."assessment" IS NULL OR (LENGTH("consultation_note"."assessment") >= 1 AND LENGTH("consultation_note"."assessment") <= 2000)),
-	CONSTRAINT "consultation_notes_plan_length_check" CHECK ("consultation_note"."plan" IS NULL OR (LENGTH("consultation_note"."plan") >= 1 AND LENGTH("consultation_note"."plan") <= 2000)),
-	CONSTRAINT "consultation_notes_finalized_at_constraint" CHECK (("consultation_note"."status" = 'finalized' AND "consultation_note"."finalized_at" IS NOT NULL AND "consultation_note"."finalized_by" IS NOT NULL) OR "consultation_note"."status" != 'finalized')
-);
---> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "notification" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
@@ -436,18 +407,6 @@ CREATE TABLE IF NOT EXISTS "notification" (
 	"consent_validated" boolean DEFAULT false NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "patient" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"created_at" timestamp DEFAULT now() NOT NULL,
-	"updated_at" timestamp DEFAULT now() NOT NULL,
-	"version" integer DEFAULT 1 NOT NULL,
-	"created_by" uuid,
-	"updated_by" uuid,
-	"person_id" uuid NOT NULL,
-	"primary_provider" jsonb,
-	"primary_pharmacy" jsonb
-);
---> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "person" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
@@ -465,22 +424,6 @@ CREATE TABLE IF NOT EXISTS "person" (
 	"avatar" jsonb,
 	"languages_spoken" jsonb,
 	"timezone" varchar(50)
-);
---> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "provider" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"created_at" timestamp DEFAULT now() NOT NULL,
-	"updated_at" timestamp DEFAULT now() NOT NULL,
-	"version" integer DEFAULT 1 NOT NULL,
-	"created_by" uuid,
-	"updated_by" uuid,
-	"person_id" uuid NOT NULL,
-	"provider_type" varchar(50) NOT NULL,
-	"years_of_experience" integer,
-	"biography" text,
-	"minor_ailments_specialties" jsonb,
-	"minor_ailments_practice_locations" jsonb,
-	CONSTRAINT "providers_person_id_unique" UNIQUE("person_id")
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "review" (
@@ -650,30 +593,6 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "consultation_note" ADD CONSTRAINT "consultation_note_patient_id_patient_id_fk" FOREIGN KEY ("patient_id") REFERENCES "public"."patient"("id") ON DELETE cascade ON UPDATE no action;
-EXCEPTION
- WHEN duplicate_object THEN null;
-END $$;
---> statement-breakpoint
-DO $$ BEGIN
- ALTER TABLE "consultation_note" ADD CONSTRAINT "consultation_note_provider_id_provider_id_fk" FOREIGN KEY ("provider_id") REFERENCES "public"."provider"("id") ON DELETE cascade ON UPDATE no action;
-EXCEPTION
- WHEN duplicate_object THEN null;
-END $$;
---> statement-breakpoint
-DO $$ BEGIN
- ALTER TABLE "patient" ADD CONSTRAINT "patient_person_id_person_id_fk" FOREIGN KEY ("person_id") REFERENCES "public"."person"("id") ON DELETE cascade ON UPDATE no action;
-EXCEPTION
- WHEN duplicate_object THEN null;
-END $$;
---> statement-breakpoint
-DO $$ BEGIN
- ALTER TABLE "provider" ADD CONSTRAINT "provider_person_id_person_id_fk" FOREIGN KEY ("person_id") REFERENCES "public"."person"("id") ON DELETE cascade ON UPDATE no action;
-EXCEPTION
- WHEN duplicate_object THEN null;
-END $$;
---> statement-breakpoint
-DO $$ BEGIN
  ALTER TABLE "review" ADD CONSTRAINT "review_reviewer_id_person_id_fk" FOREIGN KEY ("reviewer_id") REFERENCES "public"."person"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
@@ -757,26 +676,11 @@ CREATE INDEX IF NOT EXISTS "email_queue_template_tags_idx" ON "email_queue" USIN
 CREATE INDEX IF NOT EXISTS "email_queue_processing_idx" ON "email_queue" USING btree ("status","priority","scheduled_at");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "email_template_status_idx" ON "email_template" USING btree ("status");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "email_template_tags_idx" ON "email_template" USING gin ("tags");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "consultation_notes_patient_id_idx" ON "consultation_note" USING btree ("patient_id");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "consultation_notes_provider_id_idx" ON "consultation_note" USING btree ("provider_id");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "consultation_notes_status_idx" ON "consultation_note" USING btree ("status");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "consultation_notes_finalized_at_idx" ON "consultation_note" USING btree ("finalized_at");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "consultation_notes_finalized_by_idx" ON "consultation_note" USING btree ("finalized_by");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "consultation_notes_context_idx" ON "consultation_note" USING btree ("context");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "consultation_notes_patient_status_idx" ON "consultation_note" USING btree ("patient_id","status");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "consultation_notes_provider_status_idx" ON "consultation_note" USING btree ("provider_id","status");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "consultation_notes_patient_created_at_idx" ON "consultation_note" USING btree ("patient_id","created_at");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "consultation_notes_finalized_idx" ON "consultation_note" USING btree ("patient_id","finalized_at") WHERE "consultation_note"."status" = 'finalized';--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "consultation_notes_draft_idx" ON "consultation_note" USING btree ("provider_id","created_at") WHERE "consultation_note"."status" = 'draft';--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "notifications_recipient_status_idx" ON "notification" USING btree ("recipient_id","status");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "notifications_scheduled_status_idx" ON "notification" USING btree ("scheduled_at","status");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "notifications_type_channel_idx" ON "notification" USING btree ("type","channel");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "notifications_created_at_idx" ON "notification" USING btree ("created_at");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "patients_person_id_idx" ON "patient" USING btree ("person_id");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "patients_person_id_unique" ON "patient" USING btree ("person_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "persons_name_idx" ON "person" USING btree ("first_name","last_name");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "providers_person_id_idx" ON "provider" USING btree ("person_id");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "providers_provider_type_idx" ON "provider" USING btree ("provider_type");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "reviews_context_idx" ON "review" USING btree ("context_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "reviews_reviewer_idx" ON "review" USING btree ("reviewer_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "reviews_review_type_idx" ON "review" USING btree ("review_type");--> statement-breakpoint
