@@ -406,9 +406,9 @@ function PatientsPage() {
                     Message
                   </Button>
                   <Button size="sm" className="flex-1" asChild>
-                    <Link to="/consultations">
-                      <Video className="mr-2 h-3 w-3" />
-                      Consult
+                    <Link to="/bookings">
+                      <Calendar className="mr-2 h-3 w-3" />
+                      Book
                     </Link>
                   </Button>
                 </div>

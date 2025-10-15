@@ -31,11 +31,11 @@ import {
   AlertDialogTrigger,
 } from "@monobase/ui/components/alert-dialog"
 
-export const Route = createFileRoute('/_dashboard/appointments/requests')({
-  component: RequestsAppointmentsPage,
+export const Route = createFileRoute('/_dashboard/bookings/requests')({
+  component: BookingRequestsPage,
 })
 
-function RequestsAppointmentsPage() {
+function BookingRequestsPage() {
   // Fetch pending appointments
   const { data: appointmentsData, isLoading, error } = useListBookings({ status: 'pending' })
   const confirmAppointment = useConfirmBooking()

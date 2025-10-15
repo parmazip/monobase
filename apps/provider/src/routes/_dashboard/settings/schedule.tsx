@@ -12,7 +12,7 @@ import {
   Clock,
   Info,
 } from 'lucide-react'
-import { useUpsertBookingEvent, useMyBookingEvent } from '@monobase/sdk/react/hooks/use-booking'
+import { useCreateBookingEvent, useUpdateBookingEvent, useMyBookingEvent } from '@monobase/sdk/react/hooks/use-booking'
 import { useSetupRequirements } from '@/hooks/use-setup-requirements'
 import {
   getDayDisplayName,
@@ -59,6 +59,12 @@ import { formatDate } from '@monobase/ui/lib/format-date'
 
 export const Route = createFileRoute('/_dashboard/settings/schedule')({
   component: SchedulePage,
+  beforeLoad: async ({ context }) => {
+    return {
+      person: context.auth.person,
+      profile: context.auth.provider 
+    }
+  },
 })
 
 type TimeBlock = {
@@ -74,7 +80,7 @@ type DailyConfig = {
 }
 
 function SchedulePage() {
-  const { user, profile } = Route.useRouteContext()
+  const { person, profile } = Route.useRouteContext()
   const [showCreateScheduleDialog, setShowCreateScheduleDialog] = useState(false)
   const [showVisibilityDialog, setShowVisibilityDialog] = useState(false)
   const [pendingVisibilityAction, setPendingVisibilityAction] = useState<'enable' | 'disable' | null>(null)
@@ -96,16 +102,15 @@ function SchedulePage() {
     isLoading: requirementsLoading,
   } = useSetupRequirements()
 
-  const upsertEvent = useUpsertBookingEvent()
-  // Aliases for backward compatibility
-  const updateEvent = upsertEvent
-  const createEvent = upsertEvent
+  const createEvent = useCreateBookingEvent()
+  const updateEvent = useUpdateBookingEvent()
 
   // Use edited configs if available, otherwise use active event configs
-  const currentConfigs = editedConfigs || (activeEvent as any)?.dailyConfigs
+  const currentConfigs = editedConfigs || activeEvent?.dailyConfigs
 
   const handleCreateSchedule = async () => {
-    await upsertEvent.mutateAsync({
+    await createEvent.mutateAsync({
+      title: `${person.firstName} ${person.lastName} Virtual Consultation`,
       context: profile.id,
       timezone: detectTimezone(),
       locationTypes: ['video'],
@@ -122,20 +127,27 @@ function SchedulePage() {
       formConfig: {
         fields: [
           { 
-            id: 'minorAilment',
+            name: 'minorAilment',
             label: 'Select Minor Ailments',
             type: 'select',
             required: true,
             options: MINOR_AILMENTS.map(item => ({ label: item.name, value: item.code }))
           },
           {
-            id: 'hpi',
+            name: 'hpi',
             label: 'History of Present Illness',
             type: 'textarea',
             placeholder: 'Please share any symptoms or relevant information...'
           }
         ]
       },
+      keywords: [
+        `${person.firstName} ${person.lastName}`,
+      ],
+      tags: [
+        ...(profile.minorAilmentsPracticeLocations?.map(code => `loc::${code}`) || []),
+        ...(profile.minorAilmentsSpecialties?.map(code => `loc::${code}`) || []),
+      ]
     })
 
     setShowCreateScheduleDialog(false)
@@ -379,7 +391,7 @@ function SchedulePage() {
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              {(activeEvent as any)?.status === 'active' ? (
+              {activeEvent?.status === 'active' ? (
                 <Badge variant="default" className="bg-green-600">
                   <Check className="mr-1 h-3 w-3" />
                   Publicly Visible
@@ -457,9 +469,9 @@ function SchedulePage() {
               </p>
             </div>
             <Switch
-              checked={(activeEvent as any)?.status === 'active'}
+              checked={activeEvent?.status === 'active'}
               onCheckedChange={togglePublicVisibility}
-              disabled={!allRequirementsMet || upsertEvent.isPending || requirementsLoading}
+              disabled={!allRequirementsMet || updateEvent.isPending || requirementsLoading}
             />
           </div>
 
@@ -475,7 +487,7 @@ function SchedulePage() {
             </Alert>
           )}
 
-          {allRequirementsMet && (activeEvent as any)?.status === 'paused' && (
+          {allRequirementsMet && activeEvent?.status === 'paused' && (
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Currently Hidden</AlertTitle>
@@ -486,7 +498,7 @@ function SchedulePage() {
             </Alert>
           )}
 
-          {(activeEvent as any)?.status === 'active' && (
+          {activeEvent?.status === 'active' && (
             <Alert className="border-green-200 bg-green-50">
               <Check className="h-4 w-4 text-green-600" />
               <AlertTitle className="text-green-900">Publicly Visible</AlertTitle>
@@ -517,8 +529,8 @@ function SchedulePage() {
                 <Button variant="outline" size="sm" onClick={discardChanges}>
                   Discard
                 </Button>
-                <Button size="sm" onClick={saveChanges} disabled={upsertEvent.isPending}>
-                  {upsertEvent.isPending ? 'Saving...' : 'Save Changes'}
+                <Button size="sm" onClick={saveChanges} disabled={updateEvent.isPending}>
+                  {updateEvent.isPending ? 'Saving...' : 'Save Changes'}
                 </Button>
               </div>
             )}
@@ -766,7 +778,7 @@ function SchedulePage() {
               disabled={updateEvent.isPending}
               className={pendingVisibilityAction === 'enable' ? 'bg-green-600 hover:bg-green-700' : ''}
             >
-              {upsertEvent.isPending
+              {updateEvent.isPending
                 ? 'Updating...'
                 : pendingVisibilityAction === 'enable'
                   ? 'Enable Visibility'
