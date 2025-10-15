@@ -5,11 +5,11 @@ import { Tabs, TabsList, TabsTrigger } from "@monobase/ui/components/tabs"
 import { Badge } from "@monobase/ui/components/badge"
 import { useMyBookingEvent, useListBookings } from '@monobase/sdk/react/hooks/use-booking'
 
-export const Route = createFileRoute('/_dashboard/appointments')({
-  component: AppointmentsLayout,
+export const Route = createFileRoute('/_dashboard/bookings')({
+  component: BookingsLayout,
 })
 
-function AppointmentsLayout() {
+function BookingsLayout() {
   const matchRoute = useMatchRoute()
 
   // Check booking event status for conditional "Set Availability" button
@@ -23,9 +23,9 @@ function AppointmentsLayout() {
   const pendingCount = pendingData?.pagination?.totalCount || 0
 
   // Determine active tab based on current route
-  const isUpcoming = !!matchRoute({ to: '/appointments/upcoming' })
-  const isRequests = !!matchRoute({ to: '/appointments/requests' })
-  const isPast = !!matchRoute({ to: '/appointments/past' })
+  const isUpcoming = !!matchRoute({ to: '/bookings/upcoming' })
+  const isRequests = !!matchRoute({ to: '/bookings/requests' })
+  const isPast = !!matchRoute({ to: '/bookings/past' })
 
   const activeTab = isRequests ? 'requests' : isPast ? 'past' : 'upcoming'
 
@@ -34,9 +34,9 @@ function AppointmentsLayout() {
       {/* Page Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-headline font-bold">Patient Appointments</h1>
+          <h1 className="text-3xl font-headline font-bold">Patient Bookings</h1>
           <p className="text-muted-foreground font-body">
-            Manage your patient consultations and appointments
+            Manage your patient appointment bookings
           </p>
         </div>
         {!bookingEvent && (
@@ -49,11 +49,11 @@ function AppointmentsLayout() {
         )}
       </div>
 
-      {/* Appointments Tabs */}
+      {/* Bookings Tabs */}
       <Tabs value={activeTab} className="w-full">
         <TabsList>
           <TabsTrigger value="upcoming" asChild>
-            <Link to="/appointments/upcoming">
+            <Link to="/bookings/upcoming">
               Upcoming
               <Badge variant="secondary" className="ml-2">
                 {confirmedCount}
@@ -61,7 +61,7 @@ function AppointmentsLayout() {
             </Link>
           </TabsTrigger>
           <TabsTrigger value="requests" asChild>
-            <Link to="/appointments/requests">
+            <Link to="/bookings/requests">
               Requests
               <Badge variant="secondary" className="ml-2">
                 {pendingCount}
@@ -69,7 +69,7 @@ function AppointmentsLayout() {
             </Link>
           </TabsTrigger>
           <TabsTrigger value="past" asChild>
-            <Link to="/appointments/past">
+            <Link to="/bookings/past">
               Past
             </Link>
           </TabsTrigger>

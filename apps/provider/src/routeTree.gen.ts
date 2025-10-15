@@ -18,21 +18,19 @@ import { Route as DashboardPatientsRouteImport } from './routes/_dashboard/patie
 import { Route as DashboardNotificationsRouteImport } from './routes/_dashboard/notifications'
 import { Route as DashboardEarningsRouteImport } from './routes/_dashboard/earnings'
 import { Route as DashboardDashboardRouteImport } from './routes/_dashboard/dashboard'
+import { Route as DashboardBookingsRouteImport } from './routes/_dashboard/bookings'
 import { Route as DashboardBillingRouteImport } from './routes/_dashboard/billing'
-import { Route as DashboardAppointmentsRouteImport } from './routes/_dashboard/appointments'
 import { Route as DashboardMedicalRecordsIndexRouteImport } from './routes/_dashboard/medical-records/index'
-import { Route as DashboardConsultationsIndexRouteImport } from './routes/_dashboard/consultations/index'
 import { Route as DashboardSettingsSecurityRouteImport } from './routes/_dashboard/settings/security'
 import { Route as DashboardSettingsScheduleRouteImport } from './routes/_dashboard/settings/schedule'
 import { Route as DashboardSettingsProfessionalRouteImport } from './routes/_dashboard/settings/professional'
 import { Route as DashboardSettingsBillingRouteImport } from './routes/_dashboard/settings/billing'
 import { Route as DashboardSettingsAccountRouteImport } from './routes/_dashboard/settings/account'
 import { Route as DashboardMedicalRecordsIdRouteImport } from './routes/_dashboard/medical-records/$id'
-import { Route as DashboardConsultationsIdRouteImport } from './routes/_dashboard/consultations/$id'
-import { Route as DashboardAppointmentsUpcomingRouteImport } from './routes/_dashboard/appointments/upcoming'
-import { Route as DashboardAppointmentsRequestsRouteImport } from './routes/_dashboard/appointments/requests'
-import { Route as DashboardAppointmentsPastRouteImport } from './routes/_dashboard/appointments/past'
-import { Route as DashboardAppointmentsIdVideoRouteImport } from './routes/_dashboard/appointments/$id.video'
+import { Route as DashboardBookingsUpcomingRouteImport } from './routes/_dashboard/bookings/upcoming'
+import { Route as DashboardBookingsRequestsRouteImport } from './routes/_dashboard/bookings/requests'
+import { Route as DashboardBookingsPastRouteImport } from './routes/_dashboard/bookings/past'
+import { Route as DashboardBookingsIdVideoRouteImport } from './routes/_dashboard/bookings/$id.video'
 
 const VerifyEmailRoute = VerifyEmailRouteImport.update({
   id: '/verify-email',
@@ -78,26 +76,20 @@ const DashboardDashboardRoute = DashboardDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardBookingsRoute = DashboardBookingsRouteImport.update({
+  id: '/bookings',
+  path: '/bookings',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardBillingRoute = DashboardBillingRouteImport.update({
   id: '/billing',
   path: '/billing',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardAppointmentsRoute = DashboardAppointmentsRouteImport.update({
-  id: '/appointments',
-  path: '/appointments',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardMedicalRecordsIndexRoute =
   DashboardMedicalRecordsIndexRouteImport.update({
     id: '/medical-records/',
     path: '/medical-records/',
-    getParentRoute: () => DashboardRoute,
-  } as any)
-const DashboardConsultationsIndexRoute =
-  DashboardConsultationsIndexRouteImport.update({
-    id: '/consultations/',
-    path: '/consultations/',
     getParentRoute: () => DashboardRoute,
   } as any)
 const DashboardSettingsSecurityRoute =
@@ -136,86 +128,75 @@ const DashboardMedicalRecordsIdRoute =
     path: '/medical-records/$id',
     getParentRoute: () => DashboardRoute,
   } as any)
-const DashboardConsultationsIdRoute =
-  DashboardConsultationsIdRouteImport.update({
-    id: '/consultations/$id',
-    path: '/consultations/$id',
-    getParentRoute: () => DashboardRoute,
-  } as any)
-const DashboardAppointmentsUpcomingRoute =
-  DashboardAppointmentsUpcomingRouteImport.update({
+const DashboardBookingsUpcomingRoute =
+  DashboardBookingsUpcomingRouteImport.update({
     id: '/upcoming',
     path: '/upcoming',
-    getParentRoute: () => DashboardAppointmentsRoute,
+    getParentRoute: () => DashboardBookingsRoute,
   } as any)
-const DashboardAppointmentsRequestsRoute =
-  DashboardAppointmentsRequestsRouteImport.update({
+const DashboardBookingsRequestsRoute =
+  DashboardBookingsRequestsRouteImport.update({
     id: '/requests',
     path: '/requests',
-    getParentRoute: () => DashboardAppointmentsRoute,
+    getParentRoute: () => DashboardBookingsRoute,
   } as any)
-const DashboardAppointmentsPastRoute =
-  DashboardAppointmentsPastRouteImport.update({
-    id: '/past',
-    path: '/past',
-    getParentRoute: () => DashboardAppointmentsRoute,
-  } as any)
-const DashboardAppointmentsIdVideoRoute =
-  DashboardAppointmentsIdVideoRouteImport.update({
+const DashboardBookingsPastRoute = DashboardBookingsPastRouteImport.update({
+  id: '/past',
+  path: '/past',
+  getParentRoute: () => DashboardBookingsRoute,
+} as any)
+const DashboardBookingsIdVideoRoute =
+  DashboardBookingsIdVideoRouteImport.update({
     id: '/$id/video',
     path: '/$id/video',
-    getParentRoute: () => DashboardAppointmentsRoute,
+    getParentRoute: () => DashboardBookingsRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/onboarding': typeof OnboardingRoute
   '/verify-email': typeof VerifyEmailRoute
-  '/appointments': typeof DashboardAppointmentsRouteWithChildren
   '/billing': typeof DashboardBillingRoute
+  '/bookings': typeof DashboardBookingsRouteWithChildren
   '/dashboard': typeof DashboardDashboardRoute
   '/earnings': typeof DashboardEarningsRoute
   '/notifications': typeof DashboardNotificationsRoute
   '/patients': typeof DashboardPatientsRoute
   '/auth/$authView': typeof AuthAuthViewRoute
-  '/appointments/past': typeof DashboardAppointmentsPastRoute
-  '/appointments/requests': typeof DashboardAppointmentsRequestsRoute
-  '/appointments/upcoming': typeof DashboardAppointmentsUpcomingRoute
-  '/consultations/$id': typeof DashboardConsultationsIdRoute
+  '/bookings/past': typeof DashboardBookingsPastRoute
+  '/bookings/requests': typeof DashboardBookingsRequestsRoute
+  '/bookings/upcoming': typeof DashboardBookingsUpcomingRoute
   '/medical-records/$id': typeof DashboardMedicalRecordsIdRoute
   '/settings/account': typeof DashboardSettingsAccountRoute
   '/settings/billing': typeof DashboardSettingsBillingRoute
   '/settings/professional': typeof DashboardSettingsProfessionalRoute
   '/settings/schedule': typeof DashboardSettingsScheduleRoute
   '/settings/security': typeof DashboardSettingsSecurityRoute
-  '/consultations': typeof DashboardConsultationsIndexRoute
   '/medical-records': typeof DashboardMedicalRecordsIndexRoute
-  '/appointments/$id/video': typeof DashboardAppointmentsIdVideoRoute
+  '/bookings/$id/video': typeof DashboardBookingsIdVideoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/onboarding': typeof OnboardingRoute
   '/verify-email': typeof VerifyEmailRoute
-  '/appointments': typeof DashboardAppointmentsRouteWithChildren
   '/billing': typeof DashboardBillingRoute
+  '/bookings': typeof DashboardBookingsRouteWithChildren
   '/dashboard': typeof DashboardDashboardRoute
   '/earnings': typeof DashboardEarningsRoute
   '/notifications': typeof DashboardNotificationsRoute
   '/patients': typeof DashboardPatientsRoute
   '/auth/$authView': typeof AuthAuthViewRoute
-  '/appointments/past': typeof DashboardAppointmentsPastRoute
-  '/appointments/requests': typeof DashboardAppointmentsRequestsRoute
-  '/appointments/upcoming': typeof DashboardAppointmentsUpcomingRoute
-  '/consultations/$id': typeof DashboardConsultationsIdRoute
+  '/bookings/past': typeof DashboardBookingsPastRoute
+  '/bookings/requests': typeof DashboardBookingsRequestsRoute
+  '/bookings/upcoming': typeof DashboardBookingsUpcomingRoute
   '/medical-records/$id': typeof DashboardMedicalRecordsIdRoute
   '/settings/account': typeof DashboardSettingsAccountRoute
   '/settings/billing': typeof DashboardSettingsBillingRoute
   '/settings/professional': typeof DashboardSettingsProfessionalRoute
   '/settings/schedule': typeof DashboardSettingsScheduleRoute
   '/settings/security': typeof DashboardSettingsSecurityRoute
-  '/consultations': typeof DashboardConsultationsIndexRoute
   '/medical-records': typeof DashboardMedicalRecordsIndexRoute
-  '/appointments/$id/video': typeof DashboardAppointmentsIdVideoRoute
+  '/bookings/$id/video': typeof DashboardBookingsIdVideoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -223,26 +204,24 @@ export interface FileRoutesById {
   '/_dashboard': typeof DashboardRouteWithChildren
   '/onboarding': typeof OnboardingRoute
   '/verify-email': typeof VerifyEmailRoute
-  '/_dashboard/appointments': typeof DashboardAppointmentsRouteWithChildren
   '/_dashboard/billing': typeof DashboardBillingRoute
+  '/_dashboard/bookings': typeof DashboardBookingsRouteWithChildren
   '/_dashboard/dashboard': typeof DashboardDashboardRoute
   '/_dashboard/earnings': typeof DashboardEarningsRoute
   '/_dashboard/notifications': typeof DashboardNotificationsRoute
   '/_dashboard/patients': typeof DashboardPatientsRoute
   '/auth/$authView': typeof AuthAuthViewRoute
-  '/_dashboard/appointments/past': typeof DashboardAppointmentsPastRoute
-  '/_dashboard/appointments/requests': typeof DashboardAppointmentsRequestsRoute
-  '/_dashboard/appointments/upcoming': typeof DashboardAppointmentsUpcomingRoute
-  '/_dashboard/consultations/$id': typeof DashboardConsultationsIdRoute
+  '/_dashboard/bookings/past': typeof DashboardBookingsPastRoute
+  '/_dashboard/bookings/requests': typeof DashboardBookingsRequestsRoute
+  '/_dashboard/bookings/upcoming': typeof DashboardBookingsUpcomingRoute
   '/_dashboard/medical-records/$id': typeof DashboardMedicalRecordsIdRoute
   '/_dashboard/settings/account': typeof DashboardSettingsAccountRoute
   '/_dashboard/settings/billing': typeof DashboardSettingsBillingRoute
   '/_dashboard/settings/professional': typeof DashboardSettingsProfessionalRoute
   '/_dashboard/settings/schedule': typeof DashboardSettingsScheduleRoute
   '/_dashboard/settings/security': typeof DashboardSettingsSecurityRoute
-  '/_dashboard/consultations/': typeof DashboardConsultationsIndexRoute
   '/_dashboard/medical-records/': typeof DashboardMedicalRecordsIndexRoute
-  '/_dashboard/appointments/$id/video': typeof DashboardAppointmentsIdVideoRoute
+  '/_dashboard/bookings/$id/video': typeof DashboardBookingsIdVideoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -250,77 +229,71 @@ export interface FileRouteTypes {
     | '/'
     | '/onboarding'
     | '/verify-email'
-    | '/appointments'
     | '/billing'
+    | '/bookings'
     | '/dashboard'
     | '/earnings'
     | '/notifications'
     | '/patients'
     | '/auth/$authView'
-    | '/appointments/past'
-    | '/appointments/requests'
-    | '/appointments/upcoming'
-    | '/consultations/$id'
+    | '/bookings/past'
+    | '/bookings/requests'
+    | '/bookings/upcoming'
     | '/medical-records/$id'
     | '/settings/account'
     | '/settings/billing'
     | '/settings/professional'
     | '/settings/schedule'
     | '/settings/security'
-    | '/consultations'
     | '/medical-records'
-    | '/appointments/$id/video'
+    | '/bookings/$id/video'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/onboarding'
     | '/verify-email'
-    | '/appointments'
     | '/billing'
+    | '/bookings'
     | '/dashboard'
     | '/earnings'
     | '/notifications'
     | '/patients'
     | '/auth/$authView'
-    | '/appointments/past'
-    | '/appointments/requests'
-    | '/appointments/upcoming'
-    | '/consultations/$id'
+    | '/bookings/past'
+    | '/bookings/requests'
+    | '/bookings/upcoming'
     | '/medical-records/$id'
     | '/settings/account'
     | '/settings/billing'
     | '/settings/professional'
     | '/settings/schedule'
     | '/settings/security'
-    | '/consultations'
     | '/medical-records'
-    | '/appointments/$id/video'
+    | '/bookings/$id/video'
   id:
     | '__root__'
     | '/'
     | '/_dashboard'
     | '/onboarding'
     | '/verify-email'
-    | '/_dashboard/appointments'
     | '/_dashboard/billing'
+    | '/_dashboard/bookings'
     | '/_dashboard/dashboard'
     | '/_dashboard/earnings'
     | '/_dashboard/notifications'
     | '/_dashboard/patients'
     | '/auth/$authView'
-    | '/_dashboard/appointments/past'
-    | '/_dashboard/appointments/requests'
-    | '/_dashboard/appointments/upcoming'
-    | '/_dashboard/consultations/$id'
+    | '/_dashboard/bookings/past'
+    | '/_dashboard/bookings/requests'
+    | '/_dashboard/bookings/upcoming'
     | '/_dashboard/medical-records/$id'
     | '/_dashboard/settings/account'
     | '/_dashboard/settings/billing'
     | '/_dashboard/settings/professional'
     | '/_dashboard/settings/schedule'
     | '/_dashboard/settings/security'
-    | '/_dashboard/consultations/'
     | '/_dashboard/medical-records/'
-    | '/_dashboard/appointments/$id/video'
+    | '/_dashboard/bookings/$id/video'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -396,6 +369,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardDashboardRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/_dashboard/bookings': {
+      id: '/_dashboard/bookings'
+      path: '/bookings'
+      fullPath: '/bookings'
+      preLoaderRoute: typeof DashboardBookingsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/_dashboard/billing': {
       id: '/_dashboard/billing'
       path: '/billing'
@@ -403,25 +383,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardBillingRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/_dashboard/appointments': {
-      id: '/_dashboard/appointments'
-      path: '/appointments'
-      fullPath: '/appointments'
-      preLoaderRoute: typeof DashboardAppointmentsRouteImport
-      parentRoute: typeof DashboardRoute
-    }
     '/_dashboard/medical-records/': {
       id: '/_dashboard/medical-records/'
       path: '/medical-records'
       fullPath: '/medical-records'
       preLoaderRoute: typeof DashboardMedicalRecordsIndexRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/_dashboard/consultations/': {
-      id: '/_dashboard/consultations/'
-      path: '/consultations'
-      fullPath: '/consultations'
-      preLoaderRoute: typeof DashboardConsultationsIndexRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/_dashboard/settings/security': {
@@ -466,96 +432,83 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardMedicalRecordsIdRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/_dashboard/consultations/$id': {
-      id: '/_dashboard/consultations/$id'
-      path: '/consultations/$id'
-      fullPath: '/consultations/$id'
-      preLoaderRoute: typeof DashboardConsultationsIdRouteImport
-      parentRoute: typeof DashboardRoute
-    }
-    '/_dashboard/appointments/upcoming': {
-      id: '/_dashboard/appointments/upcoming'
+    '/_dashboard/bookings/upcoming': {
+      id: '/_dashboard/bookings/upcoming'
       path: '/upcoming'
-      fullPath: '/appointments/upcoming'
-      preLoaderRoute: typeof DashboardAppointmentsUpcomingRouteImport
-      parentRoute: typeof DashboardAppointmentsRoute
+      fullPath: '/bookings/upcoming'
+      preLoaderRoute: typeof DashboardBookingsUpcomingRouteImport
+      parentRoute: typeof DashboardBookingsRoute
     }
-    '/_dashboard/appointments/requests': {
-      id: '/_dashboard/appointments/requests'
+    '/_dashboard/bookings/requests': {
+      id: '/_dashboard/bookings/requests'
       path: '/requests'
-      fullPath: '/appointments/requests'
-      preLoaderRoute: typeof DashboardAppointmentsRequestsRouteImport
-      parentRoute: typeof DashboardAppointmentsRoute
+      fullPath: '/bookings/requests'
+      preLoaderRoute: typeof DashboardBookingsRequestsRouteImport
+      parentRoute: typeof DashboardBookingsRoute
     }
-    '/_dashboard/appointments/past': {
-      id: '/_dashboard/appointments/past'
+    '/_dashboard/bookings/past': {
+      id: '/_dashboard/bookings/past'
       path: '/past'
-      fullPath: '/appointments/past'
-      preLoaderRoute: typeof DashboardAppointmentsPastRouteImport
-      parentRoute: typeof DashboardAppointmentsRoute
+      fullPath: '/bookings/past'
+      preLoaderRoute: typeof DashboardBookingsPastRouteImport
+      parentRoute: typeof DashboardBookingsRoute
     }
-    '/_dashboard/appointments/$id/video': {
-      id: '/_dashboard/appointments/$id/video'
+    '/_dashboard/bookings/$id/video': {
+      id: '/_dashboard/bookings/$id/video'
       path: '/$id/video'
-      fullPath: '/appointments/$id/video'
-      preLoaderRoute: typeof DashboardAppointmentsIdVideoRouteImport
-      parentRoute: typeof DashboardAppointmentsRoute
+      fullPath: '/bookings/$id/video'
+      preLoaderRoute: typeof DashboardBookingsIdVideoRouteImport
+      parentRoute: typeof DashboardBookingsRoute
     }
   }
 }
 
-interface DashboardAppointmentsRouteChildren {
-  DashboardAppointmentsPastRoute: typeof DashboardAppointmentsPastRoute
-  DashboardAppointmentsRequestsRoute: typeof DashboardAppointmentsRequestsRoute
-  DashboardAppointmentsUpcomingRoute: typeof DashboardAppointmentsUpcomingRoute
-  DashboardAppointmentsIdVideoRoute: typeof DashboardAppointmentsIdVideoRoute
+interface DashboardBookingsRouteChildren {
+  DashboardBookingsPastRoute: typeof DashboardBookingsPastRoute
+  DashboardBookingsRequestsRoute: typeof DashboardBookingsRequestsRoute
+  DashboardBookingsUpcomingRoute: typeof DashboardBookingsUpcomingRoute
+  DashboardBookingsIdVideoRoute: typeof DashboardBookingsIdVideoRoute
 }
 
-const DashboardAppointmentsRouteChildren: DashboardAppointmentsRouteChildren = {
-  DashboardAppointmentsPastRoute: DashboardAppointmentsPastRoute,
-  DashboardAppointmentsRequestsRoute: DashboardAppointmentsRequestsRoute,
-  DashboardAppointmentsUpcomingRoute: DashboardAppointmentsUpcomingRoute,
-  DashboardAppointmentsIdVideoRoute: DashboardAppointmentsIdVideoRoute,
+const DashboardBookingsRouteChildren: DashboardBookingsRouteChildren = {
+  DashboardBookingsPastRoute: DashboardBookingsPastRoute,
+  DashboardBookingsRequestsRoute: DashboardBookingsRequestsRoute,
+  DashboardBookingsUpcomingRoute: DashboardBookingsUpcomingRoute,
+  DashboardBookingsIdVideoRoute: DashboardBookingsIdVideoRoute,
 }
 
-const DashboardAppointmentsRouteWithChildren =
-  DashboardAppointmentsRoute._addFileChildren(
-    DashboardAppointmentsRouteChildren,
-  )
+const DashboardBookingsRouteWithChildren =
+  DashboardBookingsRoute._addFileChildren(DashboardBookingsRouteChildren)
 
 interface DashboardRouteChildren {
-  DashboardAppointmentsRoute: typeof DashboardAppointmentsRouteWithChildren
   DashboardBillingRoute: typeof DashboardBillingRoute
+  DashboardBookingsRoute: typeof DashboardBookingsRouteWithChildren
   DashboardDashboardRoute: typeof DashboardDashboardRoute
   DashboardEarningsRoute: typeof DashboardEarningsRoute
   DashboardNotificationsRoute: typeof DashboardNotificationsRoute
   DashboardPatientsRoute: typeof DashboardPatientsRoute
-  DashboardConsultationsIdRoute: typeof DashboardConsultationsIdRoute
   DashboardMedicalRecordsIdRoute: typeof DashboardMedicalRecordsIdRoute
   DashboardSettingsAccountRoute: typeof DashboardSettingsAccountRoute
   DashboardSettingsBillingRoute: typeof DashboardSettingsBillingRoute
   DashboardSettingsProfessionalRoute: typeof DashboardSettingsProfessionalRoute
   DashboardSettingsScheduleRoute: typeof DashboardSettingsScheduleRoute
   DashboardSettingsSecurityRoute: typeof DashboardSettingsSecurityRoute
-  DashboardConsultationsIndexRoute: typeof DashboardConsultationsIndexRoute
   DashboardMedicalRecordsIndexRoute: typeof DashboardMedicalRecordsIndexRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
-  DashboardAppointmentsRoute: DashboardAppointmentsRouteWithChildren,
   DashboardBillingRoute: DashboardBillingRoute,
+  DashboardBookingsRoute: DashboardBookingsRouteWithChildren,
   DashboardDashboardRoute: DashboardDashboardRoute,
   DashboardEarningsRoute: DashboardEarningsRoute,
   DashboardNotificationsRoute: DashboardNotificationsRoute,
   DashboardPatientsRoute: DashboardPatientsRoute,
-  DashboardConsultationsIdRoute: DashboardConsultationsIdRoute,
   DashboardMedicalRecordsIdRoute: DashboardMedicalRecordsIdRoute,
   DashboardSettingsAccountRoute: DashboardSettingsAccountRoute,
   DashboardSettingsBillingRoute: DashboardSettingsBillingRoute,
   DashboardSettingsProfessionalRoute: DashboardSettingsProfessionalRoute,
   DashboardSettingsScheduleRoute: DashboardSettingsScheduleRoute,
   DashboardSettingsSecurityRoute: DashboardSettingsSecurityRoute,
-  DashboardConsultationsIndexRoute: DashboardConsultationsIndexRoute,
   DashboardMedicalRecordsIndexRoute: DashboardMedicalRecordsIndexRoute,
 }
 

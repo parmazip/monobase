@@ -1,4 +1,4 @@
-import { apiGet, apiPost, ApiError, type PaginatedResponse } from '../api'
+import { apiGet, apiPost, apiPatch, ApiError, type PaginatedResponse } from '../api'
 import { sanitizeObject } from '../utils/api'
 import { formatDate } from '../utils/format'
 import type { components } from '@monobase/api-spec/types'
@@ -7,6 +7,54 @@ import type { components } from '@monobase/api-spec/types'
 // Booking Types
 // ============================================================================
 
+/**
+ * Time block within a daily schedule
+ */
+export interface TimeBlock {
+  startTime: string    // HH:MM format (e.g., "09:00")
+  endTime: string      // HH:MM format (e.g., "17:00")
+  slotDuration?: number // minutes (default: 30)
+  bufferTime?: number   // minutes (default: 0)
+}
+
+/**
+ * Daily configuration for a specific day of the week
+ */
+export interface DailyConfig {
+  enabled: boolean
+  timeBlocks: TimeBlock[]
+}
+
+/**
+ * Form field configuration for booking forms
+ */
+export interface FormFieldConfig {
+  name: string
+  type: 'text' | 'textarea' | 'email' | 'phone' | 'number' | 'date' | 'datetime' | 'url' | 'select' | 'multiselect' | 'checkbox' | 'display'
+  label: string
+  required?: boolean
+  options?: Array<{ label: string; value: string }>
+  validation?: {
+    minLength?: number
+    maxLength?: number
+    min?: number | string
+    max?: number | string
+    pattern?: string
+  }
+  placeholder?: string
+  helpText?: string
+}
+
+/**
+ * Form configuration for booking event
+ */
+export interface FormConfig {
+  fields?: FormFieldConfig[]
+}
+
+/**
+ * Time slot for appointments
+ */
 export interface BookingTimeSlot {
   id: string
   providerId: string
@@ -24,6 +72,9 @@ export interface BookingTimeSlot {
   }
 }
 
+/**
+ * Provider information for booking display
+ */
 export interface BookingProvider {
   id: string
   name: string
@@ -38,21 +89,45 @@ export interface BookingProvider {
   languages?: string[]
 }
 
-export interface BookingEventData {
+/**
+ * Booking event - defines provider availability and booking configuration
+ */
+export interface BookingEvent {
+  // BaseEntity fields
   id: string
+  version: number
+  createdAt: Date
+  updatedAt: Date
+  createdBy?: string
+  updatedBy?: string
+  
+  // BookingEvent fields
+  owner: string  // person ID
+  context?: string
+  title: string
+  description?: string
+  keywords?: string[]
+  tags?: string[]
   timezone: string
   locationTypes: ('video' | 'phone' | 'in-person')[]
+  maxBookingDays: number
+  minBookingMinutes: number
+  formConfig?: FormConfig
   billingConfig?: {
     price: number
     currency: string
     cancellationThresholdMinutes: number
   }
+  status: 'draft' | 'active' | 'paused' | 'archived'
+  effectiveFrom: Date
+  effectiveTo?: Date
+  dailyConfigs: Record<string, DailyConfig>  // Keys: "sun", "mon", "tue", "wed", "thu", "fri", "sat"
 }
 
 export interface ProviderWithSlots {
   provider: BookingProvider
   slots: BookingTimeSlot[]
-  event?: BookingEventData
+  event?: BookingEvent
 }
 
 export interface Booking {
@@ -153,14 +228,35 @@ function mapApiPersonToProvider(apiPerson: ApiPerson): BookingProvider {
 }
 
 /**
- * Convert API BookingEvent to Frontend BookingEventData
+ * Convert API BookingEvent to Frontend BookingEvent
  */
-function mapApiEventToFrontend(apiEvent: ApiBookingEvent): BookingEventData {
+function mapApiBookingEventToFrontend(apiEvent: ApiBookingEvent): BookingEvent {
   return {
+    // BaseEntity fields
     id: apiEvent.id,
+    version: apiEvent.version,
+    createdAt: new Date(apiEvent.createdAt),
+    updatedAt: new Date(apiEvent.updatedAt),
+    createdBy: apiEvent.createdBy,
+    updatedBy: apiEvent.updatedBy,
+    
+    // BookingEvent fields
+    owner: typeof apiEvent.owner === 'string' ? apiEvent.owner : apiEvent.owner.id,
+    context: apiEvent.context,
+    title: apiEvent.title,
+    description: apiEvent.description,
+    keywords: apiEvent.keywords,
+    tags: apiEvent.tags,
     timezone: apiEvent.timezone,
     locationTypes: apiEvent.locationTypes as ('video' | 'phone' | 'in-person')[],
+    maxBookingDays: apiEvent.maxBookingDays,
+    minBookingMinutes: apiEvent.minBookingMinutes,
+    formConfig: apiEvent.formConfig,
     billingConfig: apiEvent.billingConfig,
+    status: apiEvent.status as 'draft' | 'active' | 'paused' | 'archived',
+    effectiveFrom: new Date(apiEvent.effectiveFrom),
+    effectiveTo: apiEvent.effectiveTo ? new Date(apiEvent.effectiveTo) : undefined,
+    dailyConfigs: apiEvent.dailyConfigs as Record<string, DailyConfig>,
   }
 }
 
@@ -251,7 +347,7 @@ export async function getProviderWithSlots(providerId: string): Promise<Provider
 
   const provider = mapApiPersonToProvider(response)
   const slots = (response.slots || []).map(mapApiTimeSlotToFrontend)
-  const event = response.event ? mapApiEventToFrontend(response.event) : undefined
+  const event = response.event ? mapApiBookingEventToFrontend(response.event) : undefined
 
   return {
     provider,
@@ -267,10 +363,10 @@ export async function getProviderWithSlots(providerId: string): Promise<Provider
 /**
  * Get provider's own booking event configuration
  */
-export async function getMyBookingEvent(): Promise<BookingEventData | null> {
+export async function getMyBookingEvent(): Promise<BookingEvent | null> {
   try {
-    const response = await apiGet<ApiBookingEvent>('/booking/event/me')
-    return mapApiEventToFrontend(response)
+    const response = await apiGet<ApiBookingEvent>('/booking/events/me')
+    return mapApiBookingEventToFrontend(response)
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {
       return null
@@ -280,19 +376,55 @@ export async function getMyBookingEvent(): Promise<BookingEventData | null> {
 }
 
 /**
- * Create or update provider's booking event
+ * Request data for creating a booking event
  */
-export async function upsertMyBookingEvent(data: Partial<ApiBookingEvent>): Promise<BookingEventData> {
-  // Note: This is likely a PUT/upsert operation - check API spec for nullable fields
-  // For now, treating as update operation with nullable fields
+export interface CreateBookingEventData {
+  title: string
+  description?: string
+  keywords?: string[]
+  tags?: string[]
+  context?: string
+  timezone?: string
+  locationTypes?: ('video' | 'phone' | 'in-person')[]
+  maxBookingDays?: number
+  minBookingMinutes?: number
+  formConfig?: FormConfig
+  billingConfig?: {
+    price: number
+    currency: string
+    cancellationThresholdMinutes: number
+  }
+  status?: 'draft' | 'active' | 'paused' | 'archived'
+  effectiveFrom?: string  // ISO date string
+  effectiveTo?: string    // ISO date string
+  dailyConfigs: Record<string, DailyConfig>
+}
+
+/**
+ * Create a new booking event
+ * POST /booking/events
+ */
+export async function createBookingEvent(data: CreateBookingEventData): Promise<BookingEvent> {
+  const sanitized = sanitizeObject(data, {
+    nullable: []  // CREATE operation: empty fields omitted, not sent as null
+  })
+  const response = await apiPost<ApiBookingEvent>('/booking/events', sanitized)
+  return mapApiBookingEventToFrontend(response)
+}
+
+/**
+ * Update an existing booking event
+ * PATCH /booking/events/{event}
+ */
+export async function updateBookingEvent(
+  eventId: string,
+  data: Partial<CreateBookingEventData>
+): Promise<BookingEvent> {
   const sanitized = sanitizeObject(data, {
     nullable: ['description', 'keywords', 'tags', 'formConfig', 'billingConfig', 'effectiveTo']
   })
-  const response = await apiGet<ApiBookingEvent>('/booking/event/me', {
-    method: 'PUT',
-    body: JSON.stringify(sanitized),
-  })
-  return mapApiEventToFrontend(response)
+  const response = await apiPatch<ApiBookingEvent>(`/booking/events/${eventId}`, sanitized)
+  return mapApiBookingEventToFrontend(response)
 }
 
 /**

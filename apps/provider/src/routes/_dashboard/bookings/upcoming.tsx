@@ -35,11 +35,11 @@ import {
   AlertDialogTrigger,
 } from "@monobase/ui/components/alert-dialog"
 
-export const Route = createFileRoute('/_dashboard/appointments/upcoming')({
-  component: UpcomingAppointmentsPage,
+export const Route = createFileRoute('/_dashboard/bookings/upcoming')({
+  component: UpcomingBookingsPage,
 })
 
-function UpcomingAppointmentsPage() {
+function UpcomingBookingsPage() {
   // Fetch confirmed appointments
   const { data: appointmentsData, isLoading, error } = useListBookings({ status: 'confirmed' })
   const cancelAppointment = useCancelBooking()
@@ -178,8 +178,8 @@ function UpcomingAppointmentsPage() {
                         <AlertDialogFooter>
                           <AlertDialogCancel>Not Yet</AlertDialogCancel>
                           <AlertDialogAction asChild>
-                            <Link to="/consultations/$id" params={{ id: appointment.id }}>
-                              Start Consultation
+                            <Link to="/bookings/$id/video" params={{ id: appointment.id }}>
+                              Start Video Call
                             </Link>
                           </AlertDialogAction>
                         </AlertDialogFooter>

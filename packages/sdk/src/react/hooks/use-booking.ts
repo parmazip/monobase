@@ -91,13 +91,15 @@ export function useTimeSlot(slotId: string, options?: { enabled?: boolean }) {
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   getMyBookingEvent,
-  upsertMyBookingEvent,
+  createBookingEvent,
+  updateBookingEvent,
   getMyAvailability,
   createAvailabilitySlot,
   updateAvailabilitySlot,
   deleteAvailabilitySlot,
   createRecurringAvailability,
   type GetAvailabilityParams,
+  type CreateBookingEventData,
 } from '../../services/booking'
 
 /**
@@ -117,9 +119,9 @@ export function useMyBookingEvent() {
 }
 
 /**
- * Hook to create/update booking event
+ * Hook to create booking event
  */
-export function useUpsertBookingEvent(options?: {
+export function useCreateBookingEvent(options?: {
   toastSuccess?: boolean,
   onSuccess?: (data: any) => void
   toastError?: boolean,
@@ -128,7 +130,42 @@ export function useUpsertBookingEvent(options?: {
   const queryClient = useQueryClient()
   
   return useMutation({
-    mutationFn: upsertMyBookingEvent,
+    mutationFn: createBookingEvent,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['booking', 'event', 'me'] })
+      
+      if (options?.toastSuccess !== false) {
+        toast.success('Booking event created successfully')
+      }
+      
+      options?.onSuccess?.(data)
+    },
+    onError: (error: Error) => {
+      console.error('Failed to create booking event:', error)
+      
+      if (options?.toastError !== false) {
+        toast.error('Failed to create booking event')
+      }
+      
+      options?.onError?.(error)
+    },
+  })
+}
+
+/**
+ * Hook to update booking event
+ */
+export function useUpdateBookingEvent(options?: {
+  toastSuccess?: boolean,
+  onSuccess?: (data: any) => void
+  toastError?: boolean,
+  onError?: (error: Error) => void
+}) {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: ({ eventId, data }: { eventId: string; data: Partial<CreateBookingEventData> }) =>
+      updateBookingEvent(eventId, data),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['booking', 'event', 'me'] })
       

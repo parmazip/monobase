@@ -18,11 +18,11 @@ import { Card, CardContent } from "@monobase/ui/components/card"
 import { Badge } from "@monobase/ui/components/badge"
 import { Avatar, AvatarFallback } from "@monobase/ui/components/avatar"
 
-export const Route = createFileRoute('/_dashboard/appointments/past')({
-  component: PastAppointmentsPage,
+export const Route = createFileRoute('/_dashboard/bookings/past')({
+  component: PastBookingsPage,
 })
 
-function PastAppointmentsPage() {
+function PastBookingsPage() {
   // Fetch all past appointment statuses
   const { data: completedData, isLoading: isLoadingCompleted, error: completedError } =
     useListBookings({ status: 'completed' })

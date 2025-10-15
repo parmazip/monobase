@@ -50,14 +50,9 @@ function DashboardLayout() {
           icon: Users,
         },
         {
-          title: "Appointments",
-          url: "/appointments",
+          title: "Bookings",
+          url: "/bookings/upcoming",
           icon: Calendar,
-        },
-        {
-          title: "Consultations",
-          url: "/consultations",
-          icon: Activity,
         },
         {
           title: "Medical Records",

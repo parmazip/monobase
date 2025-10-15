@@ -12,12 +12,12 @@ import { Alert, AlertDescription } from "@monobase/ui/components/alert"
 import { Button } from "@monobase/ui/components/button"
 import { Loader2, AlertCircle } from 'lucide-react'
 
-export const Route = createFileRoute('/_dashboard/appointments/$id/video')({
+export const Route = createFileRoute('/_dashboard/bookings/$id/video')({
   beforeLoad: composeGuards(requireAuth, requireEmailVerified, requirePerson),
-  component: AppointmentVideoCall
+  component: BookingVideoCall
 })
 
-function AppointmentVideoCall() {
+function BookingVideoCall() {
   const { id } = Route.useParams()
   const navigate = useNavigate()
   const { data: session } = useSession()
@@ -56,7 +56,7 @@ function AppointmentVideoCall() {
   }, [])
 
   const handleEndCall = () => {
-    navigate({ to: '/appointments' })
+    navigate({ to: '/bookings' })
   }
 
   if (isLoading) {
@@ -81,10 +81,10 @@ function AppointmentVideoCall() {
             </AlertDescription>
           </Alert>
           <Button
-            onClick={() => navigate({ to: '/appointments' })}
+            onClick={() => navigate({ to: '/bookings' })}
             className="w-full mt-4"
           >
-            Back to Appointments
+            Back to Bookings
           </Button>
         </div>
       </div>
