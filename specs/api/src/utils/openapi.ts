@@ -74,7 +74,7 @@ function addExpandableFieldsToDescriptions(spec: OpenAPISpec): OpenAPISpec {
 
   for (const [schemaName, schema] of Object.entries(updatedSpec.components.schemas)) {
     if (!schema || typeof schema !== 'object') continue;
-    if (!schema.properties) continue;
+    if (!('properties' in schema) || !schema.properties) continue;
 
     for (const [propName, property] of Object.entries(schema.properties)) {
       if (!property || typeof property !== 'object') continue;
