@@ -114,13 +114,13 @@ function mapApiTimeSlotToFrontend(apiSlot: ApiTimeSlot): BookingTimeSlot {
   return {
     id: apiSlot.id,
     providerId: apiSlot.owner,
-    date: new Date(apiSlot.date),
+    date: new Date(apiSlot.startTime), // Derive date from startTime
     startTime: new Date(apiSlot.startTime),
     endTime: new Date(apiSlot.endTime),
     status: apiSlot.status as 'available' | 'booked' | 'blocked',
     consultationModes: apiSlot.locationTypes as ('video' | 'phone' | 'in-person')[],
-    price: apiSlot.billingOverride?.price || 0,
-    billingOverride: apiSlot.billingOverride,
+    price: apiSlot.billingConfig?.price || 0,
+    billingOverride: apiSlot.billingConfig, // Map billingConfig to billingOverride for backward compatibility
   }
 }
 
@@ -321,11 +321,10 @@ export async function createAvailabilitySlot(data: {
   price?: number
 }): Promise<BookingTimeSlot> {
   const response = await apiPost<ApiTimeSlot>('/booking/availability', {
-      date: formatDate(data.date, { format: 'iso' }),
       startTime: data.startTime.toISOString(),
       endTime: data.endTime.toISOString(),
       locationTypes: data.locationTypes,
-      billingOverride: data.price ? { price: data.price } : undefined,
+      billingConfig: data.price ? { price: data.price } : undefined,
   })
   return mapApiTimeSlotToFrontend(response)
 }
@@ -350,7 +349,7 @@ export async function updateAvailabilitySlot(
       endTime: data.endTime?.toISOString(),
       locationTypes: data.locationTypes,
       status: data.status,
-      billingOverride: data.price !== undefined ? { price: data.price } : undefined,
+      billingConfig: data.price !== undefined ? { price: data.price } : undefined,
     }),
   })
   return mapApiTimeSlotToFrontend(response)
@@ -385,7 +384,7 @@ export async function createRecurringAvailability(data: {
       daysOfWeek: data.daysOfWeek,
       timeSlots: data.timeSlots,
       locationTypes: data.locationTypes,
-      billingOverride: data.price ? { price: data.price } : undefined,
+      billingConfig: data.price ? { price: data.price } : undefined,
   })
   return response
 }

@@ -19,9 +19,8 @@ import {
   type SendTextMessageRequest,
   type StartVideoCallRequest,
 } from '../../services/comms'
-import type { PaginatedResponse } from '../../types'
+import { ApiError, type PaginatedResponse } from '../../api'
 import { queryKeys } from '../query-keys'
-import { ApiError } from '../../api'
 
 // ============================================================================
 // Chat Rooms Hooks

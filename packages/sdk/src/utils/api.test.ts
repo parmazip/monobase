@@ -1,9 +1,9 @@
 import { describe, test, expect } from 'bun:test'
+import type { PaginatedResponse } from '../api'
 import {
   mapPaginatedResponse,
   normalizeStringField,
   sanitizeObject,
-  type PaginatedResponse
 } from './api'
 
 describe('mapPaginatedResponse', () => {
@@ -16,7 +16,12 @@ describe('mapPaginatedResponse', () => {
       pagination: {
         offset: 0,
         limit: 10,
-        totalCount: 2
+        count: 2,
+        totalCount: 2,
+        totalPages: 1,
+        currentPage: 1,
+        hasNextPage: false,
+        hasPreviousPage: false,
       }
     }
 
@@ -39,16 +44,26 @@ describe('mapPaginatedResponse', () => {
       pagination: {
         offset: 10,
         limit: 20,
-        totalCount: 100
+        count: 3,
+        totalCount: 100,
+        totalPages: 5,
+        currentPage: 1,
+        hasNextPage: true,
+        hasPreviousPage: false,
       }
     }
 
-    const result = mapPaginatedResponse(apiResponse, (x) => x * 2)
+    const result = mapPaginatedResponse(apiResponse, (x: number) => x * 2)
 
     expect(result.pagination).toEqual({
       offset: 10,
       limit: 20,
-      totalCount: 100
+      count: 3,
+      totalCount: 100,
+      totalPages: 5,
+      currentPage: 1,
+      hasNextPage: true,
+      hasPreviousPage: false,
     })
   })
 
@@ -58,11 +73,16 @@ describe('mapPaginatedResponse', () => {
       pagination: {
         offset: 0,
         limit: 10,
-        totalCount: 0
+        count: 0,
+        totalCount: 0,
+        totalPages: 0,
+        currentPage: 1,
+        hasNextPage: false,
+        hasPreviousPage: false,
       }
     }
 
-    const result = mapPaginatedResponse(apiResponse, (x) => x.toUpperCase())
+    const result = mapPaginatedResponse(apiResponse, (x: string) => x.toUpperCase())
 
     expect(result.data).toEqual([])
     expect(result.pagination.totalCount).toBe(0)
@@ -113,7 +133,7 @@ describe('sanitizeObject', () => {
   test('handles nullable fields - sends null for empty values', () => {
     const data = {
       firstName: 'John',
-      lastName: null,
+      lastName: null as string | null,
       middleName: ''
     }
 
@@ -123,15 +143,15 @@ describe('sanitizeObject', () => {
 
     expect(result).toEqual({
       firstName: 'John',
-      lastName: null,
-      middleName: null
+      lastName: null as any,
+      middleName: null as any
     })
   })
 
   test('handles non-nullable fields - omits empty values', () => {
     const data = {
       firstName: 'John',
-      lastName: null,
+      lastName: null as string | null,
       middleName: ''
     }
 
@@ -181,7 +201,7 @@ describe('sanitizeObject', () => {
       address: {
         street: '123 Main St',
         city: 'Boston',
-        zip: null
+        zip: null as any
       }
     })
   })
@@ -200,7 +220,7 @@ describe('sanitizeObject', () => {
 
     expect(result).toEqual({
       contactInfo: {
-        email: null,
+        email: null as any,
         phone: '555-1234'
       }
     })
@@ -209,7 +229,7 @@ describe('sanitizeObject', () => {
   test('handles empty nested objects based on nullable config', () => {
     const data = {
       name: 'John',
-      address: {}
+      address: {} as Record<string, any>
     }
 
     // When parent object is nullable
@@ -219,7 +239,7 @@ describe('sanitizeObject', () => {
 
     expect(resultNullable).toEqual({
       name: 'John',
-      address: null
+      address: null as any
     })
 
     // When parent object is not nullable
@@ -260,7 +280,7 @@ describe('sanitizeObject', () => {
         street1: '123 Main St',
         street2: '',
         city: '  Boston  ',
-        state: null
+        state: null as string | null
       }
     }
 
@@ -271,16 +291,16 @@ describe('sanitizeObject', () => {
     expect(result).toEqual({
       firstName: 'John',
       lastName: 'Doe',
-      middleName: null,
+      middleName: null as any,
       contactInfo: {
         email: 'john@example.com',
-        phone: null
+        phone: null as any
       },
       address: {
         street1: '123 Main St',
-        street2: null,
+        street2: null as any,
         city: 'Boston',
-        state: null
+        state: null as any
       }
     })
   })
