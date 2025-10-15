@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { ListNotificationsQuery } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import { parsePagination, buildPaginationMeta, parseFilters } from '@/utils/query';
@@ -13,7 +14,9 @@ import type { NotificationFilters } from './repos/notification.schema';
  * OperationId: listNotifications
  * Security: bearerAuth
  */
-export async function listNotifications(ctx: Context) {
+export async function listNotifications(
+  ctx: ValidatedContext<never, ListNotificationsQuery, never>
+): Promise<Response> {
   // Get authenticated user and check authorization
   const user = ctx.get('user') as User;
 
@@ -34,11 +37,11 @@ export async function listNotifications(ctx: Context) {
   const filters = parseFilters(query, ['type', 'channel', 'status', 'startDate', 'endDate']);
 
   // Convert string dates to Date objects if present
-  if (filters.startDate) {
-    filters.startDate = new Date(filters.startDate);
+  if (filters['startDate']) {
+    filters['startDate'] = new Date(filters['startDate']);
   }
-  if (filters.endDate) {
-    filters.endDate = new Date(filters.endDate);
+  if (filters['endDate']) {
+    filters['endDate'] = new Date(filters['endDate']);
   }
 
   // Instantiate repositories

@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { MarkNoShowBookingBody, MarkNoShowBookingParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import {
@@ -23,7 +24,9 @@ import { differenceInMinutes } from 'date-fns';
  * - Provider: 10 minutes past scheduled time to mark client no-show  
  * - Only one party can mark no-show (exclusivity)
  */
-export async function markNoShowBooking(ctx: Context) {
+export async function markNoShowBooking(
+  ctx: ValidatedContext<MarkNoShowBookingBody, never, MarkNoShowBookingParams>
+): Promise<Response> {
   // Get authenticated user from Better-Auth (guaranteed by middleware)
   const user = ctx.get('user') as User;
   
@@ -88,7 +91,7 @@ export async function markNoShowBooking(ctx: Context) {
   }
   
   // Use repository method to mark no-show with proper timing validation
-  const noShowBooking = await repo.markNoShow(
+  const noShowBooking = await repo.markAsNoShow(
     params.booking,
     markerType
   );

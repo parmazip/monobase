@@ -64,7 +64,11 @@ export abstract class DatabaseRepository<TEntity, TNewEntity, TFilters = Record<
       .values(data as any)
       .returning();
 
-    this.logger?.debug({ id: created.id }, 'Record created successfully');
+    if (!created) {
+      throw new Error('Failed to create record');
+    }
+
+    this.logger?.debug({ id: (created as any)['id'] }, 'Record created successfully');
 
     return created as TEntity;
   }
@@ -78,7 +82,7 @@ export abstract class DatabaseRepository<TEntity, TNewEntity, TFilters = Record<
     const [record] = await this.db
       .select()
       .from(this.table)
-      .where(eq(this.table.id, id))
+      .where(eq((this.table as any).id, id))
       .limit(1);
 
     this.logger?.debug({ id, found: !!record }, 'Record lookup completed');
@@ -124,7 +128,7 @@ export abstract class DatabaseRepository<TEntity, TNewEntity, TFilters = Record<
     const [updated] = await this.db
       .update(this.table)
       .set(updateData as any)
-      .where(eq(this.table.id, id))
+      .where(eq((this.table as any).id, id))
       .returning();
 
     if (!updated) {
@@ -144,7 +148,7 @@ export abstract class DatabaseRepository<TEntity, TNewEntity, TFilters = Record<
 
     await this.db
       .delete(this.table)
-      .where(eq(this.table.id, id));
+      .where(eq((this.table as any).id, id));
 
     this.logger?.info({ id }, 'Record deleted successfully');
   }
@@ -165,8 +169,8 @@ export abstract class DatabaseRepository<TEntity, TNewEntity, TFilters = Record<
       countQuery.where(filterCondition);
     }
 
-    const [{ count: countRaw }] = await countQuery;
-    const count = Number(countRaw);
+    const result = await countQuery;
+    const count = result?.[0]?.count ? Number(result[0].count) : 0;
 
     this.logger?.debug({ count, filters }, 'Record count completed');
 
@@ -200,8 +204,8 @@ export abstract class DatabaseRepository<TEntity, TNewEntity, TFilters = Record<
     // Apply ordering (default to createdAt if available)
     if (options?.orderBy) {
       query.orderBy(options.orderBy);
-    } else if (this.table.createdAt) {
-      query.orderBy(this.table.createdAt);
+    } else if ((this.table as any).createdAt) {
+      query.orderBy((this.table as any).createdAt);
     }
 
     // Apply pagination

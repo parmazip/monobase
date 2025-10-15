@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { ListReviewsQuery } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import { 
   UnauthorizedError,
@@ -18,7 +19,9 @@ import { ReviewRepository, type ReviewFilters } from './repos/review.repo';
  * - Reviewed entities can see reviews about them
  * - Admins can see all reviews
  */
-export async function listReviews(ctx: Context) {
+export async function listReviews(
+  ctx: ValidatedContext<never, ListReviewsQuery, never>
+): Promise<Response> {
   // Get authenticated session from Better-Auth
   const session = ctx.get('session');
   if (!session) {
@@ -63,12 +66,13 @@ export async function listReviews(ctx: Context) {
     }
   }
   
-  const pagination = {
-    page: query.page ? Number(query.page) : 1,
-    limit: query.limit ? Number(query.limit) : 20,
-  };
+  const page = query.page ? Number(query.page) : 1;
+  const limit = query.limit ? Number(query.limit) : 20;
+  const offset = (page - 1) * limit;
   
-  const result = await repo.findManyWithPagination(filters, pagination);
+  const result = await repo.findManyWithPagination(filters, {
+    pagination: { limit, offset }
+  });
   
   return ctx.json(result, 200);
 }

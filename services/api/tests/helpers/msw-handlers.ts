@@ -371,6 +371,7 @@ export const handlers = [
   // Stripe Payment Intent Capture
   http.post(/https:\/\/api\.stripe\.com\/v1\/payment_intents\/(pi_[^/]+)\/capture/, async ({ params }) => {
     const paymentIntentId = params[0] as string;
+    const chargeId = `ch_${faker.string.alphanumeric(24)}`;
 
     return HttpResponse.json({
       id: paymentIntentId,
@@ -379,11 +380,12 @@ export const handlers = [
       amount_capturable: 0,
       amount_received: 2000,
       capture_method: 'manual',
+      latest_charge: chargeId,
       charges: {
         object: 'list',
         data: [
           {
-            id: `ch_${faker.string.alphanumeric(24)}`,
+            id: chargeId,
             object: 'charge',
             amount: 2000,
             captured: true,

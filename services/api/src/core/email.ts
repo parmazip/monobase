@@ -6,6 +6,7 @@
 
 import type { DatabaseInstance } from '@/core/database';
 import type { Logger } from '@/types/logger';
+import type { Config } from '@/core/config';
 import { EmailTemplateRepository } from '@/handlers/email/repos/template.repo';
 import { EmailQueueRepository } from '@/handlers/email/repos/queue.repo';
 import { initializeEmailTemplates } from '@/handlers/email/templates/initializer';
@@ -114,12 +115,12 @@ class SMTPProvider implements EmailProvider {
         subject: request.subject,
         html: request.html,
         text: request.text,
-        replyTo: request.replyTo
+        replyTo: request.replyTo?.email
       });
       
       return {
         success: true,
-        messageId: result.messageId,
+        messageId: result?.messageId || 'unknown',
         provider: 'smtp'
       };
     } catch (error) {
@@ -175,7 +176,7 @@ class PostmarkProvider implements EmailProvider {
         Subject: request.subject,
         HtmlBody: request.html,
         TextBody: request.text,
-        ReplyTo: request.replyTo || undefined,
+        ReplyTo: request.replyTo?.email || undefined,
         MessageStream: messageStream
       });
       
@@ -220,7 +221,7 @@ class OneSignalProvider implements EmailProvider {
     }
     
     const configuration = OneSignal.createConfiguration({
-      userKey: this.config.onesignal.apiKey,
+      restApiKey: this.config.onesignal.apiKey,
     });
     
     this.client = new OneSignal.DefaultApi(configuration);

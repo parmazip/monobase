@@ -35,7 +35,7 @@ export async function slotCleanupJob(context: JobContext): Promise<void> {
   const { db, logger, jobId } = context;
   const config = { ...DEFAULT_CONFIG };
   
-  logger.info(`Starting slot cleanup job`, { jobId, config });
+  logger.info({ jobId, config }, `Starting slot cleanup job`);
   
   const timeSlotRepo = new TimeSlotRepository(db, logger);
   const bookingRepo = new BookingRepository(db, logger);
@@ -86,19 +86,19 @@ export async function slotCleanupJob(context: JobContext): Promise<void> {
     }
 
     // Log final results
-    logger.info('Slot cleanup job completed', {
+    logger.info({
       jobId,
       availableSlotsArchived: results.availableSlotsArchived,
       blockedSlotsArchived: results.blockedSlotsArchived,
       bookingsArchived: results.bookingsArchived,
       totalRecordsProcessed: results.availableSlotsArchived + results.blockedSlotsArchived + results.bookingsArchived
-    });
+    }, 'Slot cleanup job completed');
     
   } catch (error) {
-    logger.error('Slot cleanup job failed', {
+    logger.error({
       jobId,
       error: error instanceof Error ? error.message : String(error)
-    });
+    }, 'Slot cleanup job failed');
     throw error;
   }
 }
@@ -141,7 +141,7 @@ async function cleanupOldAvailableSlots(
     }
 
     // Delete the batch (hard delete)
-    const slotIds = oldSlots.map(s => s.id);
+    const slotIds = oldSlots.map((s: any) => s.id);
     const result = await db
       .delete(timeSlots)
       .where(inArray(timeSlots.id, slotIds))
@@ -151,7 +151,7 @@ async function cleanupOldAvailableSlots(
 
     logger.debug(`Archived batch of ${result.length} available slots`, {
       totalArchived,
-      slotIds: result.map(r => r.id)
+      slotIds: result.map((r: any) => r.id)
     });
 
     // Small delay between batches
@@ -201,7 +201,7 @@ async function cleanupOldBlockedSlots(
     }
 
     // Delete the batch (hard delete)
-    const slotIds = oldSlots.map(s => s.id);
+    const slotIds = oldSlots.map((s: any) => s.id);
     const result = await db
       .delete(timeSlots)
       .where(inArray(timeSlots.id, slotIds))
@@ -211,7 +211,7 @@ async function cleanupOldBlockedSlots(
 
     logger.debug(`Deleted batch of ${result.length} blocked slots`, {
       totalArchived,
-      slotIds: result.map(r => r.id)
+      slotIds: result.map((r: any) => r.id)
     });
 
     if (oldSlots.length === batchSize) {
@@ -260,9 +260,9 @@ async function archiveOldBookings(
   
   // Archive old bookings using soft delete for compliance
   if (oldBookings.length > 0) {
-    const bookingIds = oldBookings.map(a => a.id);
+    const bookingIds = oldBookings.map((a: any) => a.id);
 
-    await db.transaction(async (tx) => {
+    await db.transaction(async (tx: any) => {
       // Delete bookings (hard delete)
       const result = await tx
         .delete(bookings)
@@ -272,7 +272,7 @@ async function archiveOldBookings(
       totalArchived = result.length;
 
       logger.debug(`Deleted ${result.length} old bookings`, {
-        bookingIds: result.map(r => r.id),
+        bookingIds: result.map((r: any) => r.id),
         cutoffDate: cutoffDate.toISOString()
       });
     });

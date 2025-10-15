@@ -1,4 +1,3 @@
-import { Context } from 'hono';
 import {
   ForbiddenError,
   NotFoundError,
@@ -6,6 +5,8 @@ import {
   BusinessLogicError,
   ConflictError
 } from '@/core/errors';
+import type { ValidatedContext } from '@/types/app';
+import type { VoidInvoiceParams } from '@/generated/openapi/validators';
 import type { Session } from '@/types/auth';
 import { InvoiceRepository, MerchantAccountRepository } from './repos/billing.repo';
 import { PersonRepository } from '../person/repos/person.repo';
@@ -18,7 +19,9 @@ import { PersonRepository } from '../person/repos/person.repo';
  * 
  * Void invoice by canceling the authorized payment intent
  */
-export async function voidInvoice(ctx: Context) {
+export async function voidInvoice(
+  ctx: ValidatedContext<never, never, VoidInvoiceParams>
+): Promise<Response> {
   const database = ctx.get('database');
   const logger = ctx.get('logger');
   const billing = ctx.get('billing');
@@ -144,7 +147,7 @@ export async function voidInvoice(ctx: Context) {
     logger.info(
       {
         invoiceId,
-        paymentIntentId: invoice.stripePaymentIntentId,
+        paymentIntentId: stripePaymentIntentId,
         total: invoice.total
       },
       'Invoice voided successfully'

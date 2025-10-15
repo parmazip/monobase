@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { RetryEmailQueueItemParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User, Session } from '@/types/auth';
 import {
@@ -14,7 +15,9 @@ import { EmailQueueRepository } from './repos/queue.repo';
  * Path: POST /email/queue/{queue}/retry
  * OperationId: retryEmailQueueItem
  */
-export async function retryEmailQueueItem(ctx: Context) {
+export async function retryEmailQueueItem(
+  ctx: ValidatedContext<never, never, RetryEmailQueueItemParams>
+): Promise<Response> {
   // Get authenticated session from Better-Auth
   const session = ctx.get('session') as Session;
 
@@ -44,7 +47,7 @@ export async function retryEmailQueueItem(ctx: Context) {
     userId: user?.id,
     emailId: params.queue,
     recipientEmail: updatedEmail.recipientEmail,
-    templateId: updatedEmail.templateId,
+    template: updatedEmail.template,
     attempts: updatedEmail.attempts
   }, 'Email retry initiated');
   

@@ -104,7 +104,7 @@ export class NotFoundError extends AppError {
  * Security filtering utility to remove sensitive fields in production
  */
 function applySecurity(obj: Record<string, any>, config?: Config): Record<string, any> {
-  const isProduction = config?.env === 'production' || process.env.NODE_ENV === 'production';
+  const isProduction = process.env.NODE_ENV === 'production';
   const isDebugMode = config?.logging?.level === 'debug';
   
   if (!isProduction || isDebugMode) {
@@ -115,9 +115,9 @@ function applySecurity(obj: Record<string, any>, config?: Config): Record<string
   const filtered = { ...obj };
   
   // Remove internal implementation details
-  delete filtered.trackingId;
-  delete filtered.context;
-  delete filtered.value; // Field values from validation errors
+  delete filtered['trackingId'];
+  delete filtered['context'];
+  delete filtered['value']; // Field values from validation errors
   
   // Keep essential fields for client handling
   return filtered;
@@ -131,7 +131,7 @@ function createBaseErrorFields(c: Context, err: { message: string; code?: string
   const timestamp = new Date().toISOString();
   const requestId = c.get('requestId' as any) || c.req.header('X-Request-ID') || crypto.randomUUID();
   
-  const isProduction = config?.env === 'production' || process.env.NODE_ENV === 'production';
+  const isProduction = process.env.NODE_ENV === 'production';
   const isDebugMode = config?.logging?.level === 'debug';
   
   return {
@@ -312,7 +312,7 @@ export function createErrorHandler(config: Config) {
       
       const globalErrors: string[] = [];
       
-      zodError.errors.forEach(issue => {
+      zodError.issues.forEach((issue: any) => {
         if (issue.path.length > 0) {
           fieldErrors.push({
             field: issue.path.join('.'),
@@ -339,7 +339,7 @@ export function createErrorHandler(config: Config) {
       log?.warn({
         error: {
           message: userMessage,
-          issues: zodError.errors,
+          issues: zodError.issues,
           fieldErrors,
           globalErrors,
         },

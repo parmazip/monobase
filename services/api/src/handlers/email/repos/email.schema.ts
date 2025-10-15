@@ -5,7 +5,6 @@
 
 import { pgTable, uuid, varchar, text, jsonb, timestamp, integer, pgEnum, unique, index, boolean } from 'drizzle-orm/pg-core';
 import { baseEntityFields, type BaseEntity } from '@/core/database.schema';
-import type { Email } from '@/types/auth';
 
 /**
  * Variable types for email template variables
@@ -273,7 +272,7 @@ export interface SendEmailRequest {
 export interface EmailSendResult {
   success: boolean;
   messageId?: string;
-  provider: 'smtp' | 'postmark';
+  provider: 'smtp' | 'postmark' | 'onesignal';
   error?: string;
 }
 

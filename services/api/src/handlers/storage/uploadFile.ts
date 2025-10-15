@@ -1,4 +1,4 @@
-import { Context } from 'hono';
+import type { BaseContext } from '@/types/app';
 import { v4 as uuidv4 } from 'uuid';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
@@ -20,7 +20,9 @@ import { addMinutes } from 'date-fns';
  * Path: POST /storage/files/upload
  * OperationId: uploadFile
  */
-export async function uploadFile(ctx: Context) {
+export async function uploadFile(
+  ctx: BaseContext
+): Promise<Response> {
   // Get request body
   const body = await ctx.req.json() as {
     filename: string;

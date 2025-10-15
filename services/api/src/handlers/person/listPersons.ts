@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { ListPersonsQuery } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import {
@@ -16,13 +17,14 @@ import { parsePagination, buildPaginationMeta, parseFilters, parseSort } from '@
  * OperationId: listPersons
  * Security: bearerAuth with role ["admin"]
  */
-export async function listPersons(ctx: Context) {
+export async function listPersons(
+  ctx: ValidatedContext<never, ListPersonsQuery>
+): Promise<Response> {
   // Get authenticated user (guaranteed by auth middleware)
   const user = ctx.get('user') as User;
   
-  
-  // Extract query parameters
-  const query = ctx.req.query();
+  // Extract validated query parameters - now properly typed!
+  const query = ctx.req.valid('query');
   
   // Parse pagination with utilities
   const { limit, offset } = parsePagination(query);
@@ -44,7 +46,7 @@ export async function listPersons(ctx: Context) {
   // Retrieve persons with pagination and sorting
   const persons = await repo.findMany(filters, {
     pagination: { limit, offset },
-    sort: sort ? { field: sort.field, direction: sort.direction } : undefined
+    orderBy: sort ? { field: sort.field, direction: sort.direction } : undefined
   });
   
   // Get total count for pagination metadata

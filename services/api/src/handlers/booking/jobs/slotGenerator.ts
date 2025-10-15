@@ -36,7 +36,7 @@ export async function slotGeneratorJob(context: JobContext): Promise<void> {
   const { db, logger, jobId } = context;
   const config = { ...DEFAULT_CONFIG };
   
-  logger.info(`Starting slot generation job`, { jobId, config });
+  logger.info({ jobId, config }, `Starting slot generation job`);
   
   const timeSlotRepo = new TimeSlotRepository(db, logger);
   const eventRepo = new BookingEventRepository(db, logger);
@@ -47,11 +47,11 @@ export async function slotGeneratorJob(context: JobContext): Promise<void> {
     const startDate = startOfDay(new Date());
     const endDate = addDays(startDate, config.daysToGenerate);
     
-    logger.info('Slot generation date range', {
+    logger.info({
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
       days: config.daysToGenerate
-    });
+    }, 'Slot generation date range');
     
     // Get active booking events for date range
     const activeEvents = await eventRepo.findActiveInDateRange(startDate, endDate);
@@ -61,10 +61,10 @@ export async function slotGeneratorJob(context: JobContext): Promise<void> {
       return;
     }
 
-    logger.info(`Found ${activeEvents.length} active booking events`, {
+    logger.info({
       eventCount: activeEvents.length,
       dateRange: `${format(startDate, 'yyyy-MM-dd')} to ${format(endDate, 'yyyy-MM-dd')}`
-    });
+    }, `Found ${activeEvents.length} active booking events`);
 
     // Process events and generate slots
     const results = {
@@ -77,11 +77,11 @@ export async function slotGeneratorJob(context: JobContext): Promise<void> {
 
     for (const event of activeEvents) {
       try {
-        logger.debug(`Processing booking event ${event.id}`, {
+        logger.debug({
           eventId: event.id,
           owner: event.owner,
           status: event.status
-        });
+        }, `Processing booking event ${event.id}`);
 
         // Fetch schedule exceptions for this event
         const exceptions = await exceptionRepo.findMany({
@@ -99,19 +99,19 @@ export async function slotGeneratorJob(context: JobContext): Promise<void> {
           results.totalCreated += createResult.created.length;
           results.totalDuplicates += createResult.duplicates;
 
-          logger.info(`Completed slot generation for event ${event.id}`, {
+          logger.info({
             eventId: event.id,
             owner: event.owner,
             generated: slots.length,
             created: createResult.created.length,
             duplicates: createResult.duplicates,
             errors: createResult.errors
-          });
+          }, `Completed slot generation for event ${event.id}`);
         } else {
-          logger.debug(`No slots generated for event ${event.id} - likely no enabled days in range`, {
+          logger.debug({
             eventId: event.id,
             owner: event.owner
-          });
+          }, `No slots generated for event ${event.id} - likely no enabled days in range`);
         }
 
       } catch (error) {
@@ -119,16 +119,16 @@ export async function slotGeneratorJob(context: JobContext): Promise<void> {
         results.errors.push(errorMsg);
         results.failedEvents.push(event.id);
 
-        logger.error(`Event processing failed`, {
+        logger.error({
           eventId: event.id,
           owner: event.owner,
           error: error instanceof Error ? error.message : String(error)
-        });
+        }, `Event processing failed`);
       }
     }
 
     // Log final results
-    logger.info('Slot generation job completed', {
+    logger.info({
       jobId,
       totalEvents: activeEvents.length,
       totalGenerated: results.totalGenerated,
@@ -137,14 +137,14 @@ export async function slotGeneratorJob(context: JobContext): Promise<void> {
       failedEvents: results.failedEvents.length,
       errors: results.errors.length,
       successRate: `${((activeEvents.length - results.failedEvents.length) / activeEvents.length * 100).toFixed(2)}%`
-    });
+    }, 'Slot generation job completed');
 
     // If there were any failures, log them for investigation
     if (results.failedEvents.length > 0) {
-      logger.warn('Some events failed during slot generation', {
+      logger.warn({
         failedEvents: results.failedEvents,
         errors: results.errors
-      });
+      }, 'Some events failed during slot generation');
     }
 
     // Clean up old slots for performance (optional)
@@ -154,18 +154,17 @@ export async function slotGeneratorJob(context: JobContext): Promise<void> {
         const deletedCount = await timeSlotRepo.cleanupOldAvailableSlots(30);
         logger.info(`Cleaned up ${deletedCount} old available slots`);
       } catch (cleanupError) {
-        logger.warn('Old slot cleanup failed but continuing', {
+        logger.warn({
           error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError)
-        });
+        }, 'Old slot cleanup failed but continuing');
       }
     }
 
   } catch (error) {
-    logger.error('Slot generation job failed', {
+    logger.error({
       jobId,
-      error: error instanceof Error ? error.message : String(error),
-      attempt: context.attempt
-    });
+      error: error instanceof Error ? error.message : String(error)
+    }, 'Slot generation job failed');
     throw error;
   }
 }
@@ -207,7 +206,10 @@ async function generateSlotsFromEvent(
   const days = eachDayOfInterval({ start: startDate, end: endDate });
 
   for (const day of days) {
-    const dayOfWeek = dayMapping[getDay(day)];
+    const dayOfWeekNum = getDay(day);
+    if (dayOfWeekNum === undefined) continue;
+    const dayOfWeek = dayMapping[dayOfWeekNum];
+    if (!dayOfWeek) continue;
     const dailyConfig = event.dailyConfigs[dayOfWeek];
 
     // Skip if the day is not enabled or has no config
@@ -268,20 +270,20 @@ async function generateSlotsFromEvent(
 
     const filtered = beforeFilter - filteredSlots.length;
     if (filtered > 0) {
-      logger?.info(`Filtered ${filtered} slots due to schedule exceptions`, {
+      logger?.info({
         eventId: event.id,
         beforeFilter,
         afterFilter: filteredSlots.length,
         exceptionsCount: scheduleExceptions.length
-      });
+      }, `Filtered ${filtered} slots due to schedule exceptions`);
     }
   }
 
-  logger?.info(`Generated ${filteredSlots.length} slots from event ${event.id}`, {
+  logger?.info({
     eventId: event.id,
     owner: event.owner,
     slotCount: filteredSlots.length
-  });
+  }, `Generated ${filteredSlots.length} slots from event ${event.id}`);
 
   return filteredSlots;
 }
@@ -300,8 +302,12 @@ function generateSlotsFromTimeBlock(
   const bufferTime = timeBlock.bufferTime || 0; // Default 0 minutes
 
   // Parse start and end times
-  const [startHour, startMinute] = timeBlock.startTime.split(':').map(Number);
-  const [endHour, endMinute] = timeBlock.endTime.split(':').map(Number);
+  const startParts = timeBlock.startTime.split(':').map(Number);
+  const endParts = timeBlock.endTime.split(':').map(Number);
+  const startHour = startParts[0] ?? 0;
+  const startMinute = startParts[1] ?? 0;
+  const endHour = endParts[0] ?? 0;
+  const endMinute = endParts[1] ?? 0;
 
   // Create start and end DateTime objects in owner's timezone
   let currentTime = setMinutes(setHours(day, startHour), startMinute);

@@ -1,4 +1,4 @@
-import { Context } from 'hono';
+import type { BaseContext } from '@/types/app';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import {
@@ -20,7 +20,9 @@ import { addMinutes } from 'date-fns';
  * Path: GET /storage/files/{fileId}/download
  * OperationId: getFileDownload
  */
-export async function getFileDownload(ctx: Context) {
+export async function getFileDownload(
+  ctx: BaseContext
+): Promise<Response> {
   // Get authenticated user from Better-Auth
   const user = ctx.get('user') as User;
 
@@ -72,7 +74,7 @@ export async function getFileDownload(ctx: Context) {
   logger?.info({ 
     fileId, 
     filename: file.filename,
-    userId: ctx.get('userId') || 'anonymous',
+    userId: user.id,
     action: 'download'
   }, 'File download requested');
   

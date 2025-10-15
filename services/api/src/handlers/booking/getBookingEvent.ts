@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { GetBookingEventQuery, GetBookingEventParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import {
@@ -14,7 +15,9 @@ import { BookingEventRepository } from './repos/bookingEvent.repo';
  * OperationId: getBookingEvent
  * Security: Optional authentication (supports "me" parameter)
  */
-export async function getBookingEvent(ctx: Context) {
+export async function getBookingEvent(
+  ctx: ValidatedContext<never, GetBookingEventQuery, GetBookingEventParams>
+): Promise<Response> {
   // Get validated parameters
   const params = ctx.req.valid('param') as { event: string };
   const query = ctx.req.valid('query') as { expand?: string };
@@ -35,11 +38,15 @@ export async function getBookingEvent(ctx: Context) {
     }
 
     // Find user's first event by owner
-    const userEvents = await repo.findMany({ owner: user.id }, { limit: 1 });
+    const userEvents = await repo.findMany({ owner: user.id }, { pagination: { limit: 1, offset: 0 } });
     if (!userEvents.length) {
       throw new NotFoundError('No booking events found for current user');
     }
-    eventId = userEvents[0].id;
+    const firstEvent = userEvents[0];
+    if (!firstEvent) {
+      throw new NotFoundError('No booking events found for current user');
+    }
+    eventId = firstEvent.id;
   }
 
   // Find booking event (expand handled automatically by middleware)

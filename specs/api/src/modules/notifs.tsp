@@ -138,8 +138,14 @@ model Notification extends BaseEntity {
   @doc("Sent timestamp")
   sentAt?: utcDateTime;
 
+  @doc("Delivered timestamp")
+  deliveredAt?: utcDateTime;
+
   @doc("Read timestamp")
   readAt?: utcDateTime;
+
+  @doc("Additional metadata")
+  metadata?: Record<unknown>;
 
   @doc("Consent validation status")
   consentValidated: boolean;

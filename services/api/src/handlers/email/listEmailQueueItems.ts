@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { ListEmailQueueItemsQuery } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User, Session } from '@/types/auth';
 import { ForbiddenError } from '@/core/errors';
@@ -12,7 +13,9 @@ import type { EmailQueueFilters } from './repos/email.schema';
  * Path: GET /email/queue
  * OperationId: listEmailQueueItems
  */
-export async function listEmailQueueItems(ctx: Context) {
+export async function listEmailQueueItems(
+  ctx: ValidatedContext<never, ListEmailQueueItemsQuery, never>
+): Promise<Response> {
   // Get authenticated session from Better-Auth
   const session = ctx.get('session') as Session;
 

@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { GetEmailTemplateParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User, Session } from '@/types/auth';
 import {
@@ -13,7 +14,9 @@ import { EmailTemplateRepository } from './repos/template.repo';
  * Path: GET /email/templates/{template}
  * OperationId: getEmailTemplate
  */
-export async function getEmailTemplate(ctx: Context) {
+export async function getEmailTemplate(
+  ctx: ValidatedContext<never, never, GetEmailTemplateParams>
+): Promise<Response> {
   // Get authenticated session from Better-Auth
   const session = ctx.get('session') as Session;
   const user = ctx.get('user') as User;

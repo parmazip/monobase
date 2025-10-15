@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { GetEmailQueueItemParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User, Session } from '@/types/auth';
 import {
@@ -13,7 +14,9 @@ import { EmailQueueRepository } from './repos/queue.repo';
  * Path: GET /email/queue/{queue}
  * OperationId: getEmailQueueItem
  */
-export async function getEmailQueueItem(ctx: Context) {
+export async function getEmailQueueItem(
+  ctx: ValidatedContext<never, never, GetEmailQueueItemParams>
+): Promise<Response> {
   // Get authenticated session from Better-Auth
   const session = ctx.get('session') as Session;
 

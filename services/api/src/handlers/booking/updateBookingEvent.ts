@@ -3,19 +3,28 @@
  * Updates an existing booking event
  */
 
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { UpdateBookingEventBody } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
+import { ValidationError } from '@/core/errors';
 import { BookingEventRepository } from './repos/bookingEvent.repo';
 import type { BookingEventUpdateRequest } from './repos/booking.schema';
 import { regenerateEventSlots } from './jobs/slotGenerator';
 
-export async function updateBookingEvent(ctx: Context) {
+export async function updateBookingEvent(
+  ctx: ValidatedContext<UpdateBookingEventBody, never, never>
+): Promise<Response> {
   // Get authenticated user
   const user = ctx.get('user') as User;
 
   // Get path parameters and validated body
   const { event: eventId } = ctx.req.param();
+  
+  if (!eventId) {
+    throw new ValidationError('Event ID is required');
+  }
+  
   const body = ctx.req.valid('json') as BookingEventUpdateRequest;
 
   // Get dependencies from context

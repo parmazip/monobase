@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { MarkAllNotificationsAsReadQuery } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import { NotificationRepository } from './repos/notification.repo';
@@ -11,7 +12,9 @@ import { PersonRepository } from '../person/repos/person.repo';
  * OperationId: markAllNotificationsAsRead
  * Security: bearerAuth
  */
-export async function markAllNotificationsAsRead(ctx: Context) {
+export async function markAllNotificationsAsRead(
+  ctx: ValidatedContext<never, MarkAllNotificationsAsReadQuery, never>
+): Promise<Response> {
   // Get authenticated user and check authorization
   const user = ctx.get('user') as User;
   

@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { JoinVideoCallBody, JoinVideoCallParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import type { Config } from '@/core/config';
@@ -24,7 +25,9 @@ import type {
  * 
  * Join active video call in chat room
  */
-export async function joinVideoCall(ctx: Context) {
+export async function joinVideoCall(
+  ctx: ValidatedContext<JoinVideoCallBody, never, JoinVideoCallParams>
+): Promise<Response> {
   // Get authenticated user from Better-Auth
   const user = ctx.get('user') as User;
 
@@ -103,7 +106,7 @@ export async function joinVideoCall(ctx: Context) {
 
   const participant: CallParticipant = {
     user: user.id,
-    userType: userType,
+    userType: 'provider', // Monobase uses person-centric model
     displayName: body.displayName.trim(),
     audioEnabled: body.audioEnabled ?? true,
     videoEnabled: body.videoEnabled ?? true,

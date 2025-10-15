@@ -1,4 +1,4 @@
-import { Context } from 'hono';
+import type { BaseContext } from '@/types/app';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import {
@@ -18,7 +18,9 @@ import { userHasRole } from '@/utils/auth';
  * Path: DELETE /storage/files/{fileId}
  * OperationId: deleteFile
  */
-export async function deleteFile(ctx: Context) {
+export async function deleteFile(
+  ctx: BaseContext
+): Promise<Response> {
   // Get authenticated user from Better-Auth
   const user = ctx.get('user') as User;
 
@@ -70,7 +72,7 @@ export async function deleteFile(ctx: Context) {
         action: 'delete',
         outcome: 'success',
         user: user.id,
-        userType: user.role || 'user',
+        userType: (user.role === 'user' || user.role === 'patient' ? 'client' : user.role || 'client') as 'client' | 'provider' | 'admin' | 'system',
         resourceType: 'file',
         resource: fileId,
         description: `File deleted: ${file.filename}`,

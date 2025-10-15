@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { ListAuditLogsQuery } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import {
@@ -16,7 +17,9 @@ import type { AuditLogFilters, AuditLogQueryParams } from './repos/audit.schema'
  * OperationId: listAuditLogs
  * Security: bearerAuth with roles ["admin", "compliance"]
  */
-export async function listAuditLogs(ctx: Context) {
+export async function listAuditLogs(
+  ctx: ValidatedContext<never, ListAuditLogsQuery, never>
+): Promise<Response> {
   // Get authenticated user and check authorization
   const user = ctx.get('user') as User;
   
@@ -39,8 +42,8 @@ export async function listAuditLogs(ctx: Context) {
   // Convert date strings to Date objects if present
   const filters: AuditLogFilters = {
     ...rawFilters,
-    startDate: rawFilters.startDate ? new Date(rawFilters.startDate) : undefined,
-    endDate: rawFilters.endDate ? new Date(rawFilters.endDate) : undefined
+    startDate: rawFilters['startDate'] ? new Date(rawFilters['startDate']) : undefined,
+    endDate: rawFilters['endDate'] ? new Date(rawFilters['endDate']) : undefined
   };
   
   // Validate date range
@@ -58,8 +61,8 @@ export async function listAuditLogs(ctx: Context) {
   // Get paginated audit logs and total count
   const [auditLogs, totalCount] = await Promise.all([
     repo.findMany(filters, { 
-      pagination: { limit, offset },
-      orderBy: query.orderBy || 'desc(created_at)' // Most recent first by default
+      pagination: { limit, offset }
+      // orderBy handled by buildWhereConditions in repository
     }),
     repo.count(filters)
   ]);

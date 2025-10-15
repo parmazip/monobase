@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { CreatePersonBody } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import {
@@ -9,7 +10,6 @@ import {
   ConflictError
 } from '@/core/errors';
 import { PersonRepository } from './repos/person.repo';
-import { type PersonCreateRequest } from './repos/person.schema';
 import { validatedDateOfBirth } from '@/utils/date';
 
 /**
@@ -19,12 +19,14 @@ import { validatedDateOfBirth } from '@/utils/date';
  * OperationId: createPerson
  * Security: bearerAuth with role ["owner"]
  */
-export async function createPerson(ctx: Context) {
+export async function createPerson(
+  ctx: ValidatedContext<CreatePersonBody>
+): Promise<Response> {
   // Get authenticated user (guaranteed by auth middleware)
   const user = ctx.get('user') as User;
   
-  // Get validated request body
-  const body = ctx.req.valid('json') as PersonCreateRequest;
+  // Get validated request body - now properly typed!
+  const body = ctx.req.valid('json');
   
   // Get dependencies from context
   const db = ctx.get('database') as DatabaseInstance;
@@ -45,7 +47,7 @@ export async function createPerson(ctx: Context) {
     firstName: body.firstName,
     lastName: body.lastName || null,
     middleName: body.middleName || null,
-    dateOfBirth: body.dateOfBirth ? validatedDateOfBirth(new Date(body.dateOfBirth)) : null,
+    dateOfBirth: body.dateOfBirth ? validatedDateOfBirth(new Date(body.dateOfBirth)).toISOString() : null,
     gender: body.gender || null,
     contactInfo: body.contactInfo || null,
     primaryAddress: body.primaryAddress || null,
@@ -64,7 +66,7 @@ export async function createPerson(ctx: Context) {
         action: 'create',
         outcome: 'success',
         user: user.id,
-        userType: 'client',
+        userType: (user.role === 'user' || user.role === 'patient' ? 'client' : user.role || 'client') as 'client' | 'provider' | 'admin' | 'system',
         resourceType: 'person',
         resource: person.id,
         description: 'Person profile created',

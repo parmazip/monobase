@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { LeaveVideoCallParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import { 
@@ -18,7 +19,9 @@ import type { LeaveVideoCallResponse } from './repos/comms.schema';
  * 
  * Leave active video call
  */
-export async function leaveVideoCall(ctx: Context) {
+export async function leaveVideoCall(
+  ctx: ValidatedContext<never, never, LeaveVideoCallParams>
+): Promise<Response> {
   // Get authenticated user from Better-Auth
   const user = ctx.get('user') as User;
 

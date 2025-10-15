@@ -53,10 +53,12 @@ export async function triggerSlotGeneration(
   ownerId?: string
 ): Promise<void> {
   // This can be called manually to trigger slot generation for a specific owner
-  const { regenerateOwnerSlots } = await import('./slotGenerator');
+  const { regenerateEventSlots } = await import('./slotGenerator');
   
   if (ownerId) {
-    await regenerateOwnerSlots(db, ownerId);
+    // Note: regenerateEventSlots takes eventId, not ownerId
+    // This function signature may need to be updated
+    throw new Error('triggerSlotGeneration with ownerId not implemented - use eventId instead');
   } else {
     // Trigger the full job
     throw new Error('Full job trigger not implemented - use scheduler.trigger()');

@@ -204,6 +204,8 @@ namespace AuditModule {
         @query startDate?: utcDateTime,
         @doc("End date for filtering audit logs (inclusive)")
         @query endDate?: utcDateTime,
+        @doc("Order by field (e.g., 'desc(created_at)', 'asc(created_at)')")
+        @query orderBy?: string,
         ...PaginationQuery
      ): ApiOkResponse<PaginatedResponse<AuditLogEntry>> | ApiUnauthorizedResponse | ApiForbiddenResponse;
 

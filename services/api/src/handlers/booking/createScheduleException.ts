@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { CreateScheduleExceptionBody, CreateScheduleExceptionParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import {
@@ -18,13 +19,15 @@ import type { ScheduleExceptionCreateRequest } from './repos/booking.schema';
  * OperationId: createScheduleException
  * Security: bearerAuth with role ["owner"]
  */
-export async function createScheduleException(ctx: Context) {
+export async function createScheduleException(
+  ctx: ValidatedContext<CreateScheduleExceptionBody, never, CreateScheduleExceptionParams>
+): Promise<Response> {
   // Get authenticated user (guaranteed by auth middleware)
   const user = ctx.get('user') as User;
   
   // Get validated parameters
   const params = ctx.req.valid('param') as { event: string };
-  const body = ctx.req.valid('json') as ScheduleExceptionCreateRequest;
+  const body = ctx.req.valid('json') as any; // Type will be validated by repository
 
   // Get dependencies from context
   const db = ctx.get('database') as DatabaseInstance;

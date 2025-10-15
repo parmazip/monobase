@@ -5,12 +5,13 @@
  * Follows TypeSpec billing.tsp definition with current schema adaptation.
  */
 
-import type { Context } from 'hono';
 import {
   ForbiddenError,
   NotFoundError,
   BusinessLogicError
 } from '@/core/errors';
+import type { ValidatedContext } from '@/types/app';
+import type { DeleteInvoiceParams } from '@/generated/openapi/validators';
 import type { Session } from '@/types/auth';
 import { InvoiceRepository } from './repos/billing.repo';
 import { PersonRepository } from '../person/repos/person.repo';
@@ -23,7 +24,9 @@ import { PersonRepository } from '../person/repos/person.repo';
  *
  * Delete a draft invoice
  */
-export async function deleteInvoice(ctx: Context) {
+export async function deleteInvoice(
+  ctx: ValidatedContext<never, never, DeleteInvoiceParams>
+): Promise<Response> {
   const database = ctx.get('database');
   const logger = ctx.get('logger');
 

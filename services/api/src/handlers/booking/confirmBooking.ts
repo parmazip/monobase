@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { ConfirmBookingBody, ConfirmBookingParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { NotificationService } from '@/core/notifs';
 import type { User } from '@/types/auth';
@@ -21,7 +22,9 @@ import { checkBookingProviderOwnership } from './utils/ownership';
  * Provider confirms booking within 15-minute window
  * Only the provider who owns the booking can confirm it
  */
-export async function confirmBooking(ctx: Context) {
+export async function confirmBooking(
+  ctx: ValidatedContext<ConfirmBookingBody, never, ConfirmBookingParams>
+): Promise<Response> {
   // Get authenticated user from Better-Auth (guaranteed by middleware)
   const user = ctx.get('user') as User;
   

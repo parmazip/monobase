@@ -5,7 +5,7 @@
 
 import { addDays, addMinutes, format, isAfter, isBefore, isWithinInterval, parseISO, startOfDay, setHours, setMinutes, differenceInMinutes, set, addHours } from 'date-fns';
 import { toZonedTime, fromZonedTime } from 'date-fns-tz';
-import type { BookingEvent, NewTimeSlot } from '../repos/booking.schema';
+import type { BookingEvent, NewTimeSlot, DayOfWeek } from '../repos/booking.schema';
 
 export interface SlotGenerationConfig {
   event: BookingEvent;
@@ -36,7 +36,7 @@ export function generateSlotsForEvent(config: SlotGenerationConfig): GeneratedSl
     // Check if this day of week is configured in dailyConfigs
     const dayOfWeek = currentDate.getDay();
     const dayKey = getDayKey(dayOfWeek);
-    const dailyConfig = event.dailyConfigs[dayKey];
+    const dailyConfig = event.dailyConfigs[dayKey as DayOfWeek];
     
     if (dailyConfig && dailyConfig.enabled) {
       // Generate slots for this day
@@ -70,7 +70,7 @@ function getDayKey(dayNumber: number): string {
     5: 'fri',
     6: 'sat'
   };
-  return dayMap[dayNumber];
+  return (dayMap[dayNumber] || 'sun') as DayOfWeek;
 }
 
 /**
@@ -108,10 +108,10 @@ function generateSlotsForDay(params: {
     
     // Check minimum booking hours constraint
     const now = new Date();
-    const minBookingTime = addMinutes(now, event.minBookingHours * 60);
+    const minBookingTime = addMinutes(now, ((event as any).minBookingHours || 0) * 60);
     
     // Check advance booking constraint
-    const maxBookingDate = addDays(now, event.advanceBookingDays);
+    const maxBookingDate = addDays(now, (event as any).advanceBookingDays || 365);
     if (isAfter(date, maxBookingDate)) {
       continue; // Beyond advance booking window
     }
@@ -211,7 +211,9 @@ export function validateSlotBoundaries(
   
   for (let i = 0; i < slots.length; i++) {
     const slot = slots[i];
-    const duration = differenceInMinutes(slot.endTime, slot.startTime);
+    if (!slot) continue;
+    
+    const duration = differenceInMinutes(slot['endTime'], slot['startTime']);
 
     // Check slot duration
     if (duration !== expectedDuration) {
@@ -222,8 +224,10 @@ export function validateSlotBoundaries(
     // Check interval between consecutive slots (if not the last slot)
     if (i < slots.length - 1) {
       const nextSlot = slots[i + 1];
-      if (slot.date === nextSlot.date) {
-        const interval = differenceInMinutes(nextSlot.startTime, slot.startTime);
+      if (!nextSlot) continue;
+      
+      if (slot['date'] === nextSlot['date']) {
+        const interval = differenceInMinutes(nextSlot['startTime'], slot['startTime']);
         if (interval !== expectedInterval) {
           invalid.push(slot);
           continue;

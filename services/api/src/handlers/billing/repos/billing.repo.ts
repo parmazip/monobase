@@ -21,6 +21,9 @@ import {
   type InvoiceFilters,
   type MerchantAccountFilters
 } from './billing.schema';
+
+// Re-export InvoiceFilters for handler use
+export type { InvoiceFilters };
 import { persons } from '../../person/repos/person.schema';
 
 /**
@@ -150,7 +153,7 @@ export class InvoiceRepository extends DatabaseRepository<Invoice, NewInvoice, I
       .limit(1);
 
     let nextNumber = 1;
-    if (result.length > 0) {
+    if (result.length > 0 && result[0]) {
       const lastNumber = result[0].invoiceNumber.replace(prefix, '');
       nextNumber = parseInt(lastNumber) + 1;
     }
@@ -179,6 +182,10 @@ export class InvoiceRepository extends DatabaseRepository<Invoice, NewInvoice, I
         .returning();
 
       // Create line items
+      if (!invoice) {
+        throw new Error('Failed to create invoice');
+      }
+      
       const lineItems = await tx
         .insert(invoiceLineItems)
         .values(
@@ -192,7 +199,7 @@ export class InvoiceRepository extends DatabaseRepository<Invoice, NewInvoice, I
       return {
         ...invoice,
         lineItems
-      };
+      } as InvoiceWithLineItems;
     });
   }
 }
@@ -239,7 +246,7 @@ export class MerchantAccountRepository extends DatabaseRepository<MerchantAccoun
       .where(eq(merchantAccounts.person, personId))
       .limit(1);
 
-    return result.length > 0 ? result[0] : null;
+    return result.length > 0 && result[0] ? result[0] : null;
   }
 
   /**
@@ -254,7 +261,7 @@ export class MerchantAccountRepository extends DatabaseRepository<MerchantAccoun
       .where(sql`${merchantAccounts.metadata}->>'stripeAccountId' = ${stripeAccountId}`)
       .limit(1);
 
-    return result.length > 0 ? result[0] : null;
+    return result.length > 0 && result[0] ? result[0] : null;
   }
 
   /**
@@ -282,6 +289,10 @@ export class MerchantAccountRepository extends DatabaseRepository<MerchantAccoun
     }
 
     const row = result[0];
+    if (!row) {
+      return null;
+    }
+    
     return {
       ...row.merchantAccount,
       person: row.person

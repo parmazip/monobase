@@ -1,4 +1,4 @@
-import { Context } from 'hono';
+import type { BaseContext } from '@/types/app';
 import type { NotificationService } from '@/core/notifs';
 import { 
   ValidationError,
@@ -17,11 +17,13 @@ import type Stripe from 'stripe';
  * 
  * Handle Stripe webhook events for invoice payments and merchant account updates
  */
-export async function handleStripeWebhook(ctx: Context) {
+export async function handleStripeWebhook(
+  ctx: BaseContext
+): Promise<Response> {
   const database = ctx.get('database');
   const logger = ctx.get('logger');
   const billing = ctx.get('billing');
-  const notificationService = ctx.get('notificationService') as NotificationService;
+  const notificationService = (ctx.get as any)('notificationService') as NotificationService;
   
   // Get the raw body and signature for webhook verification
   const signature = ctx.req.header('stripe-signature');
@@ -104,7 +106,7 @@ export async function handleStripeWebhook(ctx: Context) {
         await handleTransferCreated(event, invoiceRepo, logger);
         break;
         
-      case 'transfer.failed':
+      case 'transfer.failed' as any:
         await handleTransferFailed(event, invoiceRepo, logger);
         break;
       
@@ -152,7 +154,7 @@ async function handlePaymentIntentSucceeded(
   notificationService: NotificationService
 ) {
   const paymentIntent = event.data.object as Stripe.PaymentIntent;
-  const invoiceId = paymentIntent.metadata?.invoiceId;
+  const invoiceId = paymentIntent.metadata?.['invoiceId'];
   
   if (!invoiceId) {
     logger.warn({ paymentIntentId: paymentIntent.id }, 'No invoice ID in payment intent metadata');
@@ -185,7 +187,7 @@ async function handlePaymentIntentSucceeded(
   // Send payment authorization notification to patient
   try {
     await notificationService.createNotification({
-      recipientId: invoice.customer,
+      recipient: invoice.customer,
       type: 'payment_authorized',
       title: 'Payment Authorized',
       message: 'Your payment has been authorized and is being held until the service is completed.',
@@ -198,7 +200,7 @@ async function handlePaymentIntentSucceeded(
       },
       channels: ['in-app', 'email'],
       priority: 'normal'
-    });
+    } as any);
 
     logger.info(
       { invoiceId, paymentIntentId: paymentIntent.id, customerId: invoice.customer },
@@ -222,7 +224,7 @@ async function handlePaymentIntentFailed(
   notificationService: NotificationService
 ) {
   const paymentIntent = event.data.object as Stripe.PaymentIntent;
-  const invoiceId = paymentIntent.metadata?.invoiceId;
+  const invoiceId = paymentIntent.metadata?.['invoiceId'];
   
   if (!invoiceId) {
     logger.warn({ paymentIntentId: paymentIntent.id }, 'No invoice ID in payment intent metadata');
@@ -247,7 +249,7 @@ async function handlePaymentIntentFailed(
   // Send payment failure notification to patient
   try {
     await notificationService.createNotification({
-      recipientId: invoice.customer,
+      recipient: invoice.customer,
       type: 'payment_failed',
       title: 'Payment Failed',
       message: 'Your payment could not be processed. Please update your payment method and try again.',
@@ -260,7 +262,7 @@ async function handlePaymentIntentFailed(
       },
       channels: ['in-app', 'email', 'sms'],
       priority: 'high'
-    });
+    } as any);
 
     logger.info(
       { invoiceId, paymentIntentId: paymentIntent.id, customerId: invoice.customer },
@@ -283,7 +285,7 @@ async function handlePaymentIntentCanceled(
   logger: any
 ) {
   const paymentIntent = event.data.object as Stripe.PaymentIntent;
-  const invoiceId = paymentIntent.metadata?.invoiceId;
+  const invoiceId = paymentIntent.metadata?.['invoiceId'];
   
   if (!invoiceId) {
     logger.warn({ paymentIntentId: paymentIntent.id }, 'No invoice ID in payment intent metadata');
@@ -311,7 +313,7 @@ async function handlePaymentIntentRequiresAction(
   logger: any
 ) {
   const paymentIntent = event.data.object as Stripe.PaymentIntent;
-  const invoiceId = paymentIntent.metadata?.invoiceId;
+  const invoiceId = paymentIntent.metadata?.['invoiceId'];
   
   if (!invoiceId) {
     logger.warn({ paymentIntentId: paymentIntent.id }, 'No invoice ID in payment intent metadata');
@@ -347,7 +349,7 @@ async function handleChargeSucceeded(
   
   // Find invoice by payment intent ID in metadata
   // Note: This requires a custom query since we're searching in JSONB
-  const allInvoices = await invoiceRepo.db
+  const allInvoices = await (invoiceRepo as any).db
     .select()
     .from(invoices);
 
@@ -390,7 +392,7 @@ async function handleChargeSucceeded(
   try {
     // Notification for patient - payment captured
     await notificationService.createNotification({
-      recipientId: invoice.customer,
+      recipient: invoice.customer,
       type: 'payment_captured',
       title: 'Payment Processed',
       message: 'Your payment has been successfully processed and captured.',
@@ -404,11 +406,11 @@ async function handleChargeSucceeded(
       },
       channels: ['in-app', 'email'],
       priority: 'normal'
-    });
+    } as any);
 
     // Notification for provider - payment received
     await notificationService.createNotification({
-      recipientId: invoice.merchant,
+      recipient: invoice.merchant,
       type: 'payment_received',
       title: 'Payment Received',
       message: 'Payment for your invoice has been processed and will be transferred to your account.',
@@ -422,7 +424,7 @@ async function handleChargeSucceeded(
       },
       channels: ['in-app', 'email'],
       priority: 'normal'
-    });
+    } as any);
 
     logger.info(
       { invoiceId: invoice.id, chargeId: charge.id, customerId: invoice.customer, merchantId: invoice.merchant },
@@ -454,7 +456,7 @@ async function handleChargeFailed(
   }
   
   // Find invoice by payment intent ID in metadata
-  const allInvoices = await invoiceRepo.db
+  const allInvoices = await (invoiceRepo as any).db
     .select()
     .from(invoices);
 
@@ -480,7 +482,7 @@ async function handleChargeFailed(
   // Send charge failure notification to patient
   try {
     await notificationService.createNotification({
-      recipientId: invoice.customer,
+      recipient: invoice.customer,
       type: 'charge_failed',
       title: 'Payment Charge Failed',
       message: 'There was an issue processing your payment charge. Please contact support if this continues.',
@@ -495,7 +497,7 @@ async function handleChargeFailed(
       },
       channels: ['in-app', 'email'],
       priority: 'high'
-    });
+    } as any);
 
     logger.info(
       { invoiceId: invoice.id, chargeId: charge.id, customerId: invoice.customer },
@@ -526,7 +528,7 @@ async function handleChargeRefunded(
   }
   
   // Find invoice by payment intent ID in metadata
-  const allInvoices = await invoiceRepo.db
+  const allInvoices = await (invoiceRepo as any).db
     .select()
     .from(invoices);
 
@@ -677,7 +679,7 @@ async function handleTransferCreated(
   const transfer = event.data.object as Stripe.Transfer;
   
   // Find invoice by transfer ID in metadata
-  const allInvoices = await invoiceRepo.db
+  const allInvoices = await (invoiceRepo as any).db
     .select()
     .from(invoices);
 
@@ -695,7 +697,7 @@ async function handleTransferCreated(
     { 
       transferId: transfer.id,
       amount: transfer.amount,
-      invoiceIds: foundInvoices.map(i => i.id)
+      invoiceIds: foundInvoices.map((i: any) => i.id)
     }, 
     'Transfer created for invoice payments'
   );
@@ -712,7 +714,7 @@ async function handleTransferFailed(
   const transfer = event.data.object as Stripe.Transfer;
   
   // Find invoice by transfer ID in metadata
-  const allInvoices = await invoiceRepo.db
+  const allInvoices = await (invoiceRepo as any).db
     .select()
     .from(invoices);
 
@@ -732,7 +734,7 @@ async function handleTransferFailed(
       { 
         invoiceId: invoice.id,
         transferId: transfer.id,
-        failureMessage: transfer.failure_message 
+        failureMessage: (transfer as any).failure_message 
       }, 
       'Transfer failed for invoice - requires manual review'
     );

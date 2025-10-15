@@ -195,7 +195,7 @@ export class TimeSlotRepository extends DatabaseRepository<TimeSlot, NewTimeSlot
     this.logger?.debug({
       ownerId,
       found: !!slot,
-      nextSlot: slot?.startTime
+      nextSlot: slot?.['startTime']
     }, 'Next available slot found');
 
     return slot;
@@ -287,7 +287,7 @@ export class TimeSlotRepository extends DatabaseRepository<TimeSlot, NewTimeSlot
           .onConflictDoNothing({
             target: [timeSlots.event, timeSlots.startTime]
           })
-          .returning();
+          .returning() as any[];
 
         created.push(...batchCreated);
         duplicates += (batch.length - batchCreated.length);

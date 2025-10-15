@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { CreateReviewBody } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import { 
   UnauthorizedError,
@@ -17,7 +18,9 @@ import type { CreateReviewRequest } from './repos/review.schema';
  * Creates a new review with NPS score and optional comment.
  * Enforces unique constraint: one review per (context, reviewer, reviewType).
  */
-export async function createReview(ctx: Context) {
+export async function createReview(
+  ctx: ValidatedContext<CreateReviewBody, never, never>
+): Promise<Response> {
   // Get authenticated session from Better-Auth
   const session = ctx.get('session');
   if (!session) {

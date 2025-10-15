@@ -160,6 +160,9 @@ model Invoice extends BaseEntity {
   @doc("Payment capture method")
   paymentCaptureMethod: CaptureMethod;
   
+  @doc("Date when invoice was issued")
+  issuedAt?: utcDateTime;
+  
   @doc("Payment due date")
   paymentDueAt?: utcDateTime;
   
@@ -206,7 +209,7 @@ model MerchantAccount extends BaseEntity {
   @doc("Whether account is active")
   active: boolean;
 
-  @doc("Metadata (includes stripeAccountId, onboardingComplete, etc.)")
+  @doc("Metadata (includes Stripe account ID, onboardingComplete, etc.)")
   metadata: Record<unknown>;
 }
 

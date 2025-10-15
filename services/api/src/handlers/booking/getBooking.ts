@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { GetBookingQuery, GetBookingParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import {
@@ -19,7 +20,9 @@ import { checkBookingOwnership } from './utils/ownership';
  * Supports expansion: provider, client, slot
  * Role-based access: clients see own, providers see theirs, admin sees all
  */
-export async function getBooking(ctx: Context) {
+export async function getBooking(
+  ctx: ValidatedContext<never, GetBookingQuery, GetBookingParams>
+): Promise<Response> {
   // Get authenticated user from Better-Auth (guaranteed by middleware)
   const user = ctx.get('user') as User;
   

@@ -1,4 +1,3 @@
-import { Context } from 'hono';
 import {
   ForbiddenError,
   NotFoundError,
@@ -6,6 +5,8 @@ import {
   BusinessLogicError,
   ConflictError
 } from '@/core/errors';
+import type { ValidatedContext } from '@/types/app';
+import type { PayInvoiceBody, PayInvoiceParams } from '@/generated/openapi/validators';
 import type { Session } from '@/types/auth';
 import { InvoiceRepository, MerchantAccountRepository } from './repos/billing.repo';
 import { PersonRepository } from '../person/repos/person.repo';
@@ -19,7 +20,9 @@ import { PersonRepository } from '../person/repos/person.repo';
  * 
  * Create payment intent for invoice (Hold & Decide model)
  */
-export async function payInvoice(ctx: Context) {
+export async function payInvoice(
+  ctx: ValidatedContext<PayInvoiceBody, never, PayInvoiceParams>
+): Promise<Response> {
   const database = ctx.get('database');
   const logger = ctx.get('logger');
   const billing = ctx.get('billing');
@@ -35,8 +38,8 @@ export async function payInvoice(ctx: Context) {
   const { paymentMethod, metadata } = body;
 
   // Extract return URLs from metadata if provided
-  const successUrl = metadata?.successUrl as string | undefined;
-  const cancelUrl = metadata?.cancelUrl as string | undefined;
+  const successUrl = metadata?.['successUrl'] as string | undefined;
+  const cancelUrl = metadata?.['cancelUrl'] as string | undefined;
 
   // Validate payment method ID format (Stripe format: pm_*)
   if (paymentMethod && !paymentMethod.startsWith('pm_')) {
@@ -85,7 +88,7 @@ export async function payInvoice(ctx: Context) {
   }
   
   // Check if payment already exists
-  if (invoice.paymentStatus && invoice.paymentStatus !== 'none') {
+  if (invoice.paymentStatus && invoice.paymentStatus !== 'pending') {
     throw new ConflictError('Payment already exists for this invoice');
   }
   
@@ -131,9 +134,14 @@ export async function payInvoice(ctx: Context) {
     });
     
     // Update invoice with payment details
+    // Store Stripe payment intent ID in metadata since it's not in the schema
+    const updatedMetadata = {
+      ...(invoice.metadata || {}),
+      stripePaymentIntentId: paymentIntent.paymentIntentId,
+    };
     await invoiceRepo.updateOneById(invoiceId, {
       paymentStatus: 'pending',
-      stripePaymentIntentId: paymentIntent.paymentIntentId,
+      metadata: updatedMetadata,
     });
     
     logger.info(
@@ -165,7 +173,7 @@ export async function payInvoice(ctx: Context) {
     }, 200);
     
   } catch (error) {
-    logger.error({ error, invoiceId, paymentMethodId }, 'Failed to create payment intent');
+    logger.error({ error, invoiceId, paymentMethod }, 'Failed to create payment intent');
     
     if (error instanceof ValidationError || error instanceof ConflictError || error instanceof BusinessLogicError) {
       throw error;

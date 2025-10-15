@@ -47,14 +47,14 @@ export class ChatMessageRepository extends DatabaseRepository<ChatMessage, NewCh
     }
     
     if (filters.timestampFrom) {
-      conditions.push(gte(chatMessages.timestamp, filters.timestampFrom));
+      conditions.push(gte(chatMessages.timestamp, new Date(filters.timestampFrom)));
     }
     
     if (filters.timestampTo) {
-      conditions.push(lte(chatMessages.timestamp, filters.timestampTo));
+      conditions.push(lte(chatMessages.timestamp, new Date(filters.timestampTo)));
     }
     
-    return conditions.length > 0 ? and(...conditions) : undefined;
+    return conditions.length > 0 ? and(...conditions as any) : undefined;
   }
 
   /**
@@ -281,7 +281,7 @@ export class ChatMessageRepository extends DatabaseRepository<ChatMessage, NewCh
     updatedParticipants[participantIndex] = {
       ...updatedParticipants[participantIndex],
       ...updates
-    };
+    } as any;
     
     return await this.updateVideoCallData(messageId, {
       participants: updatedParticipants

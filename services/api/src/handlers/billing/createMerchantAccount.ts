@@ -5,13 +5,14 @@
  * Requires provider to be the owner of the account or an admin.
  */
 
-import type { Context } from 'hono';
 import { 
   ForbiddenError, 
   NotFoundError, 
   ValidationError,
   ConflictError
 } from '@/core/errors';
+import type { ValidatedContext } from '@/types/app';
+import type { CreateMerchantAccountBody } from '@/generated/openapi/validators';
 import type { Session } from '@/types/auth';
 import { MerchantAccountRepository } from './repos/billing.repo';
 import { PersonRepository } from '../person/repos/person.repo';
@@ -24,7 +25,9 @@ import { PersonRepository } from '../person/repos/person.repo';
  *
  * Create a merchant account for a person to receive payments
  */
-export async function createMerchantAccount(ctx: Context) {
+export async function createMerchantAccount(
+  ctx: ValidatedContext<CreateMerchantAccountBody, never, never>
+): Promise<Response> {
   const database = ctx.get('database');
   const logger = ctx.get('logger');
   const billing = ctx.get('billing');
@@ -54,40 +57,31 @@ export async function createMerchantAccount(ctx: Context) {
     });
   }
 
-  // Check authorization: must be the person themselves or an admin
-  if (person.id !== user.id && !user.adminLevel) {
+  // Check authorization: must be the person themselves
+  if (person.id !== user.id) {
     throw new ForbiddenError('You can only create merchant accounts for yourself');
   }
 
   // Extract email from contactInfo JSONB field
   const email = person.contactInfo?.email;
   if (!email) {
-    throw new ValidationError('Person must have an email in contact info', {
-      field: 'person.contactInfo.email',
-      suggestions: ['Update person contact info with a valid email address']
-    });
+    throw new ValidationError('Person must have an email in contact info');
   }
 
   // Extract country from primaryAddress JSONB field
   const country = person.primaryAddress?.country;
   if (!country || country.length !== 2) {
-    throw new ValidationError('Person must have a valid 2-letter ISO country code in their primary address', {
-      field: 'person.primaryAddress.country',
-      value: country,
-      suggestions: ['Update person primary address with valid ISO 3166-1 alpha-2 country code (e.g., US, CA, GB)']
-    });
+    throw new ValidationError('Person must have a valid 2-letter ISO country code in their primary address');
   }
   
   // Check if person already has a merchant account
   const existingAccount = await merchantAccountRepo.findByPerson(personId);
   if (existingAccount) {
-    logger.warn({ personId, existingAccountId: existingAccount.stripeAccountId },
+    const metadata = existingAccount.metadata as any;
+    logger.warn({ personId, existingAccountId: metadata?.stripeAccountId },
       'Person already has a merchant account');
 
-    throw new ConflictError('Person already has a merchant account', {
-      existingAccountId: existingAccount.id,
-      suggestions: ['Use the existing merchant account', 'Delete existing account before creating new one']
-    });
+    throw new ConflictError('Person already has a merchant account');
   }
   
   // Prepare Stripe Connect account data

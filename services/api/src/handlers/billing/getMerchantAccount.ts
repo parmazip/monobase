@@ -5,7 +5,8 @@
  * Follows TypeSpec billing.tsp definition with TypeSpec-aligned schema.
  */
 
-import type { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { GetMerchantAccountParams } from '@/generated/openapi/validators';
 import { ForbiddenError, NotFoundError, ValidationError } from '@/core/errors';
 import type { Session } from '@/types/auth';
 import type { User } from '@/types/auth';
@@ -19,7 +20,9 @@ import { MerchantAccountRepository } from './repos/billing.repo';
  *
  * Get merchant account by ID with authorization checks
  */
-export async function getMerchantAccount(ctx: Context) {
+export async function getMerchantAccount(
+  ctx: ValidatedContext<never, never, GetMerchantAccountParams>
+): Promise<Response> {
   // Check if this is an internal expand request
   const isInternalExpand = ctx.get('isInternalExpand');
 
@@ -69,7 +72,13 @@ export async function getMerchantAccount(ctx: Context) {
   // Skip authorization for internal expand requests (already authorized at parent resource level)
   if (!isInternalExpand) {
     // Authorization check: user must be the person who owns the merchant account
-    const personId = typeof merchantAccount.person === 'string' ? merchantAccount.person : merchantAccount.person.id;
+    let personId: string | null = null;
+    if (typeof merchantAccount.person === 'string') {
+      personId = merchantAccount.person;
+    } else if (merchantAccount.person && typeof merchantAccount.person === 'object' && 'id' in merchantAccount.person) {
+      personId = (merchantAccount.person as { id: string }).id;
+    }
+    
     if (personId !== user?.id) {
       throw new ForbiddenError('You can only access your own merchant account');
     }

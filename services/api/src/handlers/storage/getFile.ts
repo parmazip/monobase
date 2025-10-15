@@ -1,4 +1,4 @@
-import { Context } from 'hono';
+import type { BaseContext } from '@/types/app';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import {
@@ -23,7 +23,9 @@ import { addMinutes } from 'date-fns';
  * Get file metadata and download URL if available.
  * Consolidates functionality from getFileMetadata and getFileDownload.
  */
-export async function getFile(ctx: Context) {
+export async function getFile(
+  ctx: BaseContext
+): Promise<Response> {
   // Get authenticated user from Better-Auth
   const user = ctx.get('user') as User;
 
@@ -79,7 +81,7 @@ export async function getFile(ctx: Context) {
         action: 'read',
         outcome: 'success',
         user: user.id,
-        userType: user.role || 'user',
+        userType: (user.role === 'user' || user.role === 'patient' ? 'client' : user.role || 'client') as 'client' | 'provider' | 'admin' | 'system',
         resourceType: 'file',
         resource: fileId,
         description: `File accessed: ${file.filename}`,

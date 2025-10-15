@@ -35,6 +35,7 @@ describe('Booking Search and Filtering E2E Tests', () => {
   beforeAll(async () => {
     testApp = await createTestApp({ storage: true });
     apiClient = createApiClient({ app: testApp.app });
+    await apiClient.signup();
 
     // Create 4 providers with different specialties
     const providers = [

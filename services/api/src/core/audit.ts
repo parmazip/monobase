@@ -42,8 +42,9 @@ export interface AuditService {
   /**
    * Mark expired logs for purging (maintenance task)
    * Called periodically to identify logs exceeding retention period
+   * TODO: Not yet implemented
    */
-  markForPurging(): Promise<number>;
+  markForPurging?(): Promise<number>;
   
   
   /**
@@ -83,7 +84,7 @@ class AuditServiceImpl implements AuditService {
   logEvent: AuditService['logEvent'];
   verifyIntegrity: AuditService['verifyIntegrity'];
   archiveOldLogs: AuditService['archiveOldLogs'];
-  markForPurging: AuditService['markForPurging'];
+  markForPurging?: AuditService['markForPurging'];
   getAuditStatistics: AuditService['getAuditStatistics'];
 }
 

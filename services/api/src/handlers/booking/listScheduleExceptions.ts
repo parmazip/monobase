@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { ListScheduleExceptionsQuery, ListScheduleExceptionsParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import { 
   ForbiddenError,
@@ -21,7 +22,9 @@ import { checkBookingEventOwnership } from './utils/authorization';
  * List event's schedule exceptions with filtering by date range and type.
  * Requires event ownership, admin, or support permissions.
  */
-export async function listScheduleExceptions(ctx: Context) {
+export async function listScheduleExceptions(
+  ctx: ValidatedContext<never, ListScheduleExceptionsQuery, ListScheduleExceptionsParams>
+): Promise<Response> {
   // Get authenticated user (guaranteed by middleware)
   const user = ctx.get('user') as User;
   
@@ -75,8 +78,8 @@ export async function listScheduleExceptions(ctx: Context) {
   // Convert date range filters
   if (query.dateStart && query.dateEnd) {
     filters.dateRange = {
-      start: query.dateStart,
-      end: query.dateEnd
+      start: new Date(query.dateStart),
+      end: new Date(query.dateEnd)
     };
   }
   

@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { CreateBookingEventBody } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import {
@@ -18,7 +19,9 @@ import { regenerateEventSlots } from './jobs/slotGenerator';
  * OperationId: createBookingEvent
  * Security: bearerAuth with role ["owner"]
  */
-export async function createBookingEvent(ctx: Context) {
+export async function createBookingEvent(
+  ctx: ValidatedContext<CreateBookingEventBody, never, never>
+): Promise<Response> {
   // Get authenticated user (guaranteed by auth middleware)
   const user = ctx.get('user') as User;
   
@@ -35,7 +38,7 @@ export async function createBookingEvent(ctx: Context) {
   // Validate request
   const errors = repo.validateEventConfig(body);
   if (errors.length > 0) {
-    throw new ValidationError('Invalid booking event configuration', { errors });
+    throw new ValidationError('Invalid booking event configuration');
   }
 
   // Create booking event with smart defaults

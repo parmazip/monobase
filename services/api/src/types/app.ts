@@ -36,17 +36,58 @@ export type Variables = {
   ws: WebSocketService;
   billing: BillingService;
   config: Config;
+  app?: any; // Hono app instance
 
   // Auth context
   user?: User;
   session?: Session;
+
+  // Internal service authentication
+  internalServiceToken?: string;
+  isInternalExpand?: boolean;
 };
 
 /**
- * Simple context type for handlers - uses 'any' to avoid typing complexity
- * In a real app you'd want stronger typing, but for generated handlers this is pragmatic
+ * Base context type for all handlers
+ * Includes Variables with all injected dependencies
  */
-export type AppContext = any;
+export type BaseContext = Context<{ Variables: Variables }>;
+
+/**
+ * Validated context type for handlers with typed request validation
+ * Use this type for handlers that receive validated request data from zValidator middleware
+ * 
+ * @template TJson - Type for validated JSON request body (from zValidator('json', ...))
+ * @template TQuery - Type for validated query parameters (from zValidator('query', ...))
+ * @template TParam - Type for validated path parameters (from zValidator('param', ...))
+ * 
+ * @example
+ * ```typescript
+ * export async function createReview(
+ *   ctx: ValidatedContext<CreateReviewRequest>
+ * ): Promise<Response> {
+ *   const body = ctx.req.valid('json'); // Typed as CreateReviewRequest
+ *   // ...
+ * }
+ * ```
+ */
+export type ValidatedContext<
+  TJson = never,
+  TQuery = never,
+  TParam = never
+> = BaseContext & {
+  req: BaseContext['req'] & {
+    valid(target: 'json'): TJson;
+    valid(target: 'query'): TQuery;
+    valid(target: 'param'): TParam;
+  };
+};
+
+/**
+ * Legacy type alias for backward compatibility
+ * @deprecated Use BaseContext or ValidatedContext instead for proper type safety
+ */
+export type AppContext = BaseContext;
 
 /**
  * Unified App type that includes Hono with Variables and all attached dependencies

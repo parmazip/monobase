@@ -5,13 +5,14 @@
  * Follows TypeSpec billing.tsp definition with TypeSpec-aligned schema.
  */
 
-import type { Context } from 'hono';
 import {
   ForbiddenError,
   NotFoundError,
   ValidationError,
   ConflictError
 } from '@/core/errors';
+import type { ValidatedContext } from '@/types/app';
+import type { CreateInvoiceBody } from '@/generated/openapi/validators';
 import type { Session } from '@/types/auth';
 import { InvoiceRepository } from './repos/billing.repo';
 import { PersonRepository } from '../person/repos/person.repo';
@@ -26,7 +27,9 @@ import type { CreateInvoiceRequest } from './repos/billing.schema';
  *
  * Create a new invoice for billing purposes (TypeSpec-aligned)
  */
-export async function createInvoice(ctx: Context) {
+export async function createInvoice(
+  ctx: ValidatedContext<CreateInvoiceBody, never, never>
+): Promise<Response> {
   const database = ctx.get('database');
   const logger = ctx.get('logger');
 
@@ -93,11 +96,9 @@ export async function createInvoice(ctx: Context) {
   // Check for duplicate context if provided
   if (context) {
     const existingInvoice = await invoiceRepo.findMany({ context });
-    if (existingInvoice.length > 0) {
-      throw new ConflictError('Invoice with this context already exists', {
-        resource: context,
-        existingResource: existingInvoice[0].id
-      });
+    const firstInvoice = existingInvoice[0];
+    if (firstInvoice) {
+      throw new ConflictError('Invoice with this context already exists');
     }
   }
 

@@ -69,7 +69,7 @@ export class EmailQueueRepository extends DatabaseRepository<EmailQueueItem, New
     }
     
     if (filters.scheduledOnly) {
-      conditions.push(isNull(emailQueue.scheduledAt) === false);
+      conditions.push(sql`${emailQueue.scheduledAt} IS NOT NULL`);
     }
     
     if (filters.dateFrom) {
@@ -80,7 +80,7 @@ export class EmailQueueRepository extends DatabaseRepository<EmailQueueItem, New
       conditions.push(lte(emailQueue.createdAt, filters.dateTo));
     }
     
-    return conditions.length > 0 ? and(...conditions) : undefined;
+    return conditions.length > 0 ? and(...conditions as any) : undefined;
   }
   
   /**
@@ -185,7 +185,7 @@ export class EmailQueueRepository extends DatabaseRepository<EmailQueueItem, New
    */
   async markAsSent(
     id: string, 
-    provider: 'smtp' | 'postmark', 
+    provider: 'smtp' | 'postmark' | 'onesignal', 
     providerMessageId: string
   ): Promise<EmailQueueItem> {
     this.logger?.debug({ id, provider, providerMessageId }, 'Marking email as sent');
@@ -230,7 +230,7 @@ export class EmailQueueRepository extends DatabaseRepository<EmailQueueItem, New
       2 * 60 * 60 * 1000 // 2 hours
     ];
     
-    const delay = delays[Math.min(attempts, delays.length - 1)];
+    const delay = delays[Math.min(attempts, delays.length - 1)] || 0;
     return new Date(Date.now() + delay);
   }
   
@@ -340,9 +340,9 @@ export class EmailQueueRepository extends DatabaseRepository<EmailQueueItem, New
       .where(
         and(
           eq(emailQueue.status, 'pending'),
-          isNull(emailQueue.scheduledAt) === false,
+          sql`${emailQueue.scheduledAt} IS NOT NULL`,
           gte(emailQueue.scheduledAt, new Date())
-        )
+        ) as any
       );
     
     stats.scheduled = Number(scheduledCount?.count || 0);
@@ -366,8 +366,8 @@ export class EmailQueueRepository extends DatabaseRepository<EmailQueueItem, New
       .where(
         and(
           eq(emailQueue.status, 'sent'),
-          isNull(emailQueue.sentAt) === false
-        )
+          sql`${emailQueue.sentAt} IS NOT NULL`
+        ) as any
       )
       .limit(100); // Sample last 100 sent emails
     
@@ -407,4 +407,4 @@ export class EmailQueueRepository extends DatabaseRepository<EmailQueueItem, New
   }
 }
 
-import { count, sql } from 'drizzle-orm';
+import { count } from 'drizzle-orm';

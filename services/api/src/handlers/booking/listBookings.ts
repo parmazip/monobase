@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { ListBookingsQuery } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import { 
@@ -21,7 +22,9 @@ import { parsePagination, parseFilters, buildPaginationMeta } from '@/utils/quer
  * - Providers see only their bookings
  * - Admins see all bookings (with optional filtering)
  */
-export async function listBookings(ctx: Context) {
+export async function listBookings(
+  ctx: ValidatedContext<never, ListBookingsQuery, never>
+): Promise<Response> {
   // Get authenticated user from Better-Auth (guaranteed by middleware)
   const user = ctx.get('user') as User;
   
@@ -55,8 +58,8 @@ export async function listBookings(ctx: Context) {
   // Add date range if provided
   if (query.startDate && query.endDate) {
     filters.dateRange = {
-      start: query.startDate,
-      end: query.endDate
+      start: new Date(query.startDate),
+      end: new Date(query.endDate)
     };
   }
 

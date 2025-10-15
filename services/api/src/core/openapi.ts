@@ -247,7 +247,7 @@ function mergeOpenAPISpecs(specs: any[], config?: any): any {
   const servers = [];
   
   // Always add local development server at the beginning
-  const port = config?.server?.port || process.env.PORT || '7213';
+  const port = config?.server?.port || process.env['PORT'] || '7213';
   const host = config?.server?.host || 'localhost';
   const localUrl = `http://${host}:${port}`;
   servers.push({
@@ -324,7 +324,7 @@ export function registerRoutes(app: any, specs: any[], config?: any): void {
   );
 
   // Serve merged OpenAPI spec
-  app.get('/docs/openapi.json', c => c.json(mergedSpec));
+  app.get('/docs/openapi.json', (c: any) => c.json(mergedSpec));
 
   if (logger) {
     logger.debug('Registered OpenAPI documentation routes at /docs');

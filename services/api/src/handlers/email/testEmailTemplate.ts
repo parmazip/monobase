@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { TestEmailTemplateBody, TestEmailTemplateParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User, Session } from '@/types/auth';
 import {
@@ -16,7 +17,9 @@ import type { EmailQueueItem } from './repos/email.schema';
  * Path: POST /email/templates/{template}/test
  * OperationId: testEmailTemplate
  */
-export async function testEmailTemplate(ctx: Context) {
+export async function testEmailTemplate(
+  ctx: ValidatedContext<TestEmailTemplateBody, never, TestEmailTemplateParams>
+): Promise<Response> {
   // Get authenticated session from Better-Auth
   const session = ctx.get('session') as Session;
 
@@ -72,8 +75,8 @@ export async function testEmailTemplate(ctx: Context) {
   const testVariables = body.variables || {};
 
   // Include recipientName in variables if provided for personalization
-  if (body.recipientName) {
-    testVariables.recipientName = body.recipientName;
+  if (body['recipientName']) {
+    testVariables['recipientName'] = body['recipientName'];
   }
   
   // Queue the test email for processing

@@ -37,7 +37,7 @@ type MessageType =
 interface SignalMessage {
   type: 'video.offer' | 'video.answer' | 'video.ice-candidate';
   from: string;
-  data: RTCSessionDescriptionInit | RTCIceCandidateInit;
+  data: any; // RTCSessionDescriptionInit | RTCIceCandidateInit from WebRTC API
 }
 
 export const config: WebSocketHandler = {
@@ -102,6 +102,7 @@ export const config: WebSocketHandler = {
   async onMessage(ctx: Context, ws: WSContext, message: any) {
     const roomId = ctx.req.param('room');
     const user = ctx.get('user') as User;
+    const db = ctx.get('database') as DatabaseInstance;
     const wsService = ctx.get('ws');
     const logger = ctx.get('logger');
 

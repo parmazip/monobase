@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { GetPersonParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import { 
@@ -16,7 +17,9 @@ import { PersonRepository } from './repos/person.repo';
  * OperationId: getPerson
  * Security: bearerAuth with roles ["owner", "admin"]
  */
-export async function getPerson(ctx: Context) {
+export async function getPerson(
+  ctx: ValidatedContext<never, never, GetPersonParams>
+): Promise<Response> {
   // Check if this is an internal expand request
   const isInternalExpand = ctx.get('isInternalExpand');
 
@@ -72,10 +75,17 @@ export async function getPerson(ctx: Context) {
   }, 'Person retrieved');
   
   // Ensure dateOfBirth is serialized as ISO string for JSON response
-  const response = { ...person };
-  if (response.dateOfBirth instanceof Date) {
-    response.dateOfBirth = response.dateOfBirth.toISOString() as any;
-  }
+  // Note: With strict typing, dateOfBirth is typed as string | null from DB,
+  // but at runtime it might be a Date object. We use type assertion to handle this.
+  const dateOfBirth = person.dateOfBirth;
+  const serializedDateOfBirth = dateOfBirth && (dateOfBirth as unknown) instanceof Date
+    ? (dateOfBirth as unknown as Date).toISOString()
+    : dateOfBirth;
+  
+  const response = { 
+    ...person,
+    dateOfBirth: serializedDateOfBirth
+  };
   
   return ctx.json(response, 200);
 }

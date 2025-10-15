@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { DeleteScheduleExceptionParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import {
@@ -16,7 +17,9 @@ import { ScheduleExceptionRepository } from './repos/scheduleException.repo';
  * OperationId: deleteScheduleException
  * Security: bearerAuth with role ["owner"]
  */
-export async function deleteScheduleException(ctx: Context) {
+export async function deleteScheduleException(
+  ctx: ValidatedContext<never, never, DeleteScheduleExceptionParams>
+): Promise<Response> {
   // Get authenticated user (guaranteed by auth middleware)
   const user = ctx.get('user') as User;
   

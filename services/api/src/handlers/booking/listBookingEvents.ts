@@ -3,7 +3,8 @@
  * Lists all available booking events for discovery
  */
 
-import { Context } from 'hono';
+import type { BaseContext } from '@/types/app';
+import type { Context } from 'hono';
 import type { DatabaseInstance } from '@/core/database';
 import { BookingEventRepository } from './repos/bookingEvent.repo';
 import { parsePagination } from '@/utils/query';
@@ -13,7 +14,7 @@ export async function listBookingEvents(c: Context) {
   const query = c.req.query();
   const { limit, offset } = parsePagination(query);
 
-  const repo = new BookingEventRepository(db, c.var.logger);
+  const repo = new BookingEventRepository(db, c.var['logger']);
 
   try {
     // Get query parameters for filtering
@@ -34,14 +35,14 @@ export async function listBookingEvents(c: Context) {
       // If there's one value with commas, it's CSV → OR filtering
       if (tagsParams.length > 1) {
         // Repeated parameters: ?tags=a&tags=b → AND filtering
-        tagsAnd = tagsParams.filter(t => t.trim().length > 0);
+        tagsAnd = tagsParams.filter((t: string) => t.trim().length > 0);
       } else {
         // Single parameter - check if it's CSV
         const singleParam = tagsParams[0];
-        if (singleParam.includes(',')) {
+        if (singleParam && singleParam.includes(',')) {
           // CSV format: ?tags=a,b,c → OR filtering
-          tagsOr = singleParam.split(',').map(t => t.trim()).filter(t => t.length > 0);
-        } else {
+          tagsOr = singleParam.split(',').map((t: string) => t.trim()).filter((t: string) => t.length > 0);
+        } else if (singleParam) {
           // Single tag → OR filtering with one item
           tagsOr = [singleParam.trim()];
         }
@@ -63,7 +64,7 @@ export async function listBookingEvents(c: Context) {
 
     return c.json(result);
   } catch (error) {
-    c.var.logger?.error({ error }, 'Failed to list booking events');
+    c.var['logger']?.error({ error }, 'Failed to list booking events');
     return c.json({ error: 'Failed to list booking events' }, 500);
   }
 }

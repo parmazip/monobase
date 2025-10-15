@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { CancelBookingBody, CancelBookingParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { NotificationService } from '@/core/notifs';
 import type { User } from '@/types/auth';
@@ -21,7 +22,9 @@ import { getBookingUserType } from './utils/ownership';
  * Mutual cancellation - both client and provider can cancel confirmed bookings
  * Reason required, timing validation, slot release
  */
-export async function cancelBooking(ctx: Context) {
+export async function cancelBooking(
+  ctx: ValidatedContext<CancelBookingBody, never, CancelBookingParams>
+): Promise<Response> {
   // Get authenticated user from Better-Auth (guaranteed by middleware)
   const user = ctx.get('user') as User;
   
@@ -33,7 +36,7 @@ export async function cancelBooking(ctx: Context) {
   const db = ctx.get('database') as DatabaseInstance;
   const logger = ctx.get('logger');
   const auth = ctx.get('auth');
-  const notificationService = ctx.get('notificationService') as NotificationService;
+  const notificationService = ctx.get('notifs') as NotificationService;
   
   // Instantiate repository
   const repo = new BookingRepository(db, logger);
@@ -97,7 +100,7 @@ export async function cancelBooking(ctx: Context) {
 
     // Notification for the person who cancelled (confirmation)
     // (automatically sends WebSocket notification via NotificationService)
-    await notificationService.createNotificationForModule({
+    await notificationService.createNotification({
       recipient: user.id,
       type: 'booking.cancelled',
       channel: 'in-app',
@@ -110,7 +113,7 @@ export async function cancelBooking(ctx: Context) {
 
     // Notification for the other party (cancellation notice)
     // (automatically sends WebSocket notification via NotificationService)
-    await notificationService.createNotificationForModule({
+    await notificationService.createNotification({
       recipient: otherPartyPersonId,
       type: 'booking.cancelled',
       channel: 'in-app',

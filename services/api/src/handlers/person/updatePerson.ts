@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { UpdatePersonBody } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import { 
@@ -18,7 +19,9 @@ import { validateDateOfBirth } from '@/utils/date';
  * OperationId: updatePerson
  * Security: bearerAuth with role ["owner"]
  */
-export async function updatePerson(ctx: Context) {
+export async function updatePerson(
+  ctx: ValidatedContext<UpdatePersonBody, never, never>
+): Promise<Response> {
   // Get authenticated user (guaranteed by auth middleware)
   const user = ctx.get('user') as User;
   
@@ -87,7 +90,7 @@ export async function updatePerson(ctx: Context) {
         action: 'update',
         outcome: 'success',
         user: user.id,
-        userType: 'client',
+        userType: (user.role === 'user' || user.role === 'patient' ? 'client' : user.role || 'client') as 'client' | 'provider' | 'admin' | 'system',
         resourceType: 'person',
         resource: personId,
         description: 'Person profile updated',

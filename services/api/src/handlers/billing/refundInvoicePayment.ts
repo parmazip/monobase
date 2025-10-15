@@ -1,4 +1,3 @@
-import { Context } from 'hono';
 import {
   ForbiddenError,
   NotFoundError,
@@ -6,6 +5,8 @@ import {
   BusinessLogicError,
   ConflictError
 } from '@/core/errors';
+import type { ValidatedContext } from '@/types/app';
+import type { RefundInvoicePaymentBody, RefundInvoicePaymentParams } from '@/generated/openapi/validators';
 import type { Session } from '@/types/auth';
 import { InvoiceRepository, MerchantAccountRepository } from './repos/billing.repo';
 import { PersonRepository } from '../person/repos/person.repo';
@@ -18,7 +19,9 @@ import { PersonRepository } from '../person/repos/person.repo';
  * 
  * Create a refund for a captured invoice payment
  */
-export async function refundInvoicePayment(ctx: Context) {
+export async function refundInvoicePayment(
+  ctx: ValidatedContext<RefundInvoicePaymentBody, never, RefundInvoicePaymentParams>
+): Promise<Response> {
   const database = ctx.get('database');
   const logger = ctx.get('logger');
   const billing = ctx.get('billing');
@@ -32,7 +35,7 @@ export async function refundInvoicePayment(ctx: Context) {
 
   const invoiceId = params.invoice;
   const { amount, reason, metadata: requestMetadata } = body;
-  const notes = requestMetadata?.notes;
+  const notes = (requestMetadata?.['notes'] as string | undefined) || '';
 
   logger.info({ invoiceId, amount, reason, notes }, 'Creating refund for invoice');
   
@@ -115,7 +118,8 @@ export async function refundInvoicePayment(ctx: Context) {
   }
   
   const metadata = merchantAccount.metadata as any;
-  if (!metadata?.stripeAccountId) {
+  const stripeAccountId = metadata?.stripeAccountId as string;
+  if (!stripeAccountId) {
     throw new BusinessLogicError(
       'Provider Stripe account not found',
       'STRIPE_ACCOUNT_MISSING'
@@ -128,7 +132,7 @@ export async function refundInvoicePayment(ctx: Context) {
       paymentIntentId: stripePaymentIntentId,
       amount: refundAmountCents,
       reason: reason as 'requested_by_customer' | 'duplicate' | 'fraudulent' | undefined,
-      connectedAccountId: metadata.stripeAccountId,
+      connectedAccountId: stripeAccountId,
       metadata: {
         invoiceId,
         refundedBy: user.id,
@@ -141,8 +145,8 @@ export async function refundInvoicePayment(ctx: Context) {
     const isFullRefund = refundAmountCents === maxRefundAmountCents;
 
     // Update invoice with refund details in metadata
-    const updatedMetadata = {
-      ...invoiceMetadata,
+    const updatedMetadata: Record<string, any> = {
+      ...(invoiceMetadata || {}),
       stripeRefundId: refundResult.refundId,
       refundAmount: refundAmountDecimal,
       refundReason: reason || 'requested_by_customer',

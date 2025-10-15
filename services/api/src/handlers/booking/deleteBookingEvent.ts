@@ -1,4 +1,4 @@
-import { Context } from 'hono';
+import type { BaseContext } from '@/types/app';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import {
@@ -16,12 +16,18 @@ import { BookingEventRepository } from './repos/bookingEvent.repo';
  * OperationId: deleteBookingEvent
  * Security: bearerAuth with role ["owner"]
  */
-export async function deleteBookingEvent(ctx: Context) {
+export async function deleteBookingEvent(
+  ctx: BaseContext
+): Promise<Response> {
   // Get authenticated user (guaranteed by auth middleware)
   const user = ctx.get('user') as User;
 
   // Get validated parameters
   const { event: eventId } = ctx.req.param();
+  
+  if (!eventId) {
+    throw new ValidationError('Event ID is required');
+  }
 
   // Get dependencies from context
   const db = ctx.get('database') as DatabaseInstance;

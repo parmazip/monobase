@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { CancelEmailQueueItemBody, CancelEmailQueueItemParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User, Session } from '@/types/auth';
 import {
@@ -13,7 +14,9 @@ import { EmailQueueRepository } from './repos/queue.repo';
  * Path: POST /email/queue/{queue}/cancel
  * OperationId: cancelEmailQueueItem
  */
-export async function cancelEmailQueueItem(ctx: Context) {
+export async function cancelEmailQueueItem(
+  ctx: ValidatedContext<CancelEmailQueueItemBody, never, CancelEmailQueueItemParams>
+): Promise<Response> {
   // Get authenticated session from Better-Auth
   const session = ctx.get('session') as Session;
 

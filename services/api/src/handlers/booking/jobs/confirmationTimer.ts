@@ -39,7 +39,7 @@ export async function confirmationTimerJob(context: ExtendedJobContext): Promise
   const { db, logger, jobId } = context;
   const config = { ...DEFAULT_CONFIG };
   
-  logger.debug(`Starting confirmation timer job`, { jobId, config });
+  logger.debug({ jobId, config }, `Starting confirmation timer job`);
   
   const bookingRepo = new BookingRepository(db, logger);
   const timeSlotRepo = new TimeSlotRepository(db, logger);
@@ -48,10 +48,10 @@ export async function confirmationTimerJob(context: ExtendedJobContext): Promise
     // Calculate the cutoff time for auto-rejection
     const cutoffTime = subMinutes(new Date(), config.confirmationWindowMinutes);
     
-    logger.debug('Checking for expired pending bookings', {
+    logger.debug({
       cutoffTime: cutoffTime.toISOString(),
       windowMinutes: config.confirmationWindowMinutes
-    });
+    }, 'Checking for expired pending bookings');
     
     // Find all pending bookings that have exceeded the confirmation window
     const expiredBookings = await db
@@ -96,13 +96,13 @@ export async function confirmationTimerJob(context: ExtendedJobContext): Promise
             })
             .where(
               and(
-                eq(bookings.id, booking.id),
+                eq(bookings.id, booking['id']),
                 eq(bookings.status, 'pending') // Double-check status hasn't changed
               )
             );
           
           // Release the associated time slot
-          if (booking.slot) {
+          if (booking['slot']) {
             await tx
               .update(timeSlots)
               .set({
@@ -110,19 +110,19 @@ export async function confirmationTimerJob(context: ExtendedJobContext): Promise
                 booking: null,
                 updatedAt: new Date()
               })
-              .where(eq(timeSlots.id, booking.slot));
+              .where(eq(timeSlots.id, booking['slot']));
           }
         });
         
         results.rejected++;
         
-        logger.info('Auto-rejected booking', {
-          bookingId: booking.id,
-          clientId: booking.client,
-          providerId: booking.provider,
-          bookingTime: booking.bookedAt,
-          minutesExpired: differenceInMinutes(new Date(), booking.bookedAt)
-        });
+        logger.info({
+          bookingId: booking['id'],
+          clientId: booking['client'],
+          providerId: booking['provider'],
+          bookingTime: booking['bookedAt'],
+          minutesExpired: differenceInMinutes(new Date(), booking['bookedAt'])
+        }, 'Auto-rejected booking');
         
         // Queue notification for client and provider
         if (config.includeNotifications) {
@@ -131,37 +131,37 @@ export async function confirmationTimerJob(context: ExtendedJobContext): Promise
         
       } catch (error) {
         results.failed++;
-        const errorMsg = `Failed to auto-reject booking ${booking.id}: ${error}`;
+        const errorMsg = `Failed to auto-reject booking ${booking['id']}: ${error}`;
         results.errors.push(errorMsg);
         
-        logger.error('Failed to auto-reject booking', {
-          bookingId: booking.id,
+        logger.error({
+          bookingId: booking['id'],
           error: error instanceof Error ? error.message : String(error)
-        });
+        }, 'Failed to auto-reject booking');
       }
     }
     
     // Log final results
-    logger.info('Confirmation timer job completed', {
+    logger.info({
       jobId,
       totalProcessed: expiredBookings.length,
       rejected: results.rejected,
       failed: results.failed,
       successRate: `${(results.rejected / expiredBookings.length * 100).toFixed(2)}%`
-    });
+    }, 'Confirmation timer job completed');
     
     if (results.failed > 0) {
-      logger.warn('Some bookings failed to auto-reject', {
+      logger.warn({
         failedCount: results.failed,
         errors: results.errors
-      });
+      }, 'Some bookings failed to auto-reject');
     }
     
   } catch (error) {
-    logger.error('Confirmation timer job failed', {
+    logger.error({
       jobId,
       error: error instanceof Error ? error.message : String(error)
-    });
+    }, 'Confirmation timer job failed');
     throw error;
   }
 }
@@ -178,7 +178,7 @@ async function queueAutoRejectionNotifications(
   try {
     // Client notification - booking was auto-rejected
     await notificationService.createNotification({
-      recipientId: booking.client,
+      recipient: booking.client,
       type: 'booking_auto_rejected',
       title: 'Booking Request Expired',
       message: 'Your booking request has expired as the provider did not confirm within 15 minutes.',
@@ -191,11 +191,11 @@ async function queueAutoRejectionNotifications(
       },
       channels: ['in-app', 'email', 'sms'],
       priority: 'high'
-    });
+    } as any);
     
     // Provider notification - booking expired
     await notificationService.createNotification({
-      recipientId: booking.provider,
+      recipient: booking.provider,
       type: 'booking_expired',
       title: 'Booking Request Expired',
       message: 'A booking request has expired due to no confirmation within the time limit.',
@@ -208,19 +208,19 @@ async function queueAutoRejectionNotifications(
       },
       channels: ['in-app', 'email'],
       priority: 'normal'
-    });
+    } as any);
 
-    logger.info('Auto-rejection notifications sent successfully', {
+    logger.info({
       bookingId: booking.id,
       clientId: booking.client,
       providerId: booking.provider
-    });
+    }, 'Auto-rejection notifications sent successfully');
     
   } catch (error) {
-    logger.error('Failed to queue auto-rejection notifications', {
+    logger.error({
       bookingId: booking.id,
       error: error instanceof Error ? error.message : String(error)
-    });
+    }, 'Failed to queue auto-rejection notifications');
     // Don't throw - notification failure shouldn't fail the job
   }
 }

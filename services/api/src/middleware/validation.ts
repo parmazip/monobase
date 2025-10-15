@@ -10,7 +10,7 @@ import { ZodError } from 'zod';
  * Custom error handler for zValidator that formats validation errors
  * Returns TypeSpec-compliant ValidationError format
  */
-export function validationErrorHandler(result: any, c: Context) {
+export function validationErrorHandler(result: any, c: Context): Response | undefined {
   if (!result.success) {
     // result.error is the ZodError, but we need to access its issues
     const zodError = new ZodError(result.error.issues || result.error.errors || []);
@@ -33,7 +33,7 @@ export function validationErrorHandler(result: any, c: Context) {
           value: 'received' in issue ? (issue as any).received : undefined,
           code: issue.code,
           message: issue.message,
-          context: issue.fatal !== undefined ? { fatal: issue.fatal } : undefined,
+          context: 'fatal' in issue && issue.fatal !== undefined ? { fatal: issue.fatal } : undefined,
         });
       } else {
         globalErrors.push(issue.message);
@@ -66,4 +66,6 @@ export function validationErrorHandler(result: any, c: Context) {
       globalErrors: globalErrors.length > 0 ? globalErrors : undefined,
     }, 400);
   }
+  
+  return undefined;
 }

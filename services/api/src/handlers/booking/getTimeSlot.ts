@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { GetTimeSlotQuery, GetTimeSlotParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import { NotFoundError } from '@/core/errors';
 import { TimeSlotRepository } from './repos/timeSlot.repo';
@@ -9,7 +10,9 @@ import { TimeSlotRepository } from './repos/timeSlot.repo';
  * Path: GET /booking/slots/{slotId}
  * OperationId: getTimeSlot
  */
-export async function getTimeSlot(ctx: Context) {
+export async function getTimeSlot(
+  ctx: ValidatedContext<never, GetTimeSlotQuery, GetTimeSlotParams>
+): Promise<Response> {
   // Public endpoint - no auth required
 
   // Extract validated parameters

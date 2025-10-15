@@ -338,7 +338,7 @@ export class BillingService {
       const paymentIntent = await stripe.paymentIntents.capture(
         paymentIntentId,
         { metadata },
-        { stripeAccount: connectedAccountId, expand: ['latest_charge'] }
+        { stripeAccount: connectedAccountId } as any
       );
 
       const chargeId = typeof paymentIntent.latest_charge === 'string' 
@@ -465,17 +465,32 @@ export class BillingService {
     try {
       const stripe = this.ensureStripeInitialized();
 
-      if (!this.config.webhookSecret) {
+      if (!this.config) {
+        throw new Error('Stripe configuration not initialized');
+      }
+
+      const webhookSecret = this.config.webhookSecret;
+      if (!webhookSecret) {
         throw new Error(
           'Stripe webhook secret is required for webhook verification. Please set STRIPE_WEBHOOK_SECRET environment variable.'
         );
       }
 
-      return await stripe.webhooks.constructEventAsync(
+      if (!stripe.webhooks) {
+        throw new Error('Stripe webhooks API not available');
+      }
+
+      const event = await stripe.webhooks!.constructEventAsync(
         payload,
         signature,
-        this.config.webhookSecret
+        webhookSecret
       );
+      
+      if (!event) {
+        throw new Error('Failed to construct Stripe webhook event');
+      }
+      
+      return event;
     } catch (error) {
       this.logger.error({ error }, 'Invalid webhook signature');
       throw new Error(`Invalid webhook signature: ${error instanceof Error ? error.message : 'Unknown error'}`);

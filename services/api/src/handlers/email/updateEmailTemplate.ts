@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { UpdateEmailTemplateBody, UpdateEmailTemplateParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User, Session } from '@/types/auth';
 import { 
@@ -15,7 +16,9 @@ import type { TemplateVariable } from './repos/email.schema';
  * Path: PATCH /email/templates/{template}
  * OperationId: updateEmailTemplate
  */
-export async function updateEmailTemplate(ctx: Context) {
+export async function updateEmailTemplate(
+  ctx: ValidatedContext<UpdateEmailTemplateBody, never, UpdateEmailTemplateParams>
+): Promise<Response> {
   // Get authenticated session from Better-Auth
   const session = ctx.get('session') as Session;
   const user = ctx.get('user') as User;

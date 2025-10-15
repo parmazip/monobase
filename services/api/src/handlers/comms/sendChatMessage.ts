@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { SendChatMessageBody, SendChatMessageParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import { 
@@ -25,7 +26,9 @@ import type {
  * 
  * Send message (text or start video call) in chat room
  */
-export async function sendChatMessage(ctx: Context) {
+export async function sendChatMessage(
+  ctx: ValidatedContext<SendChatMessageBody, never, SendChatMessageParams>
+): Promise<Response> {
   // Get authenticated user from Better-Auth
   const user = ctx.get('user') as User;
 
@@ -122,10 +125,9 @@ export async function sendChatMessage(ctx: Context) {
     
     // Ensure the initiator is included in participants
     // User type is determined by room context (participant role)
-    const userType = 'user'; // Simplified - actual type determined by room context
     const initiatorParticipant: CallParticipant = {
       user: user.id,
-      userType: userType,
+      userType: 'provider', // Monobase uses person-centric model
       displayName: user.name || 'User',
       audioEnabled: true,
       videoEnabled: true

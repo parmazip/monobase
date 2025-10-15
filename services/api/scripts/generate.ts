@@ -331,13 +331,16 @@ async function generateValidators(spec: any) {
     '  let sum = 0;',
     '  for (let i = 0; i < 9; i++) {',
     '    let digit = digits[i];',
+    '    if (digit === undefined) return false; // Type guard for undefined',
     '    if (i % 2 === 0) {',
     '      digit *= 2;',
     '      if (digit > 9) digit -= 9;',
     '    }',
     '    sum += digit;',
     '  }',
-    '  return (10 - (sum % 10)) % 10 === digits[9];',
+    '  const lastDigit = digits[9];',
+    '  if (lastDigit === undefined) return false; // Type guard for undefined',
+    '  return (10 - (sum % 10)) % 10 === lastDigit;',
     '};',
     '',
     'const containsPHI = (value: string): boolean => {',
@@ -413,6 +416,7 @@ async function generateValidators(spec: any) {
               validators.push(`  ${param.name}: ${zodType},`);
             }
             validators.push('});');
+            validators.push(`export type ${paramsName} = z.infer<typeof ${paramsName}>;`);
             validators.push('');
           }
         }
@@ -429,6 +433,7 @@ async function generateValidators(spec: any) {
               validators.push(`  ${param.name}: ${zodType},`);
             }
             validators.push('});');
+            validators.push(`export type ${queryName} = z.infer<typeof ${queryName}>;`);
             validators.push('');
           }
         }
@@ -440,6 +445,7 @@ async function generateValidators(spec: any) {
             generatedNames.add(bodyName);
             const bodyValidator = generateRequestBodyValidator(operation.requestBody);
             validators.push(`export const ${bodyName} = ${bodyValidator};`);
+            validators.push(`export type ${bodyName} = z.infer<typeof ${bodyName}>;`);
             validators.push('');
           }
         }
@@ -471,15 +477,16 @@ async function generateRoutes(paths: Record<string, PathItem>, spec: any) {
   console.log('🔧 Generating routes...');
   
   const routes: string[] = [
-    "import { Hono } from 'hono';",
+    "import type { Hono, Handler } from 'hono';",
     "import { zValidator } from '@hono/zod-validator';",
+    "import type { Variables } from '@/types/app';",
     "import * as validators from './validators';",
     "import { registry } from './registry';",
     "import { authMiddleware } from '@/middleware/auth';",
     "import { validationErrorHandler } from '@/middleware/validation';",
     "import { createExpandMiddleware } from '@/middleware/expand';",
     '',
-    'export function registerRoutes(app: Hono) {',
+    'export function registerRoutes(app: Hono<{ Variables: Variables }>) {',
   ];
 
   for (const [path, methods] of Object.entries(paths)) {
@@ -542,7 +549,7 @@ async function generateRoutes(paths: Record<string, PathItem>, spec: any) {
       }
 
       // Handler
-      routes.push(`    registry.${operation.operationId}`);
+      routes.push(`    registry.${operation.operationId} as unknown as Handler`);
       routes.push('  );');
       routes.push('');
     }
@@ -671,7 +678,43 @@ function generateHandlerStub(operation: OpenAPIOperation, path: string, method: 
   // }`;
   }
 
-  return `import { Context } from 'hono';
+  // Generate ValidatedContext type parameters
+  const typeParams: string[] = [];
+  
+  // TJson - request body type
+  if (hasBody) {
+    const bodyType = `${capitalize(operation.operationId)}Body`;
+    typeParams.push(bodyType);
+  } else {
+    typeParams.push('never');
+  }
+  
+  // TQuery - query parameters type
+  if (hasQuery) {
+    const queryType = `${capitalize(operation.operationId)}Query`;
+    typeParams.push(queryType);
+  } else {
+    typeParams.push('never');
+  }
+  
+  // TParam - path parameters type
+  if (hasParams) {
+    const paramType = `${capitalize(operation.operationId)}Params`;
+    typeParams.push(paramType);
+  } else {
+    typeParams.push('never');
+  }
+  
+  const contextType = typeParams.every(t => t === 'never') 
+    ? 'BaseContext' 
+    : `ValidatedContext<${typeParams.join(', ')}>`;
+  
+  // Generate type imports - only import the context type from @/types/app
+  const contextImport = contextType.startsWith('ValidatedContext') 
+    ? 'ValidatedContext' 
+    : 'BaseContext';
+
+  return `import type { ${contextImport} } from '@/types/app';
 import { db } from '@/core/database';
 import { 
   UnauthorizedError,
@@ -680,6 +723,11 @@ import {
   ValidationError,
   BusinessLogicError
 } from '@/core/errors';
+${hasBody || hasQuery || hasParams ? `import type { ${[
+    hasBody && `${capitalize(operation.operationId)}Body`,
+    hasQuery && `${capitalize(operation.operationId)}Query`, 
+    hasParams && `${capitalize(operation.operationId)}Params`
+  ].filter(Boolean).join(', ')} } from '@/generated/openapi/validators';` : ''}
 
 /**
  * ${operation.summary || operation.operationId}
@@ -687,7 +735,9 @@ import {
  * Path: ${method.toUpperCase()} ${path}
  * OperationId: ${operation.operationId}
  */
-export async function ${operation.operationId}(ctx: Context) {
+export async function ${operation.operationId}(
+  ctx: ${contextType}
+): Promise<Response> {
   ${isOptionalAuth ? `// Optional authentication - check if user is authenticated
   const session = ctx.get('session'); // May be null
   const user = ctx.get('user'); // May be null

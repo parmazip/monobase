@@ -5,12 +5,13 @@
  * Follows TypeSpec billing.tsp definition with current schema adaptation.
  */
 
-import type { Context } from 'hono';
 import {
   ForbiddenError,
   NotFoundError,
   BusinessLogicError
 } from '@/core/errors';
+import type { ValidatedContext } from '@/types/app';
+import type { MarkInvoiceUncollectibleParams } from '@/generated/openapi/validators';
 import type { Session } from '@/types/auth';
 import { InvoiceRepository } from './repos/billing.repo';
 import { PersonRepository } from '../person/repos/person.repo';
@@ -23,7 +24,9 @@ import { PersonRepository } from '../person/repos/person.repo';
  *
  * Mark invoice as uncollectible
  */
-export async function markInvoiceUncollectible(ctx: Context) {
+export async function markInvoiceUncollectible(
+  ctx: ValidatedContext<never, never, MarkInvoiceUncollectibleParams>
+): Promise<Response> {
   const database = ctx.get('database');
   const logger = ctx.get('logger');
 
@@ -75,7 +78,7 @@ export async function markInvoiceUncollectible(ctx: Context) {
   }
 
   // Additional business rule: invoice should not already be paid
-  if (invoice.paymentStatus === 'captured') {
+  if (invoice.paymentStatus === 'succeeded') {
     throw new BusinessLogicError(
       'Cannot mark paid invoice as uncollectible',
       'INVOICE_ALREADY_PAID'
@@ -96,7 +99,7 @@ export async function markInvoiceUncollectible(ctx: Context) {
     invoiceNumber: updatedInvoice.invoiceNumber,
     merchantId: updatedInvoice.merchant,
     customerId: updatedInvoice.customer,
-    amount: updatedInvoice.amount,
+    total: updatedInvoice.total,
     markedUncollectibleBy: user.id
   }, 'Invoice marked as uncollectible successfully');
 
@@ -108,12 +111,12 @@ export async function markInvoiceUncollectible(ctx: Context) {
     merchant: updatedInvoice.merchant, // Already correct field name
     context: null, // TODO: Add context field to schema
     status: updatedInvoice.status,
-    subtotal: parseFloat(updatedInvoice.amount) - 0, // TODO: Calculate proper subtotal
-    tax: null, // TODO: Implement tax calculation
-    total: parseFloat(updatedInvoice.amount),
+    subtotal: updatedInvoice.subtotal,
+    tax: updatedInvoice.tax,
+    total: updatedInvoice.total,
     currency: updatedInvoice.currency,
     paymentCaptureMethod: 'automatic', // TODO: Add to schema
-    paymentDueAt: updatedInvoice.dueAt?.toISOString() || null,
+    paymentDueAt: null, // TODO: Add dueAt field to schema
     lineItems: [], // TODO: Implement proper line items storage
     paymentStatus: updatedInvoice.paymentStatus || null,
     paidAt: updatedInvoice.paidAt?.toISOString() || null,

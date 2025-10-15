@@ -1,4 +1,3 @@
-import { Context } from 'hono';
 import {
   ForbiddenError,
   NotFoundError,
@@ -6,6 +5,8 @@ import {
   BusinessLogicError,
   ConflictError
 } from '@/core/errors';
+import type { ValidatedContext } from '@/types/app';
+import type { CaptureInvoicePaymentParams } from '@/generated/openapi/validators';
 import type { Session } from '@/types/auth';
 import { InvoiceRepository, MerchantAccountRepository } from './repos/billing.repo';
 import { PersonRepository } from '../person/repos/person.repo';
@@ -18,7 +19,9 @@ import { PersonRepository } from '../person/repos/person.repo';
  * 
  * Capture previously authorized invoice payment (provider decision after service delivery)
  */
-export async function captureInvoicePayment(ctx: Context) {
+export async function captureInvoicePayment(
+  ctx: ValidatedContext<never, never, CaptureInvoicePaymentParams>
+): Promise<Response> {
   const database = ctx.get('database');
   const logger = ctx.get('logger');
   const billing = ctx.get('billing');

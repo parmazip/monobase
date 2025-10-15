@@ -121,8 +121,10 @@ export function createAuth(database: DatabaseInstance, config: Config, logger: L
             }
 
             // Modify role data before it gets stored
-            const currentRole = user.role || 'user';
-            const existingRoles = currentRole.split(',').map((r: string) => r.trim()).filter(r => r);
+            const currentRole = user['role'] || 'user';
+            const existingRoles = typeof currentRole === 'string' 
+              ? currentRole.split(',').map((r: string) => r.trim()).filter(r => r)
+              : [];
 
             if (!existingRoles.includes('admin')) {
               existingRoles.push('admin');
@@ -284,7 +286,7 @@ export function createAuth(database: DatabaseInstance, config: Config, logger: L
         if (logger) {
           const logFn = logger[level as keyof typeof logger];
           if (typeof logFn === 'function') {
-            logFn.call(logger, message, ...args);
+            (logFn as any).call(logger, message, ...args);
           }
         }
       },

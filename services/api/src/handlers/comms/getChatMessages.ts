@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { GetChatMessagesQuery, GetChatMessagesParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import { 
@@ -18,7 +19,9 @@ import { ChatMessageRepository } from './repos/chatMessage.repo';
  * 
  * Get messages for a chat room with filtering and pagination
  */
-export async function getChatMessages(ctx: Context) {
+export async function getChatMessages(
+  ctx: ValidatedContext<never, GetChatMessagesQuery, GetChatMessagesParams>
+): Promise<Response> {
   // Get authenticated user from Better-Auth
   const user = ctx.get('user') as User;
 

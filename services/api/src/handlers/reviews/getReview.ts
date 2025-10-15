@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { GetReviewParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import { 
   UnauthorizedError,
@@ -19,7 +20,9 @@ import { ReviewRepository } from './repos/review.repo';
  * - The reviewed entity (if applicable)
  * - Admins
  */
-export async function getReview(ctx: Context) {
+export async function getReview(
+  ctx: ValidatedContext<never, never, GetReviewParams>
+): Promise<Response> {
   // Get authenticated session from Better-Auth
   const session = ctx.get('session');
   if (!session) {

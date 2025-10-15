@@ -142,7 +142,7 @@ export async function initializeApp(app: App, config: Config): Promise<void> {
   registerEmailJobs(jobs, app.email);
   registerNotifsJobs(jobs, app.notifs);
   registerAuditJobs(jobs);
-  registerBookingJobs(jobs, database);
+  registerBookingJobs(jobs, app.notifs);
   
   logger.debug('Starting background job scheduler...');
   await jobs.start();

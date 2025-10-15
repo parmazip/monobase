@@ -5,12 +5,13 @@
  * Follows TypeSpec billing.tsp definition with current schema adaptation.
  */
 
-import type { Context } from 'hono';
 import {
   ForbiddenError,
   NotFoundError,
   BusinessLogicError
 } from '@/core/errors';
+import type { ValidatedContext } from '@/types/app';
+import type { FinalizeInvoiceParams } from '@/generated/openapi/validators';
 import type { Session } from '@/types/auth';
 import { InvoiceRepository } from './repos/billing.repo';
 import { PersonRepository } from '../person/repos/person.repo';
@@ -23,7 +24,9 @@ import { PersonRepository } from '../person/repos/person.repo';
  *
  * Finalize an invoice (draft to open)
  */
-export async function finalizeInvoice(ctx: Context) {
+export async function finalizeInvoice(
+  ctx: ValidatedContext<never, never, FinalizeInvoiceParams>
+): Promise<Response> {
   const database = ctx.get('database');
   const logger = ctx.get('logger');
 
@@ -91,7 +94,7 @@ export async function finalizeInvoice(ctx: Context) {
     merchantId: finalizedInvoice.merchant,
     customerId: finalizedInvoice.customer,
     total: finalizedInvoice.total,
-    issuedAt: finalizedInvoice.issuedAt
+    status: finalizedInvoice.status
   }, 'Invoice finalized successfully');
 
   // Format response to match TypeSpec Invoice model
@@ -107,7 +110,7 @@ export async function finalizeInvoice(ctx: Context) {
     total: finalizedInvoice.total,
     currency: finalizedInvoice.currency,
     paymentCaptureMethod: finalizedInvoice.paymentCaptureMethod,
-    paymentDueAt: finalizedInvoice.dueAt?.toISOString() || null,
+    paymentDueAt: null, // TODO: Add dueAt field to schema
     lineItems: [], // TODO: Implement proper line items storage
     paymentStatus: finalizedInvoice.paymentStatus || null,
     paidAt: finalizedInvoice.paidAt?.toISOString() || null,

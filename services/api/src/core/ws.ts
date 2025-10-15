@@ -160,7 +160,7 @@ export class WebSocketService {
     this.connections.byUser.set(userId, ws);
 
     // Update metadata
-    const metadata = this.connections.metadata.get(ws) || { ws, route: '' };
+    const metadata: ConnectionMetadata = this.connections.metadata.get(ws) || { ws };
     metadata.userId = userId;
     this.connections.metadata.set(ws, metadata);
 
@@ -194,7 +194,7 @@ export class WebSocketService {
     this.connections.byChannel.get(channelId)!.add(ws);
 
     // Update metadata
-    const metadata = this.connections.metadata.get(ws) || { ws, route: '' };
+    const metadata: ConnectionMetadata = this.connections.metadata.get(ws) || { ws };
     metadata.channelId = channelId;
     this.connections.metadata.set(ws, metadata);
 

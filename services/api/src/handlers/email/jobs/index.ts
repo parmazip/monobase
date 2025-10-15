@@ -24,14 +24,14 @@ export function registerEmailJobs(
   // Email queue cleanup job - runs daily at 4 AM
   scheduler.registerCron('email.cleanup', '0 4 * * *', async (context: JobContext) => {
     const { db, logger, jobId } = context;
-    logger.debug('Starting email cleanup job', { jobId });
+    logger.debug({ jobId }, 'Starting email cleanup job');
     
     try {
       const { EmailQueueRepository } = await import('../repos/queue.repo');
       const queueRepo = new EmailQueueRepository(db, logger);
       const deletedCount = await queueRepo.cleanupOldEmails(30); // Clean emails older than 30 days
       
-      logger.info(`Email cleanup completed`, { jobId, deletedCount });
+      logger.info({ jobId, deletedCount }, 'Email cleanup completed');
     } catch (error) {
       logger.error({ error, jobId }, 'Email cleanup job failed');
       throw error;

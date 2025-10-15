@@ -298,7 +298,7 @@ export interface InvoiceWithLineItems extends Invoice {
   lineItems: InvoiceLineItem[];
 }
 
-export interface MerchantAccountWithPerson extends MerchantAccount {
+export interface MerchantAccountWithPerson extends Omit<MerchantAccount, 'person'> {
   person: { id: string } | null;
 }
 

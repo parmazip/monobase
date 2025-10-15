@@ -117,7 +117,7 @@ class PgBossScheduler implements JobScheduler {
     
     // Initialize pg-boss with the adapter
     this.boss = new PgBoss({
-      db: pgBossDb,
+      db: pgBossDb as any,
       
       // pg-boss configuration
       schema: 'pgboss', // Isolate pg-boss tables in their own schema
@@ -133,11 +133,9 @@ class PgBossScheduler implements JobScheduler {
       expireInMinutes: 5, // Shorter expiration for tests
       
       // Maintenance configuration (faster for tests)
-      maintenanceIntervalSeconds: 10, // More frequent maintenance
+      maintenanceIntervalSeconds: 10 // More frequent maintenance
       
-      // Worker configuration
-      noScheduling: false, // Enable scheduling features
-      noSupervisor: false, // Enable maintenance operations
+      // Worker configuration - noScheduling and noSupervisor removed as they don't exist in ConstructorOptions
     });
   }
   
@@ -278,6 +276,11 @@ class PgBossScheduler implements JobScheduler {
       await this.boss.work(name, { pollingIntervalSeconds: 0.5 }, async (jobs) => {
         const job = Array.isArray(jobs) ? jobs[0] : jobs;
         
+        if (!job) {
+          this.logger.warn({ job: name }, 'No job data received');
+          return;
+        }
+        
         const context: JobContext = {
           db: this.db,
           logger: this.logger.child({ job: name, jobId: job.id }),
@@ -340,6 +343,11 @@ class PgBossScheduler implements JobScheduler {
         await this.boss.work(name, { pollingIntervalSeconds: 0.5 }, async (jobs) => {
           // pg-boss passes jobs as an array, even for single jobs
           const job = Array.isArray(jobs) ? jobs[0] : jobs;
+          
+          if (!job) {
+            this.logger.warn({ job: name }, 'No job data received');
+            return;
+          }
           
           const context: JobContext = {
             db: this.db,

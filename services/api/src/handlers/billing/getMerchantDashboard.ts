@@ -5,7 +5,8 @@
  * Link expires in 5 minutes for security.
  */
 
-import type { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { GetMerchantDashboardParams } from '@/generated/openapi/validators';
 import { ForbiddenError, NotFoundError, BusinessLogicError, UnauthorizedError } from '@/core/errors';
 import type { Session } from '@/types/auth';
 import type { BillingService } from '@/core/billing';
@@ -20,7 +21,9 @@ import { addMinutes } from 'date-fns';
  *
  * Generate Stripe dashboard login link for merchant account management
  */
-export async function getMerchantDashboard(ctx: Context) {
+export async function getMerchantDashboard(
+  ctx: ValidatedContext<never, never, GetMerchantDashboardParams>
+): Promise<Response> {
   const database = ctx.get('database');
   const logger = ctx.get('logger');
   const billing = ctx.get('billing') as BillingService;
@@ -72,13 +75,13 @@ export async function getMerchantDashboard(ctx: Context) {
   }
 
   // Extract Stripe account ID from metadata
-  const stripeAccountId = merchantAccount.metadata?.stripeAccountId as string | undefined;
+  const stripeAccountId = merchantAccount.metadata?.['stripeAccountId'] as string | undefined;
 
   if (!stripeAccountId) {
-    throw new BusinessLogicError('Merchant account is not connected to Stripe', {
-      field: 'stripeAccountId',
-      suggestions: ['Complete merchant onboarding first']
-    });
+    throw new BusinessLogicError(
+      'Merchant account is not connected to Stripe',
+      'STRIPE_NOT_CONNECTED'
+    );
   }
 
   // Get account status and dashboard URL from billing service
@@ -86,22 +89,18 @@ export async function getMerchantDashboard(ctx: Context) {
 
   // Check if onboarding is complete
   if (!accountStatus.onboardingComplete) {
-    throw new BusinessLogicError('Merchant onboarding is not complete', {
-      field: 'onboardingComplete',
-      suggestions: ['Complete merchant onboarding process first']
-    });
+    throw new BusinessLogicError(
+      'Merchant onboarding is not complete',
+      'ONBOARDING_INCOMPLETE'
+    );
   }
 
   // Check if dashboard URL is available
   if (!accountStatus.dashboardUrl) {
-    throw new BusinessLogicError('Dashboard URL is not available', {
-      field: 'dashboardUrl',
-      suggestions: [
-        'Account may be restricted',
-        'Verify account is active',
-        'Contact support if issue persists'
-      ]
-    });
+    throw new BusinessLogicError(
+      'Dashboard URL is not available',
+      'DASHBOARD_UNAVAILABLE'
+    );
   }
 
   logger.info({

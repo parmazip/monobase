@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { ListEmailTemplatesQuery } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User, Session } from '@/types/auth';
 import { ForbiddenError } from '@/core/errors';
@@ -12,7 +13,9 @@ import type { EmailTemplateFilters } from './repos/email.schema';
  * Path: GET /email/templates
  * OperationId: listEmailTemplates
  */
-export async function listEmailTemplates(ctx: Context) {
+export async function listEmailTemplates(
+  ctx: ValidatedContext<never, ListEmailTemplatesQuery, never>
+): Promise<Response> {
   // Get authenticated session from Better-Auth
   const session = ctx.get('session') as Session;
   
@@ -44,12 +47,12 @@ export async function listEmailTemplates(ctx: Context) {
   
   // Build filters object for repository
   const filters: EmailTemplateFilters = {};
-  if (rawFilters.status) {
-    filters.status = rawFilters.status;
+  if (rawFilters['status']) {
+    filters.status = rawFilters['status'];
   }
-  if (rawFilters.tags) {
+  if (rawFilters['tags']) {
     // Handle both single tag string and array of tags
-    filters.tags = Array.isArray(rawFilters.tags) ? rawFilters.tags : [rawFilters.tags];
+    filters.tags = Array.isArray(rawFilters['tags']) ? rawFilters['tags'] : [rawFilters['tags']];
   }
   
   // Get dependencies from context

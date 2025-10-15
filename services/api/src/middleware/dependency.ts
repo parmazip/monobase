@@ -12,7 +12,8 @@ import type { Config } from '@/core/config';
  * Injects logger, database, storage, auth instances, job scheduler, notification service, audit service, and config into request context for handler access
  */
 export function createDependencyInjection(app: App, config: Config) {
-  const { logger, database, storage, auth, jobs, notifs, audit, email, ws, billing, internalServiceToken } = app;
+  const { logger, database, storage, auth, jobs, notifs, audit, email, ws, billing } = app;
+  const internalServiceToken = (app as any).internalServiceToken;
 
   return async function dependencyInjection(ctx: AppContext, next: Next) {
     // Inject dependencies into request context

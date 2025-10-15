@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { CreateChatRoomBody } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import {
@@ -18,7 +19,9 @@ import { type CreateChatRoomRequest } from './repos/comms.schema';
  *
  * Create a new chat room between participants (with upsert logic)
  */
-export async function createChatRoom(ctx: Context) {
+export async function createChatRoom(
+  ctx: ValidatedContext<CreateChatRoomBody, never, never>
+): Promise<Response> {
   // Get authenticated user from Better-Auth
   const user = ctx.get('user') as User;
 

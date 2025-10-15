@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { ListEventSlotsQuery, ListEventSlotsParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import { NotFoundError } from '@/core/errors';
 import { TimeSlotRepository } from './repos/timeSlot.repo';
@@ -12,7 +13,9 @@ import { addDays } from 'date-fns';
  * OperationId: listEventSlots
  * Security: Optional authentication
  */
-export async function listEventSlots(ctx: Context) {
+export async function listEventSlots(
+  ctx: ValidatedContext<never, ListEventSlotsQuery, ListEventSlotsParams>
+): Promise<Response> {
   // Get validated parameters
   const params = ctx.req.valid('param') as { event: string };
   const query = ctx.req.valid('query') as { 

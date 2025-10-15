@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { UpdateVideoCallParticipantBody, UpdateVideoCallParticipantParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import { 
@@ -18,7 +19,9 @@ import type { UpdateParticipantRequest, CallParticipant } from './repos/comms.sc
  * 
  * Update participant status in video call (audio/video enabled)
  */
-export async function updateVideoCallParticipant(ctx: Context) {
+export async function updateVideoCallParticipant(
+  ctx: ValidatedContext<UpdateVideoCallParticipantBody, never, UpdateVideoCallParticipantParams>
+): Promise<Response> {
   // Get authenticated user from Better-Auth
   const user = ctx.get('user') as User;
 

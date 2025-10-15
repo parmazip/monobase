@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { GetNotificationParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import { NotFoundError, ForbiddenError } from '@/core/errors';
@@ -12,7 +13,9 @@ import { PersonRepository } from '../person/repos/person.repo';
  * OperationId: getNotification
  * Security: bearerAuth
  */
-export async function getNotification(ctx: Context) {
+export async function getNotification(
+  ctx: ValidatedContext<never, never, GetNotificationParams>
+): Promise<Response> {
   // Get authenticated user and check authorization
   const user = ctx.get('user') as User;
   
@@ -35,7 +38,7 @@ export async function getNotification(ctx: Context) {
     // We don't distinguish between not found and no access for security
     throw new NotFoundError('Notification not found', {
       resourceType: 'notification',
-      resource: params.notification,
+      resource: params.notif,
       suggestions: ['Check notification ID format', 'Verify notification exists']
     });
   }

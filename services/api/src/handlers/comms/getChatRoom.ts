@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { GetChatRoomParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import { 
@@ -17,7 +18,9 @@ import { ChatRoomRepository } from './repos/chatRoom.repo';
  * 
  * Get specific chat room (only accessible to participants)
  */
-export async function getChatRoom(ctx: Context) {
+export async function getChatRoom(
+  ctx: ValidatedContext<never, never, GetChatRoomParams>
+): Promise<Response> {
   // Get authenticated user from Better-Auth
   const user = ctx.get('user') as User;
 

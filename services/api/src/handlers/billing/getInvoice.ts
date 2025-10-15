@@ -5,7 +5,8 @@
  * Follows TypeSpec billing.tsp definition with current schema adaptation.
  */
 
-import type { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { GetInvoiceQuery, GetInvoiceParams } from '@/generated/openapi/validators';
 import { ForbiddenError, NotFoundError } from '@/core/errors';
 import type { Session } from '@/types/auth';
 import { InvoiceRepository } from './repos/billing.repo';
@@ -19,7 +20,9 @@ import { PersonRepository } from '../person/repos/person.repo';
  *
  * Get invoice by ID with authorization checks
  */
-export async function getInvoice(ctx: Context) {
+export async function getInvoice(
+  ctx: ValidatedContext<never, GetInvoiceQuery, GetInvoiceParams>
+): Promise<Response> {
   const database = ctx.get('database');
   const logger = ctx.get('logger');
 
@@ -90,7 +93,7 @@ export async function getInvoice(ctx: Context) {
     total: invoice.total,
     currency: invoice.currency,
     paymentCaptureMethod: 'automatic', // TODO: Add to schema
-    paymentDueAt: invoice.dueAt?.toISOString() || null,
+    paymentDueAt: invoice.paymentDueAt?.toISOString() || null,
     lineItems: [], // TODO: Implement proper line items storage
     paymentStatus: invoice.paymentStatus || null,
     paidAt: invoice.paidAt?.toISOString() || null,

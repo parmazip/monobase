@@ -15,12 +15,12 @@ export async function emailProcessorJob(
 ): Promise<void> {
   const { logger, jobId } = context;
   
-  logger.debug('Starting email processor job', { jobId });
+  logger.debug({ jobId }, 'Starting email processor job');
   
   try {
     await emailService.processPendingEmails();
     
-    logger.debug('Email processor job completed', { jobId });
+    logger.debug({ jobId }, 'Email processor job completed');
   } catch (error) {
     logger.error({ error, jobId }, 'Email processor job failed');
     throw error;

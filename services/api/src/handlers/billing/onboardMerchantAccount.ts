@@ -5,13 +5,14 @@
  * Follows TypeSpec billing.tsp definition with current schema adaptation.
  */
 
-import type { Context } from 'hono';
 import {
   ForbiddenError,
   NotFoundError,
   BusinessLogicError,
   ExternalServiceError
 } from '@/core/errors';
+import type { ValidatedContext } from '@/types/app';
+import type { OnboardMerchantAccountBody, OnboardMerchantAccountParams } from '@/generated/openapi/validators';
 import type { Session } from '@/types/auth';
 import { MerchantAccountRepository } from './repos/billing.repo';
 import { PersonRepository } from '../person/repos/person.repo';
@@ -24,7 +25,9 @@ import { PersonRepository } from '../person/repos/person.repo';
  *
  * Get merchant onboarding URL
  */
-export async function onboardMerchantAccount(ctx: Context) {
+export async function onboardMerchantAccount(
+  ctx: ValidatedContext<OnboardMerchantAccountBody, never, OnboardMerchantAccountParams>
+): Promise<Response> {
   const database = ctx.get('database');
   const logger = ctx.get('logger');
   const billing = ctx.get('billing');
@@ -99,11 +102,7 @@ export async function onboardMerchantAccount(ctx: Context) {
       if (!email) {
         throw new BusinessLogicError(
           'Cannot create Stripe account: person must have an email in contact info',
-          'MISSING_PERSON_EMAIL',
-          {
-            field: 'person.contactInfo.email',
-            suggestions: ['Update person contact info with a valid email address']
-          }
+          'MISSING_PERSON_EMAIL'
         );
       }
 
@@ -112,12 +111,7 @@ export async function onboardMerchantAccount(ctx: Context) {
       if (!country || country.length !== 2) {
         throw new BusinessLogicError(
           'Cannot create Stripe account: person must have a valid 2-letter ISO country code in their primary address',
-          'INVALID_COUNTRY_CODE',
-          {
-            field: 'person.primaryAddress.country',
-            value: country,
-            suggestions: ['Update person primary address with valid ISO 3166-1 alpha-2 country code (e.g., US, CA, GB)']
-          }
+          'INVALID_COUNTRY_CODE'
         );
       }
 
@@ -132,7 +126,7 @@ export async function onboardMerchantAccount(ctx: Context) {
           personId: merchantAccount.person,
           merchantAccountId: merchantAccount.id,
           createdBy: user.id,
-          createdLate: true // Audit flag for late creation
+          createdLate: 'true' // Audit flag for late creation
         }
       });
 
@@ -236,8 +230,8 @@ export async function onboardMerchantAccount(ctx: Context) {
     if (error instanceof Error && error.message.includes('not configured')) {
       throw new ExternalServiceError(
         'Payment provider is not configured. Please contact support.',
-        'STRIPE_NOT_CONFIGURED',
-        { isConfigurationError: true }
+        'stripe',
+        'configure'
       );
     }
 
@@ -249,8 +243,10 @@ export async function onboardMerchantAccount(ctx: Context) {
 
     throw new ExternalServiceError(
       'Failed to generate merchant onboarding URL',
+      'stripe',
+      'onboard',
       'STRIPE_ONBOARDING_ERROR',
-      { originalError: error instanceof Error ? error.message : 'Unknown error' }
+      error instanceof Error ? error.message : 'Unknown error'
     );
   }
 }

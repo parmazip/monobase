@@ -5,13 +5,14 @@
  * Follows TypeSpec billing.tsp definition with current schema adaptation.
  */
 
-import type { Context } from 'hono';
 import {
   ForbiddenError,
   NotFoundError,
   ValidationError,
   BusinessLogicError
 } from '@/core/errors';
+import type { ValidatedContext } from '@/types/app';
+import type { UpdateInvoiceBody, UpdateInvoiceParams } from '@/generated/openapi/validators';
 import type { Session } from '@/types/auth';
 import { InvoiceRepository } from './repos/billing.repo';
 import { PersonRepository } from '../person/repos/person.repo';
@@ -24,7 +25,9 @@ import { PersonRepository } from '../person/repos/person.repo';
  *
  * Update an existing invoice (draft only)
  */
-export async function updateInvoice(ctx: Context) {
+export async function updateInvoice(
+  ctx: ValidatedContext<UpdateInvoiceBody, never, UpdateInvoiceParams>
+): Promise<Response> {
   const database = ctx.get('database');
   const logger = ctx.get('logger');
 
@@ -119,7 +122,7 @@ export async function updateInvoice(ctx: Context) {
     updateData.amount = total.toString();
     updateData.providerAmount = total.toString(); // TODO: Calculate after platform fees
     updateData.platformAmount = '0.00'; // TODO: Calculate platform fees
-    updateData.description = processedLineItems.map(item => item.description).join(', ');
+    updateData.description = processedLineItems.map((item: any) => item.description).join(', ');
 
     // TODO: Store line items in proper JSONB field when schema is updated
   }
@@ -136,7 +139,7 @@ export async function updateInvoice(ctx: Context) {
     invoiceId,
     invoiceNumber: updatedInvoice.invoiceNumber,
     changes: Object.keys(updateData),
-    newAmount: updatedInvoice.amount
+    newAmount: (updatedInvoice as any).amount
   }, 'Invoice updated successfully');
 
   // Format response to match TypeSpec Invoice model
@@ -147,12 +150,12 @@ export async function updateInvoice(ctx: Context) {
     merchant: updatedInvoice.merchant, // Already correct field name
     context: null, // TODO: Add context field to schema
     status: updatedInvoice.status,
-    subtotal: parseFloat(updatedInvoice.amount) - 0, // TODO: Calculate proper subtotal
+    subtotal: parseFloat((updatedInvoice as any).amount) - 0, // TODO: Calculate proper subtotal
     tax: null, // TODO: Implement tax calculation
-    total: parseFloat(updatedInvoice.amount),
+    total: parseFloat((updatedInvoice as any).amount),
     currency: updatedInvoice.currency,
     paymentCaptureMethod: body.paymentCaptureMethod || 'automatic', // TODO: Add to schema
-    paymentDueAt: updatedInvoice.dueAt?.toISOString() || null,
+    paymentDueAt: (updatedInvoice as any).dueAt?.toISOString() || null,
     lineItems: body.lineItems || [], // TODO: Store and retrieve from proper field
     paymentStatus: updatedInvoice.paymentStatus || null,
     paidAt: updatedInvoice.paidAt?.toISOString() || null,

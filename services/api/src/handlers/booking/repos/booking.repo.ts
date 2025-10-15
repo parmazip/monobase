@@ -120,8 +120,8 @@ export class BookingRepository extends DatabaseRepository<Booking, NewBooking, B
       throw new NotFoundError('Time slot not found');
     }
 
-    const slot = slotWithEvent[0].time_slot;
-    const event = slotWithEvent[0].booking_event;
+    const slot = slotWithEvent[0]['time_slot'];
+    const event = slotWithEvent[0]['booking_event'];
 
     if (slot.status !== 'available') {
       throw new ConflictError('Time slot is not available');

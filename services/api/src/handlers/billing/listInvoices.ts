@@ -5,7 +5,8 @@
  * Follows TypeSpec billing.tsp definition with current schema adaptation.
  */
 
-import type { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { ListInvoicesQuery } from '@/generated/openapi/validators';
 import { ForbiddenError } from '@/core/errors';
 import type { Session } from '@/types/auth';
 import { InvoiceRepository, type InvoiceFilters } from './repos/billing.repo';
@@ -19,7 +20,9 @@ import { parsePagination, buildPaginationMeta, parseFilters } from '@/utils/quer
  *
  * List invoices with filtering and pagination
  */
-export async function listInvoices(ctx: Context) {
+export async function listInvoices(
+  ctx: ValidatedContext<never, ListInvoicesQuery, never>
+): Promise<Response> {
   const database = ctx.get('database');
   const logger = ctx.get('logger');
 

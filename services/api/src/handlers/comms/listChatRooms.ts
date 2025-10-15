@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { ListChatRoomsQuery } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import { 
@@ -18,7 +19,9 @@ import type { ChatRoomFilters } from './repos/comms.schema';
  * 
  * Lists user's chat rooms with optional filtering
  */
-export async function listChatRooms(ctx: Context) {
+export async function listChatRooms(
+  ctx: ValidatedContext<never, ListChatRoomsQuery, never>
+): Promise<Response> {
   // Get authenticated user from Better-Auth
   const user = ctx.get('user') as User;
 

@@ -65,7 +65,7 @@ export const auditLogEntries = pgTable('audit_log_entry', {
   
   // Context information
   user: uuid('user'), // UUID reference to user
-  userType: varchar('user_type', { length: 20 }), // patient, provider, admin, system
+  userType: varchar('user_type', { length: 20 }), // client, provider, admin, system
   resourceType: varchar('resource_type', { length: 100 }).notNull(),
   resource: varchar('resource', { length: 255 }).notNull(),
   
@@ -110,7 +110,7 @@ export type AuditCategory = 'hipaa' | 'security' | 'privacy' | 'administrative' 
 export type AuditAction = 'create' | 'read' | 'update' | 'delete' | 'login' | 'logout';
 export type AuditOutcome = 'success' | 'failure' | 'partial' | 'denied';
 export type AuditRetentionStatus = 'active' | 'archived' | 'pending-purge';
-export type UserType = 'patient' | 'provider' | 'admin' | 'system';
+export type UserType = 'client' | 'provider' | 'admin' | 'system';
 
 // Request interfaces matching TypeSpec definitions
 export interface CreateAuditLogRequest {

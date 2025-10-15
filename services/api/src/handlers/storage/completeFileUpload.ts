@@ -1,4 +1,4 @@
-import { Context } from 'hono';
+import type { BaseContext } from '@/types/app';
 import type { DatabaseInstance } from '@/core/database';
 import { 
   UnauthorizedError,
@@ -17,7 +17,9 @@ import { StorageFileRepository } from './repos/file.repo';
  * Path: POST /storage/files/{fileId}/complete
  * OperationId: completeFileUpload
  */
-export async function completeFileUpload(ctx: Context) {
+export async function completeFileUpload(
+  ctx: BaseContext
+): Promise<Response> {
   // Get file ID from path parameters
   const fileId = ctx.req.param('file') as string;
   

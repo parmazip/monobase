@@ -16,8 +16,9 @@ import {
   pgEnum
 } from 'drizzle-orm/pg-core';
 import { baseEntityFields } from '@/core/database.schema';
-import { patients } from '../../patient/repos/patient.schema';
-import { providers } from '../../provider/repos/provider.schema';
+
+// Note: In monobase, we use 'person' module instead of separate patient/provider modules
+// Participants are referenced by person ID in the persons table
 
 // Enums for chat room and message status
 export const chatRoomStatusEnum = pgEnum('chat_room_status', [

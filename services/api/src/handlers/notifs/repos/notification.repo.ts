@@ -36,7 +36,7 @@ export class NotificationRepository extends DatabaseRepository<Notification, New
     // Initialize OneSignal if config provided
     if (oneSignalConfig) {
       const configuration = OneSignal.createConfiguration({
-        appKey: oneSignalConfig.apiKey
+        restApiKey: oneSignalConfig.apiKey
       });
       this.oneSignalClient = new OneSignal.DefaultApi(configuration);
       this.oneSignalAppId = oneSignalConfig.appId;
@@ -353,10 +353,10 @@ export class NotificationRepository extends DatabaseRepository<Notification, New
             // Get recipient email from person repository
             const person = await this.personRepo.findOneById(notification.recipient);
             
-            if (person?.email) {
+            if (person && (person as any).email) {
               await emailService.queueEmail({
                 templateTags: [templateTag],
-                recipient: person.email,
+                recipient: (person as any).email,
                 variables: {
                   title: notification.title,
                   message: notification.message,
@@ -429,7 +429,7 @@ export class NotificationRepository extends DatabaseRepository<Notification, New
               this.logger?.info({
                 notificationId: notification.id,
                 oneSignalId: result.id,
-                recipients: result.recipients
+                recipients: (result as any).recipients
               }, 'Push notification sent via OneSignal');
 
               await this.updateOneById(notification.id, {
@@ -437,10 +437,10 @@ export class NotificationRepository extends DatabaseRepository<Notification, New
                 sentAt: new Date(),
                 deliveredAt: new Date(),
                 metadata: {
-                  ...notification.metadata,
+                  ...(notification as any).metadata,
                   oneSignalId: result.id
                 }
-              });
+              } as any);
             } else {
               this.logger?.warn({
                 notificationId: notification.id,

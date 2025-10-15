@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { CreateBookingBody } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import {
@@ -18,7 +19,9 @@ import type { BookingCreateRequest } from './repos/booking.schema';
  * OperationId: createBooking
  * Security: bearerAuth with role ["owner"]
  */
-export async function createBooking(ctx: Context) {
+export async function createBooking(
+  ctx: ValidatedContext<CreateBookingBody, never, never>
+): Promise<Response> {
   // Get authenticated user (guaranteed by auth middleware)
   const user = ctx.get('user') as User;
   
@@ -37,7 +40,7 @@ export async function createBooking(ctx: Context) {
   
   // Log audit trail
   logger?.info({
-    bookingId: booking.id,
+    bookingId: booking['id'],
     clientId: user.id,
     slotId: body.slot,
     locationType: body.locationType,

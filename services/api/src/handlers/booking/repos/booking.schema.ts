@@ -149,8 +149,10 @@ export const bookingEvents = pgTable('booking_event', {
   // Check constraints
   maxBookingDaysCheck: check('booking_events_max_booking_days_check', sql`${table.maxBookingDays} >= 0 AND ${table.maxBookingDays} <= 365`),
   minBookingMinutesCheck: check('booking_events_min_booking_minutes_check', sql`${table.minBookingMinutes} >= 0 AND ${table.minBookingMinutes} <= 4320`), // 72 hours max
-}));// Time Slots - Individual bookable slots generated from booking events
-export const timeSlots = pgTable('time_slot', {
+}));
+
+// Time Slots - Individual bookable slots generated from booking events
+export const timeSlots: any = pgTable('time_slot', {
   // Base entity fields
   ...baseEntityFields,
 
@@ -205,8 +207,10 @@ export const timeSlots = pgTable('time_slot', {
   // Ensure no slot overlap within same event (different events can have overlapping slots)
   uniqueEventTime: unique('time_slots_event_time_unique')
     .on(table.event, table.startTime),
-}));// Bookings - Booked consultations between client and provider
-export const bookings = pgTable('booking', {
+}));
+
+// Bookings - Booked consultations between client and provider
+export const bookings: any = pgTable('booking', {
   // Base entity fields
   ...baseEntityFields,
 

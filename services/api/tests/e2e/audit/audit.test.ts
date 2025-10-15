@@ -378,7 +378,7 @@ describe('Audit E2E Tests', () => {
       const validActions = ['create', 'read', 'update', 'delete', 'login', 'logout'];
       const validOutcomes = ['success', 'failure', 'partial', 'denied'];
       const validRetentionStatuses = ['active', 'archived', 'pending-purge'];
-      const validUserTypes = ['client', 'service_provider', 'admin', 'system'];
+      const validUserTypes = ['user', 'client', 'service_provider', 'admin', 'system'];
 
       data.data.forEach((log: any) => {
         expect(validEventTypes).toContain(log.eventType);

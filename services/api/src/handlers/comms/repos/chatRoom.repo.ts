@@ -3,7 +3,7 @@
  * Handles participant-based filtering and room management
  */
 
-import { eq, and, or, ne, desc, sql, type SQL } from 'drizzle-orm';
+import { eq, and, or, ne, desc, sql, isNull, isNotNull, type SQL } from 'drizzle-orm';
 import type { DatabaseInstance } from '@/core/database';
 import { DatabaseRepository } from '@/core/database.repo';
 import { 
@@ -64,9 +64,9 @@ export class ChatRoomRepository extends DatabaseRepository<ChatRoom, NewChatRoom
     // Special filter: rooms with active video calls
     if (filters.hasActiveCall !== undefined) {
       if (filters.hasActiveCall) {
-        conditions.push(ne(chatRooms.activeVideoCallMessage, null));
+        conditions.push(isNotNull(chatRooms.activeVideoCallMessage));
       } else {
-        conditions.push(eq(chatRooms.activeVideoCallMessage, null));
+        conditions.push(isNull(chatRooms.activeVideoCallMessage));
       }
     }
 

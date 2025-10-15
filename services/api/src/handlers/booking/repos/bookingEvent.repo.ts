@@ -222,8 +222,8 @@ export interface BookingEventFilters {
     if (updates.dailyConfigs) {
       processedUpdates.dailyConfigs = this.processAndValidateDailyConfigs(updates.dailyConfigs);
     }
-    if (updates.effectiveFrom !== undefined && updates.effectiveFrom) {
-      processedUpdates.effectiveFrom = new Date(updates.effectiveFrom);
+    if ((updates as any).effectiveFrom !== undefined && (updates as any).effectiveFrom) {
+      processedUpdates.effectiveFrom = new Date((updates as any).effectiveFrom);
     }
     if (updates.effectiveTo !== undefined) {
       processedUpdates.effectiveTo = updates.effectiveTo ? new Date(updates.effectiveTo) : null;
@@ -406,7 +406,11 @@ export interface BookingEventFilters {
 
     for (let i = 1; i < sortedBlocks.length; i++) {
       const previousBlock = sortedBlocks[i - 1];
-      const currentBlock = sortedBlocks[i];      if (previousBlock.endTime > currentBlock.startTime) {
+      const currentBlock = sortedBlocks[i];
+      
+      if (!previousBlock || !currentBlock) continue;
+      
+      if (previousBlock.endTime > currentBlock.startTime) {
         throw new Error(
           `Overlapping time blocks detected for ${day}: ` +
           `Block ending at ${previousBlock.endTime} overlaps with block starting at ${currentBlock.startTime}`
@@ -489,7 +493,7 @@ export interface BookingEventFilters {
       .where(eq(bookingEvents.id, eventId))
       .limit(1);
 
-    if (result.length === 0) {
+    if (result.length === 0 || !result[0]) {
       return null;
     }
 

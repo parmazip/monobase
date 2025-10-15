@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { EndVideoCallParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import {
@@ -19,7 +20,9 @@ import { differenceInMinutes } from 'date-fns';
  * 
  * End active video call (admin only)
  */
-export async function endVideoCall(ctx: Context) {
+export async function endVideoCall(
+  ctx: ValidatedContext<never, never, EndVideoCallParams>
+): Promise<Response> {
   // Get authenticated user from Better-Auth
   const user = ctx.get('user') as User;
 

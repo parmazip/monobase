@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { DeleteReviewParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import { 
   UnauthorizedError,
@@ -17,7 +18,9 @@ import { ReviewRepository } from './repos/review.repo';
  * Only the review owner (reviewer) can delete their own review.
  * Admins can also delete reviews.
  */
-export async function deleteReview(ctx: Context) {
+export async function deleteReview(
+  ctx: ValidatedContext<never, never, DeleteReviewParams>
+): Promise<Response> {
   // Get authenticated session from Better-Auth
   const session = ctx.get('session');
   if (!session) {
