@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { ListConsultationsQuery } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import {
@@ -21,7 +22,7 @@ import { parsePagination, buildPaginationMeta } from '@/utils/query';
  * - Admins/Support see all consultations
  * - Patients are not allowed to use this endpoint (they use patient-specific endpoint)
  */
-export async function listConsultations(ctx: Context) {
+export async function listConsultations(ctx: ValidatedContext<never, ListConsultationsQuery, never>) {
   // Get authenticated user from Better-Auth
   const user = ctx.get('user') as User;
 
@@ -30,12 +31,7 @@ export async function listConsultations(ctx: Context) {
   }
 
   // Extract validated query parameters (matching TypeSpec exactly)
-  const query = ctx.req.valid('query') as {
-    patient?: string;                        // Patient filter per TypeSpec
-    status?: 'draft' | 'finalized' | 'amended'; // Status filter per TypeSpec
-    limit?: number;                          // Pagination per TypeSpec
-    offset?: number;                         // Pagination per TypeSpec
-  };
+  const query = ctx.req.valid('query');
 
   // Get dependencies from context
   const db = ctx.get('database') as DatabaseInstance;
@@ -54,7 +50,7 @@ export async function listConsultations(ctx: Context) {
 
   // Add status filter if provided (per TypeSpec)
   if (query.status) {
-    filters.status = query.status;
+    filters.status = query.status as 'draft' | 'finalized' | 'amended';
   }
 
   // Apply role-based access control per TypeSpec

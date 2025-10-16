@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { ListProvidersQuery } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import { 
   UnauthorizedError,
@@ -18,19 +19,11 @@ import { parsePagination, buildPaginationMeta, parseFilters } from '@/utils/quer
  * OperationId: listProviders
  * Security: Public endpoint - no authentication required
  */
-export async function listProviders(ctx: Context) {
+export async function listProviders(ctx: ValidatedContext<never, ListProvidersQuery, never>) {
   // Public endpoint - no auth required
   
   // Extract validated query parameters
-  const query = ctx.req.valid('query') as {
-    limit?: number;
-    offset?: number;
-    q?: string;
-    expand?: string[];
-    minorAilmentsSpecialty?: string;
-    minorAilmentsPracticeLocation?: string;
-    languageSpoken?: string;
-  };
+  const query = ctx.req.valid('query');
   
   // Parse pagination with utilities
   const { limit, offset } = parsePagination(query);

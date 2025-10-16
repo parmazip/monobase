@@ -94,7 +94,12 @@ export class ProviderRepository extends DatabaseRepository<Provider, NewProvider
       return null;
     }
     
-    const { provider, person } = result[0];
+    const row = result[0];
+    if (!row) {
+      return null;
+    }
+    
+    const { provider, person } = row;
     
     this.logger?.debug({ providerId, found: true }, 'Provider with person data retrieved');
     
@@ -119,7 +124,8 @@ export class ProviderRepository extends DatabaseRepository<Provider, NewProvider
         person: persons
       })
       .from(providers)
-      .innerJoin(persons, eq(providers.person, persons.id));
+      .innerJoin(persons, eq(providers.person, persons.id))
+      .$dynamic();
 
     // Apply filters
     const conditions: SQL[] = [];
@@ -134,7 +140,7 @@ export class ProviderRepository extends DatabaseRepository<Provider, NewProvider
         or(
           ilike(persons.firstName, `%${filters.q}%`),
           ilike(persons.lastName, `%${filters.q}%`)
-        )
+        )!
       );
     }
 
@@ -162,8 +168,9 @@ export class ProviderRepository extends DatabaseRepository<Provider, NewProvider
     let finalQuery = baseQuery;
 
     // Apply conditions
-    if (conditions.length > 0) {
-      finalQuery = finalQuery.where(and(...conditions));
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+    if (whereClause) {
+      finalQuery = finalQuery.where(whereClause);
     }
 
     // Apply pagination
@@ -203,7 +210,7 @@ export class ProviderRepository extends DatabaseRepository<Provider, NewProvider
         or(
           ilike(persons.firstName, `%${filters.q}%`),
           ilike(persons.lastName, `%${filters.q}%`)
-        )
+        )!
       );
     }
 
@@ -225,8 +232,9 @@ export class ProviderRepository extends DatabaseRepository<Provider, NewProvider
       );
     }
 
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+    if (whereClause) {
+      query = query.where(whereClause);
     }
 
     const result = await query;
@@ -271,7 +279,7 @@ export class ProviderRepository extends DatabaseRepository<Provider, NewProvider
         nextAvailable: sql<Date>`MIN(${timeSlots.startTime})`.as('next_available')
       })
       .from(timeSlots)
-      .where(and(...nextAvailableConditions))
+      .where(and(...nextAvailableConditions)!)
       .groupBy(timeSlots.owner)
       .as('next_available_slots');
 
@@ -299,7 +307,7 @@ export class ProviderRepository extends DatabaseRepository<Provider, NewProvider
         or(
           ilike(persons.firstName, `%${filters.q}%`),
           ilike(persons.lastName, `%${filters.q}%`)
-        )
+        )!
       );
     }
 
@@ -327,8 +335,9 @@ export class ProviderRepository extends DatabaseRepository<Provider, NewProvider
     }
 
     // Apply conditions
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+    if (whereClause) {
+      query = query.where(whereClause);
     }
 
     // Sort by nextAvailable (available providers first, ordered by soonest availability)
@@ -394,7 +403,7 @@ export class ProviderRepository extends DatabaseRepository<Provider, NewProvider
         or(
           ilike(persons.firstName, `%${filters.q}%`),
           ilike(persons.lastName, `%${filters.q}%`)
-        )
+        )!
       );
     }
 
@@ -417,8 +426,9 @@ export class ProviderRepository extends DatabaseRepository<Provider, NewProvider
     }
 
     // Apply conditions
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+    if (whereClause) {
+      query = query.where(whereClause);
     }
 
     // Apply pagination
@@ -469,7 +479,12 @@ export class ProviderRepository extends DatabaseRepository<Provider, NewProvider
       return null;
     }
 
-    const { provider, person, event } = result[0];
+    const row = result[0];
+    if (!row) {
+      return null;
+    }
+
+    const { provider, person, event } = row;
 
     this.logger?.debug({ providerId, hasEvent: !!event }, 'Provider with person and event data retrieved');
 

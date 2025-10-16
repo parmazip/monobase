@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { CreateConsultationBody } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import {
@@ -21,7 +22,7 @@ import { type CreateConsultationRequest } from './repos/emr.schema';
  *
  * Creates a consultation note per TypeSpec - accepts patient and provider directly
  */
-export async function createConsultation(ctx: Context) {
+export async function createConsultation(ctx: ValidatedContext<CreateConsultationBody, never, never>) {
   // Get authenticated user
   const user = ctx.get('user') as User;
 

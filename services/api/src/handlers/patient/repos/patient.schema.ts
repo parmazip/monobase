@@ -70,14 +70,14 @@ export interface PharmacyInfoUpdate {
 export interface PersonData {
   id: string;
   firstName: string;
-  lastName?: string;
-  middleName?: string;
-  dateOfBirth?: string;
-  gender?: string;
-  primaryAddress?: any;
-  contactInfo?: any;
-  languagesSpoken?: string[];
-  timezone?: string;
+  lastName?: string | null;
+  middleName?: string | null;
+  dateOfBirth?: string | null;
+  gender?: string | null;
+  primaryAddress?: any | null;
+  contactInfo?: any | null;
+  languagesSpoken?: string[] | null;
+  timezone?: string | null;
   createdAt: Date;
   updatedAt: Date;
   version: number;
@@ -96,6 +96,7 @@ export interface PatientUpdateRequest {
 }
 
 // Helper type for queries with joined person data
-export interface PatientWithPerson extends Patient {
+// Use intersection type instead of extends to avoid type conflicts
+export type PatientWithPerson = Omit<Patient, 'person'> & {
   person: PersonData;
-}
+};

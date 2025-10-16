@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { UpdateConsultationBody, UpdateConsultationParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import {
@@ -20,19 +21,13 @@ import { type UpdateConsultationRequest } from './repos/emr.schema';
  * Updates a consultation note (only draft status consultations can be updated)
  * Supports explicit null values for field clearing per TypeSpec
  */
-export async function updateConsultation(ctx: Context) {
+export async function updateConsultation(ctx: ValidatedContext<UpdateConsultationBody, never, UpdateConsultationParams>) {
   // Get authenticated user
   const user = ctx.get('user') as User;
 
   // Get consultation ID from path parameters
-  const consultationId = ctx.req.param('consultation');
-  if (!consultationId) {
-    throw new NotFoundError('Consultation ID is required', {
-      resourceType: 'consultation',
-      resource: 'missing',
-      suggestions: ['Check ID format', 'Verify resource exists']
-    });
-  }
+  const params = ctx.req.valid('param');
+  const consultationId = params.consultation;
   
   // Get validated request body
   const body = ctx.req.valid('json') as UpdateConsultationRequest;

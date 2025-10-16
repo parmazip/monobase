@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { CreatePatientBody } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import { 
   ForbiddenError,
@@ -20,7 +21,7 @@ import type { AuthInstance } from '@/utils/auth';
  * OperationId: createPatient
  * Security: bearerAuth with role ["owner"]
  */
-export async function createPatient(ctx: Context) {
+export async function createPatient(ctx: ValidatedContext<CreatePatientBody, never, never>) {
   // Get authenticated user (middleware guarantees user exists)
   const user = ctx.get('user') as User;
   
@@ -66,6 +67,7 @@ export async function createPatient(ctx: Context) {
   if (session?.token && auth) {
     try {
       await auth.api.revokeSession({
+        body: { token: session.token },
         headers: ctx.req.raw.headers
       });
       logger?.info({ userId: user.id }, 'Session invalidated after patient role assignment');

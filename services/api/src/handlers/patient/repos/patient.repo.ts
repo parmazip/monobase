@@ -83,7 +83,12 @@ export class PatientRepository extends DatabaseRepository<Patient, NewPatient, P
       return null;
     }
     
-    const { patient, person } = result[0];
+    const row = result[0];
+    if (!row) {
+      return null;
+    }
+    
+    const { patient, person } = row;
     
     this.logger?.debug({ patientId, found: true }, 'Patient with person data retrieved');
     
@@ -96,7 +101,7 @@ export class PatientRepository extends DatabaseRepository<Patient, NewPatient, P
   /**
    * Delete a patient by ID (hard delete)
    */
-  async deleteOneById(id: string): Promise<void> {
+  override async deleteOneById(id: string): Promise<void> {
     this.logger?.debug({ id }, 'Deleting patient by ID');
     await super.deleteOneById(id);
     this.logger?.info({ id }, 'Patient deleted successfully');
@@ -111,13 +116,14 @@ export class PatientRepository extends DatabaseRepository<Patient, NewPatient, P
   ): Promise<PatientWithPerson[]> {
     this.logger?.debug({ filters, options }, 'Finding patients with person data');
     
-    let query = this.db
+    const baseQuery = this.db
       .select({
         patient: patients,
         person: persons
       })
       .from(patients)
-      .innerJoin(persons, eq(patients.person, persons.id));
+      .innerJoin(persons, eq(patients.person, persons.id))
+      .$dynamic();
     
     // Apply filters
     const conditions = [];
@@ -139,6 +145,8 @@ export class PatientRepository extends DatabaseRepository<Patient, NewPatient, P
         )
       );
     }
+    
+    let query = baseQuery;
     
     if (conditions.length > 0) {
       query = query.where(and(...conditions));

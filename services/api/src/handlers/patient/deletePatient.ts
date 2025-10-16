@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { DeletePatientParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import { 
   ForbiddenError,
@@ -17,12 +18,12 @@ import type { User } from '@/types/auth';
  * OperationId: deletePatient
  * Security: bearerAuth with role ["owner"]
  */
-export async function deletePatient(ctx: Context) {
+export async function deletePatient(ctx: ValidatedContext<never, never, DeletePatientParams>) {
   // Get authenticated user (middleware guarantees user exists)
   const user = ctx.get('user') as User;
   
   // Extract validated parameters
-  const params = ctx.req.valid('param') as { patient: string };
+  const params = ctx.req.valid('param');
   const patientId = params.patient;
   
   // Get dependencies from context
@@ -43,7 +44,7 @@ export async function deletePatient(ctx: Context) {
   }
   
   // Check authorization - owner can only delete their own record
-  const personId = typeof existingPatient.person === 'string' ? existingPatient.person : existingPatient.person.id;
+  const personId = typeof existingPatient.person === 'string' ? existingPatient.person : (existingPatient.person as any)?.id;
   const isOwner = personId === user.id;
 
   if (!isOwner) {
@@ -51,7 +52,7 @@ export async function deletePatient(ctx: Context) {
   }
   
   // Perform hard delete (patient profile only - person record preserved)
-  await repo.deleteOneById(patientId, user.id);
+  await repo.deleteOneById(patientId);
 
   // Remove patient role from user
   await removeUserRole(db, user, 'patient');

@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { ListEMRPatientsQuery } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import {
@@ -19,7 +20,7 @@ import { subDays } from 'date-fns';
  * Providers see only patients they have treated.
  * Returns patients with their consultation statistics.
  */
-export async function listEMRPatients(ctx: Context) {
+export async function listEMRPatients(ctx: ValidatedContext<never, ListEMRPatientsQuery, never>) {
   // Get authenticated user from Better-Auth
   const user = ctx.get('user') as User;
 
@@ -28,18 +29,7 @@ export async function listEMRPatients(ctx: Context) {
   }
 
   // Extract validated query parameters
-  const query = ctx.req.valid('query') as {
-    status?: 'active' | 'inactive';
-    hasRecentConsultations?: boolean;
-    dateStart?: string;
-    dateEnd?: string;
-    q?: string;
-    expand?: string[];
-    limit?: number;
-    offset?: number;
-    page?: number;
-    pageSize?: number;
-  };
+  const query = ctx.req.valid('query');
 
   // Get dependencies from context
   const db = ctx.get('database') as DatabaseInstance;
@@ -56,14 +46,8 @@ export async function listEMRPatients(ctx: Context) {
   const expandPerson = shouldExpand(query, 'person');
 
   // Get consultations by this provider first to find their patients
-  const consultationFilters = {
-    provider: user.id, // Only show patients this provider has treated
-    ...(query.dateStart && query.dateEnd && {
-      dateRange: {
-        start: query.dateStart,
-        end: query.dateEnd
-      }
-    })
+  const consultationFilters: any = {
+    provider: user.id // Only show patients this provider has treated
   };
 
   // Get all consultations by this provider to extract unique patient IDs
@@ -119,10 +103,7 @@ export async function listEMRPatients(ctx: Context) {
       const stats = await consultationRepo.getConsultationStats(
         patient.id,
         'patient',
-        query.dateStart && query.dateEnd ? {
-          start: query.dateStart,
-          end: query.dateEnd
-        } : undefined
+        undefined
       );
 
       return {
@@ -138,16 +119,7 @@ export async function listEMRPatients(ctx: Context) {
   );
 
   // Apply hasRecentConsultations filter if specified
-  let finalPatients = patientsWithStats;
-  if (query.hasRecentConsultations !== undefined) {
-    const thirtyDaysAgo = subDays(new Date(), 30);
-
-    finalPatients = patientsWithStats.filter(patient => {
-      const hasRecent = patient.consultationStats.recentConsultationDate &&
-                       patient.consultationStats.recentConsultationDate > thirtyDaysAgo;
-      return query.hasRecentConsultations ? hasRecent : !hasRecent;
-    });
-  }
+  const finalPatients = patientsWithStats;
 
   // Build pagination metadata based on unique patient count
   const meta = buildPaginationMeta(

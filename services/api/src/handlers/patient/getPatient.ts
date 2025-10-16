@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { GetPatientQuery, GetPatientParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import {
   ForbiddenError,
@@ -18,13 +19,14 @@ import type { User } from '@/types/auth';
  * Security: bearerAuth with roles ["owner", "admin"]
  * Note: Supports special /patients/me endpoint for current user's profile
  */
-export async function getPatient(ctx: Context) {
+export async function getPatient(ctx: ValidatedContext<never, GetPatientQuery, GetPatientParams>) {
   // Get authenticated user (middleware guarantees user exists)
   const user = ctx.get('user') as User;
   
   // Get path parameter and query
-  let patientId = ctx.req.param('patient');
-  const query = ctx.req.valid('query') as { expand?: string[] };
+  const params = ctx.req.valid('param');
+  let patientId = params.patient;
+  const query = ctx.req.valid('query');
   
   // Get dependencies from context
   const db = ctx.get('database') as DatabaseInstance;
@@ -68,7 +70,7 @@ export async function getPatient(ctx: Context) {
   }
   
   // Check authorization - owner can only access their own record
-  const personId = typeof patient.person === 'string' ? patient.person : patient.person.id;
+  const personId = typeof patient.person === 'string' ? patient.person : (patient.person as any)?.id;
   const isOwner = personId === user.id;
 
   if (!isOwner) {

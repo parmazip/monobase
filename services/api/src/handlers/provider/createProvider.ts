@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { CreateProviderBody } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User, Session } from '@/types/auth';
 import type { AuthInstance } from '@/utils/auth';
@@ -20,7 +21,7 @@ import { addUserRole } from '@/utils/auth';
  * OperationId: createProvider
  * Security: bearerAuth with role ["owner"]
  */
-export async function createProvider(ctx: Context) {
+export async function createProvider(ctx: ValidatedContext<CreateProviderBody, never, never>) {
   // Get authenticated user (guaranteed by middleware)
   const user = ctx.get('user') as User;
   
@@ -86,6 +87,7 @@ export async function createProvider(ctx: Context) {
   if (session?.token && auth) {
     try {
       await auth.api.revokeSession({
+        body: { token: session.token },
         headers: ctx.req.raw.headers
       });
       logger?.info({ userId: user.id }, 'Session invalidated after provider role assignment');

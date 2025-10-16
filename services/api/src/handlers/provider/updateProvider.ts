@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { UpdateProviderBody, UpdateProviderParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import { 
@@ -17,15 +18,16 @@ import { type ProviderUpdateRequest } from './repos/provider.schema';
  * OperationId: updateProvider
  * Security: bearerAuth with role ["owner"]
  */
-export async function updateProvider(ctx: Context) {
+export async function updateProvider(ctx: ValidatedContext<UpdateProviderBody, never, UpdateProviderParams>) {
   // Get authenticated user (guaranteed by middleware)
   const user = ctx.get('user') as User;
   
   // Get path parameter
-  const providerId = ctx.req.param('provider');
+  const params = ctx.req.valid('param');
+  const providerId = params.provider;
   
   // Get validated request body
-  const body = await ctx.req.json() as ProviderUpdateRequest;
+  const body = ctx.req.valid('json') as ProviderUpdateRequest;
   
   // Get dependencies from context
   const db = ctx.get('database') as DatabaseInstance;

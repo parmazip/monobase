@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { ListPatientsQuery } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import {
   NotFoundError,
@@ -17,21 +18,13 @@ import type { User } from '@/types/auth';
  * OperationId: listPatients
  * Security: bearerAuth with role ["admin"]
  */
-export async function listPatients(ctx: Context) {
+export async function listPatients(ctx: ValidatedContext<never, ListPatientsQuery, never>) {
   // Get authenticated user (middleware guarantees user exists)
   const user = ctx.get('user') as User;
   
   
   // Extract validated query parameters
-  const query = ctx.req.valid('query') as {
-    limit?: number;
-    offset?: number;
-    page?: number;
-    pageSize?: number;
-    q?: string;
-    expand?: string[];
-    status?: 'active' | 'inactive' | 'archived';
-  };
+  const query = ctx.req.valid('query');
 
   // Parse pagination with utilities - use TypeSpec defaults (limit: 20, maxLimit: 100)
   const { limit, offset } = parsePagination(query, { limit: 20, maxLimit: 100 });

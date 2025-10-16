@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { UpdatePatientBody, UpdatePatientParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import {
   ForbiddenError,
@@ -17,12 +18,13 @@ import type { User } from '@/types/auth';
  * OperationId: updatePatient
  * Security: bearerAuth with role ["owner"]
  */
-export async function updatePatient(ctx: Context) {
+export async function updatePatient(ctx: ValidatedContext<UpdatePatientBody, never, UpdatePatientParams>) {
   // Get authenticated user (middleware guarantees user exists)
   const user = ctx.get('user') as User;
   
   // Extract patient ID from path
-  const patientId = ctx.req.param('patient');
+  const params = ctx.req.valid('param');
+  const patientId = params.patient;
   
   // Extract validated request body
   const body = ctx.req.valid('json') as PatientUpdateRequest;
@@ -45,7 +47,7 @@ export async function updatePatient(ctx: Context) {
   }
   
   // Check authorization - owner can only update their own record
-  const personId = typeof existingPatient.person === 'string' ? existingPatient.person : existingPatient.person.id;
+  const personId = typeof existingPatient.person === 'string' ? existingPatient.person : (existingPatient.person as any)?.id;
   const isOwner = personId === user.id;
 
   if (!isOwner) {

@@ -1,4 +1,5 @@
-import { Context } from 'hono';
+import type { ValidatedContext } from '@/types/app';
+import type { DeleteProviderParams } from '@/generated/openapi/validators';
 import type { DatabaseInstance } from '@/core/database';
 import type { User } from '@/types/auth';
 import { 
@@ -17,12 +18,13 @@ import { removeUserRole } from '@/utils/auth';
  * OperationId: deleteProvider
  * Security: bearerAuth with role ["owner"]
  */
-export async function deleteProvider(ctx: Context) {
+export async function deleteProvider(ctx: ValidatedContext<never, never, DeleteProviderParams>) {
   // Get authenticated user (guaranteed by middleware)
   const user = ctx.get('user') as User;
   
   // Get path parameter
-  const providerId = ctx.req.param('provider');
+  const params = ctx.req.valid('param');
+  const providerId = params.provider;
   
   // Get dependencies from context
   const db = ctx.get('database') as DatabaseInstance;
@@ -42,14 +44,14 @@ export async function deleteProvider(ctx: Context) {
   }
   
   // Check authorization - owner can only delete their own record
-  const personId = typeof provider.person === 'string' ? provider.person : provider.person.id;
+  const personId = typeof provider.person === 'string' ? provider.person : (provider.person as any)?.id;
   const isOwner = personId === user.id;
   if (!isOwner) {
     throw new ForbiddenError('You can only delete your own provider profile');
   }
   
   // Perform hard delete (provider profile only - person record preserved)
-  await repo.deleteOneById(providerId, user.id);
+  await repo.deleteOneById(providerId);
 
   // Remove provider role from user
   await removeUserRole(db, user, 'provider');

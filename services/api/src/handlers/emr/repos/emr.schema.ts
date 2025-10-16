@@ -247,10 +247,11 @@ export interface PatientHealthSummary {
 }
 
 // Helper types for queries with joined data
-export interface ConsultationNoteWithDetails extends ConsultationNote {
+// Use intersection type instead of extends to avoid type conflicts
+export type ConsultationNoteWithDetails = ConsultationNote & {
   patient?: any;
   provider?: any;
-}
+};
 
 // Response type for paginated consultation lists
 export interface PaginatedConsultationResponse {

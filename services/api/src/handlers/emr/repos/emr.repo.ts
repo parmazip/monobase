@@ -193,26 +193,32 @@ export class ConsultationNoteRepository extends DatabaseRepository<
     
     // Attach expanded data
     if (patientData && patientData.length > 0) {
-      if (expand?.person && 'patient' in patientData[0]) {
-        // Include person data in patient object
-        result.patient = {
-          ...patientData[0].patient,
-          person: patientData[0].person
-        };
-      } else {
-        result.patient = patientData[0];
+      const patientRow = patientData[0];
+      if (patientRow) {
+        if (expand?.person && 'patient' in patientRow) {
+          // Include person data in patient object
+          result.patient = {
+            ...patientRow.patient,
+            person: patientRow.person
+          };
+        } else {
+          result.patient = patientRow;
+        }
       }
     }
     
     if (providerData && providerData.length > 0) {
-      if (expand?.person && 'provider' in providerData[0]) {
-        // Include person data in provider object
-        result.provider = {
-          ...providerData[0].provider,
-          person: providerData[0].person
-        };
-      } else {
-        result.provider = providerData[0];
+      const providerRow = providerData[0];
+      if (providerRow) {
+        if (expand?.person && 'provider' in providerRow) {
+          // Include person data in provider object
+          result.provider = {
+            ...providerRow.provider,
+            person: providerRow.person
+          };
+        } else {
+          result.provider = providerRow;
+        }
       }
     }
     
@@ -401,7 +407,7 @@ export class ConsultationNoteRepository extends DatabaseRepository<
       draftConsultations: allNotes.filter(note => note.status === 'draft').length,
       finalizedConsultations: allNotes.filter(note => note.status === 'finalized').length,
       amendedConsultations: allNotes.filter(note => note.status === 'amended').length,
-      recentConsultationDate: allNotes.length > 0 ? allNotes[0].createdAt : undefined
+      recentConsultationDate: allNotes.length > 0 ? allNotes[0]?.createdAt : undefined
     };
     
     this.logger?.debug({ 
@@ -453,7 +459,7 @@ export class ConsultationNoteRepository extends DatabaseRepository<
     
     const summary = {
       recentConsultations: recentNotes.length,
-      lastConsultation: recentNotes.length > 0 ? recentNotes[0].createdAt : undefined,
+      lastConsultation: recentNotes.length > 0 ? recentNotes[0]?.createdAt : undefined,
       activePrescriptions: activePrescriptions.slice(0, 10) // Limit to 10 most recent
     };
     
