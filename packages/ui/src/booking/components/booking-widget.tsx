@@ -9,14 +9,14 @@ import { Button } from '../../components/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/card'
 import { Separator } from '../../components/separator'
 import { Alert, AlertDescription } from '../../components/alert'
-import type { BookingTimeSlot, BookingProvider, BookingEventData } from '@monobase/sdk/services/booking'
+import type { BookingTimeSlot, BookingProvider, BookingEvent } from '@monobase/sdk/services/booking'
 
-export type { BookingTimeSlot, BookingProvider, BookingEventData }
+export type { BookingTimeSlot, BookingProvider, BookingEvent }
 
 export interface BookingWidgetProps {
   provider: BookingProvider
   slots: BookingTimeSlot[]
-  event?: BookingEventData
+  event?: BookingEvent
   onSlotSelect: (slot: BookingTimeSlot) => void
   className?: string
 }

@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@monobase/ui/components/card'
 import { Badge } from '@monobase/ui/components/badge'
 import { Calendar, Info } from 'lucide-react'
-import type { FollowUpData } from '@monobase/sdk/types'
+import type { FollowUpData } from '@monobase/sdk/services/emr'
 
 interface FollowUpDisplayProps {
   followUp: FollowUpData
@@ -21,12 +21,12 @@ export function FollowUpDisplay({ followUp }: FollowUpDisplayProps) {
           </Badge>
         </div>
 
-        {followUp.needed && followUp.timeframe && (
+        {followUp.needed && followUp.timeframeDays && (
           <div className="flex items-start space-x-2">
             <Calendar className="h-4 w-4 mt-0.5 text-muted-foreground" />
             <div>
               <span className="text-xs text-muted-foreground">Timeframe</span>
-              <p className="text-sm font-medium">{followUp.timeframe}</p>
+              <p className="text-sm font-medium">{followUp.timeframeDays} days</p>
             </div>
           </div>
         )}

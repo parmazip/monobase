@@ -7,7 +7,7 @@ import {
   TableRow,
 } from '@monobase/ui/components/table'
 import { Card, CardContent, CardHeader, CardTitle } from '@monobase/ui/components/card'
-import type { PrescriptionData } from '@monobase/sdk/types'
+import type { PrescriptionData } from '@monobase/sdk/services/emr'
 
 interface PrescriptionsListProps {
   prescriptions: PrescriptionData[]
@@ -38,9 +38,15 @@ export function PrescriptionsList({ prescriptions }: PrescriptionsListProps) {
             {prescriptions.map((prescription, index) => (
               <TableRow key={prescription.id || index}>
                 <TableCell className="font-medium">{prescription.medication}</TableCell>
-                <TableCell>{prescription.dosage || '-'}</TableCell>
+                <TableCell>
+                  {prescription.dosageAmount && prescription.dosageUnit 
+                    ? `${prescription.dosageAmount} ${prescription.dosageUnit}` 
+                    : '-'}
+                </TableCell>
                 <TableCell>{prescription.frequency || '-'}</TableCell>
-                <TableCell>{prescription.duration || '-'}</TableCell>
+                <TableCell>
+                  {prescription.durationDays ? `${prescription.durationDays} days` : '-'}
+                </TableCell>
                 <TableCell className="max-w-xs truncate" title={prescription.instructions}>
                   {prescription.instructions || '-'}
                 </TableCell>

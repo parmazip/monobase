@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@monobase/ui/components/card'
 import { Activity, Thermometer, Heart, Weight, Ruler } from 'lucide-react'
-import type { VitalsData } from '@monobase/sdk/types'
+import type { VitalsData } from '@monobase/sdk/services/emr'
 
 interface VitalsDisplayProps {
   vitals: VitalsData
@@ -10,33 +10,33 @@ export function VitalsDisplay({ vitals }: VitalsDisplayProps) {
   const vitalItems = [
     {
       label: 'Temperature',
-      value: vitals.temperature,
+      value: vitals.temperatureCelsius ? `${vitals.temperatureCelsius}°C` : undefined,
       icon: Thermometer,
-      show: !!vitals.temperature,
+      show: !!vitals.temperatureCelsius,
     },
     {
       label: 'Blood Pressure',
-      value: vitals.bloodPressure,
+      value: vitals.systolicBp && vitals.diastolicBp ? `${vitals.systolicBp}/${vitals.diastolicBp} mmHg` : undefined,
       icon: Activity,
-      show: !!vitals.bloodPressure,
+      show: !!(vitals.systolicBp && vitals.diastolicBp),
     },
     {
-      label: 'Pulse',
-      value: vitals.pulse ? `${vitals.pulse} bpm` : undefined,
+      label: 'Heart Rate',
+      value: vitals.heartRate ? `${vitals.heartRate} bpm` : undefined,
       icon: Heart,
-      show: !!vitals.pulse,
+      show: !!vitals.heartRate,
     },
     {
       label: 'Weight',
-      value: vitals.weight,
+      value: vitals.weightKg ? `${vitals.weightKg} kg` : undefined,
       icon: Weight,
-      show: !!vitals.weight,
+      show: !!vitals.weightKg,
     },
     {
       label: 'Height',
-      value: vitals.height,
+      value: vitals.heightCm ? `${vitals.heightCm} cm` : undefined,
       icon: Ruler,
-      show: !!vitals.height,
+      show: !!vitals.heightCm,
     },
   ].filter((item) => item.show)
 

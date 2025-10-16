@@ -5,7 +5,7 @@ import { VitalsDisplay } from './vitals-display'
 import { PrescriptionsList } from './prescriptions-list'
 import { SymptomsDisplay } from './symptoms-display'
 import { FollowUpDisplay } from './follow-up-display'
-import type { ConsultationNote } from '@monobase/sdk/types'
+import type { ConsultationNote } from '@monobase/sdk/services/emr'
 import { formatDate } from '@monobase/ui/lib/format-date'
 
 interface ConsultationCardProps {
@@ -13,11 +13,9 @@ interface ConsultationCardProps {
 }
 
 export function ConsultationCard({ consultation }: ConsultationCardProps) {
-  // Extract provider name if expanded
-  const providerName =
-    typeof consultation.provider === 'object'
-      ? `${consultation.provider.person.firstName} ${consultation.provider.person.lastName}`
-      : 'Provider'
+  // Note: provider is a string ID, not an expanded object
+  // In a real app, you'd need to fetch provider details separately or use expanded data
+  const providerName = 'Provider'
 
   // Format date
   const consultationDate = formatDate(consultation.createdAt, { format: 'long' })
