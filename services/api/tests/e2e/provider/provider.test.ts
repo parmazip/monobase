@@ -30,15 +30,10 @@ import {
 describe('Provider Module E2E Tests', () => {
   let apiClient: ApiClient;
   let testApp: TestApp;
+  let userCredentials: { email: string; password: string };
 
   beforeAll(async () => {
     testApp = await createTestApp({ storage: true });
-
-    // Create API client with embedded app instance
-    apiClient = createApiClient({ app: testApp.app });
-
-    // Create and sign up a new user for this test
-    await apiClient.signup();
   }, 30000);
 
   afterAll(async () => {
@@ -49,9 +44,17 @@ describe('Provider Module E2E Tests', () => {
     // Create new API client for each test
     apiClient = createApiClient({ app: testApp.app });
 
-    // Create and sign up a new user for this test
-    await apiClient.signup();
+    // Create and sign up a new user for this test, capture credentials for re-auth
+    userCredentials = await apiClient.signup();
   }, 30000);
+
+  // Helper function to create provider and re-authenticate
+  async function createProviderAndReauth(client: ApiClient, data: any) {
+    const result = await createProvider(client, data);
+    // Re-authenticate after creating provider (session is revoked)
+    await client.signin(userCredentials.email, userCredentials.password);
+    return result;
+  }
 
   describe('Provider Creation', () => {
     test('should create provider with complete information', async () => {
@@ -171,7 +174,7 @@ describe('Provider Module E2E Tests', () => {
     test('should retrieve provider by ID', async () => {
       // Create a provider for retrieval tests
       const testProviderData = generateTestProviderData();
-      const { data: createdProvider } = await createProvider(apiClient, testProviderData);
+      const { data: createdProvider } = await createProviderAndReauth(apiClient, testProviderData);
       const testProviderId = createdProvider!.id;
 
       const { response, data } = await getProvider(apiClient, testProviderId);
@@ -187,7 +190,7 @@ describe('Provider Module E2E Tests', () => {
     test('should include provider details in retrieval', async () => {
       // Create a provider for retrieval tests
       const testProviderData = generateTestProviderData();
-      const { data: createdProvider } = await createProvider(apiClient, testProviderData);
+      const { data: createdProvider } = await createProviderAndReauth(apiClient, testProviderData);
       const testProviderId = createdProvider!.id;
 
       const { response, data } = await getProvider(apiClient, testProviderId);
@@ -212,7 +215,7 @@ describe('Provider Module E2E Tests', () => {
     test('should retrieve current user\'s provider profile via /providers/me', async () => {
       // Create provider profile for current user
       const testData = generateTestProviderData();
-      const { data: createdProvider } = await createProvider(apiClient, testData);
+      const { data: createdProvider } = await createProviderAndReauth(apiClient, testData);
 
       // Retrieve via /providers/me
       const { response, data } = await getMyProvider(apiClient);
@@ -238,7 +241,7 @@ describe('Provider Module E2E Tests', () => {
     test('should include person details when expand=person', async () => {
       // Create provider profile for current user
       const testData = generateTestProviderData();
-      await createProvider(apiClient, testData);
+      await createProviderAndReauth(apiClient, testData);
 
       // Retrieve via /providers/me with expand
       const { response, data } = await getMyProvider(apiClient, {
@@ -268,6 +271,9 @@ describe('Provider Module E2E Tests', () => {
       });
       const { data: createdProvider } = await createProvider(newApiClient, testData);
 
+      // Re-authenticate newApiClient after creating provider (session is revoked)
+      await newApiClient.signin(user.email, user.password);
+
       // Get via /providers/me
       const { response, data } = await getMyProvider(newApiClient);
 
@@ -284,7 +290,7 @@ describe('Provider Module E2E Tests', () => {
     test('should update provider years of experience', async () => {
       // Create a provider for update tests
       const originalData = generateTestProviderData();
-      const { data: createdProvider } = await createProvider(apiClient, originalData);
+      const { data: createdProvider } = await createProviderAndReauth(apiClient, originalData);
       const testProviderId = createdProvider!.id;
 
       const updateData: ProviderUpdateRequest = {
@@ -300,7 +306,7 @@ describe('Provider Module E2E Tests', () => {
     test('should update biography', async () => {
       // Create a provider for update tests
       const originalData = generateTestProviderData();
-      const { data: createdProvider } = await createProvider(apiClient, originalData);
+      const { data: createdProvider } = await createProviderAndReauth(apiClient, originalData);
       const testProviderId = createdProvider!.id;
 
       const newBio = 'Updated professional biography focusing on patient care and minor ailment treatment.';
@@ -317,7 +323,7 @@ describe('Provider Module E2E Tests', () => {
     test('should update minor ailments specialties', async () => {
       // Create a provider for update tests
       const originalData = generateTestProviderData();
-      const { data: createdProvider } = await createProvider(apiClient, originalData);
+      const { data: createdProvider } = await createProviderAndReauth(apiClient, originalData);
       const testProviderId = createdProvider!.id;
 
       const updateData: ProviderUpdateRequest = {
@@ -335,7 +341,7 @@ describe('Provider Module E2E Tests', () => {
     test('should update minor ailment practice locations', async () => {
       // Create a provider for update tests
       const originalData = generateTestProviderData();
-      const { data: createdProvider } = await createProvider(apiClient, originalData);
+      const { data: createdProvider } = await createProviderAndReauth(apiClient, originalData);
       const testProviderId = createdProvider!.id;
 
       const updateData: ProviderUpdateRequest = {
@@ -352,7 +358,7 @@ describe('Provider Module E2E Tests', () => {
     test('should validate update data', async () => {
       // Create a provider for update tests
       const originalData = generateTestProviderData();
-      const { data: createdProvider } = await createProvider(apiClient, originalData);
+      const { data: createdProvider } = await createProviderAndReauth(apiClient, originalData);
       const testProviderId = createdProvider!.id;
 
       const updateData = {
@@ -380,7 +386,7 @@ describe('Provider Module E2E Tests', () => {
     test('should delete provider', async () => {
       // Create a provider
       const testData = generateTestProviderData();
-      const { data: createdProvider } = await createProvider(apiClient, testData);
+      const { data: createdProvider } = await createProviderAndReauth(apiClient, testData);
       
       // Delete the provider
       const { response } = await deleteProvider(apiClient, createdProvider!.id);
@@ -567,7 +573,7 @@ describe('Provider Module E2E Tests', () => {
         yearsOfExperience: 15
       });
       
-      const { response, data } = await createProvider(apiClient, testData);
+      const { response, data } = await createProviderAndReauth(apiClient, testData);
       
       expect(response.status).toBe(201);
       expect(data?.yearsOfExperience).toBe(15);
@@ -695,7 +701,7 @@ describe('Provider Module E2E Tests', () => {
     test('should handle concurrent updates to same provider', async () => {
       // Create a provider
       const testData = generateTestProviderData();
-      const { data: provider } = await createProvider(apiClient, testData);
+      const { data: provider } = await createProviderAndReauth(apiClient, testData);
       
       // Perform concurrent updates
       const updates = [

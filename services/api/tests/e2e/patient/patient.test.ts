@@ -32,6 +32,7 @@ import {
 describe('Patient Module E2E Tests', () => {
   let testApp: TestApp;
   let apiClient: ApiClient;
+  let userCredentials: { email: string; password: string };
 
   beforeAll(async () => {
     testApp = await createTestApp({ storage: true });
@@ -41,14 +42,22 @@ describe('Patient Module E2E Tests', () => {
     // Create new API client for each test with embedded app instance
     apiClient = createApiClient({ app: testApp.app });
 
-    // Create and sign up a new user for this test
-    await apiClient.signup();
+    // Create and sign up a new user for this test, capture credentials for re-auth
+    userCredentials = await apiClient.signup();
   }, 30000);
 
   afterAll(async () => {
     // Cleanup test database schema
     await testApp?.cleanup();
   });
+
+  // Helper function to create patient and re-authenticate
+  async function createPatientAndReauth(client: ApiClient, data: any) {
+    const result = await createPatient(client, data);
+    // Re-authenticate after creating patient (session is revoked)
+    await client.signin(userCredentials.email, userCredentials.password);
+    return result;
+  }
 
   describe('Patient Creation', () => {
     test('should create patient with complete information', async () => {
@@ -157,10 +166,13 @@ describe('Patient Module E2E Tests', () => {
     let testPatientData: PatientCreateRequest;
 
     beforeEach(async () => {
-      // Create a patient for retrieval tests
+      // Create a patient for retrieval tests (this will revoke the session)
       testPatientData = generateTestPatientData();
       const { data } = await createPatient(apiClient, testPatientData);
       testPatientId = data!.id;
+      
+      // Re-authenticate to get fresh token with patient role
+      await apiClient.signin(userCredentials.email, userCredentials.password);
     });
 
     test('should retrieve patient by ID', async () => {
@@ -194,7 +206,7 @@ describe('Patient Module E2E Tests', () => {
     test('should retrieve current user\'s patient profile via /patients/me', async () => {
       // Create patient profile for current user
       const testData = generateTestPatientData();
-      const { data: createdPatient } = await createPatient(apiClient, testData);
+      const { data: createdPatient } = await createPatientAndReauth(apiClient, testData);
 
       // Retrieve via /patients/me
       const { response, data } = await getMyPatient(apiClient);
@@ -220,7 +232,7 @@ describe('Patient Module E2E Tests', () => {
     test('should include person details when expand=person', async () => {
       // Create patient profile
       const testData = generateTestPatientData();
-      await createPatient(apiClient, testData);
+      await createPatientAndReauth(apiClient, testData);
 
       // Retrieve with expand parameter
       const { response, data } = await getMyPatient(apiClient, { expand: ['person'] });
@@ -237,9 +249,12 @@ describe('Patient Module E2E Tests', () => {
       // Typical user workflow: signup -> create patient -> get profile
       const testData = generateTestPatientData();
 
-      // Create patient
+      // Create patient (this will revoke the session)
       const { response: createResponse, data: createdPatient } = await createPatient(apiClient, testData);
       expect(createResponse.status).toBe(201);
+
+      // Re-authenticate to get fresh token with patient role
+      await apiClient.signin(userCredentials.email, userCredentials.password);
 
       // Immediately retrieve via /me endpoint
       const { response: getResponse, data: retrievedPatient } = await getMyPatient(apiClient);
@@ -256,10 +271,13 @@ describe('Patient Module E2E Tests', () => {
     let originalData: PatientCreateRequest;
 
     beforeEach(async () => {
-      // Create a patient for update tests
+      // Create a patient for update tests (this will revoke the session)
       originalData = generateTestPatientData();
       const { data } = await createPatient(apiClient, originalData);
       testPatientId = data!.id;
+      
+      // Re-authenticate to get fresh token with patient role
+      await apiClient.signin(userCredentials.email, userCredentials.password);
     });
 
     test('should update primary provider', async () => {
@@ -353,10 +371,13 @@ describe('Patient Module E2E Tests', () => {
     let testPatientId: string;
 
     beforeEach(async () => {
-      // Create a patient for PATCH response tests
+      // Create a patient for PATCH response tests (this will revoke the session)
       const testData = generateTestPatientData();
       const { data } = await createPatient(apiClient, testData);
       testPatientId = data!.id;
+      
+      // Re-authenticate to get fresh token with patient role
+      await apiClient.signin(userCredentials.email, userCredentials.password);
     });
 
     test('PATCH response should include updated provider data in response body', async () => {
@@ -556,7 +577,7 @@ describe('Patient Module E2E Tests', () => {
     test('should delete patient (hard delete)', async () => {
       // Create a patient
       const testData = generateTestPatientData();
-      const { data: createdPatient } = await createPatient(apiClient, testData);
+      const { data: createdPatient } = await createPatientAndReauth(apiClient, testData);
       
       // Delete the patient (hard delete - patient completely removed)
       const { response } = await deletePatient(apiClient, createdPatient!.id);
@@ -572,7 +593,7 @@ describe('Patient Module E2E Tests', () => {
     test('should remove patient role after patient deletion (verified by 403 responses)', async () => {
       // Create a patient (this gives user patient role)
       const testData = generateTestPatientData();
-      const { data: createdPatient } = await createPatient(apiClient, testData);
+      const { data: createdPatient } = await createPatientAndReauth(apiClient, testData);
       
       // Verify we can access the patient before deletion
       const { response: getBeforeResponse } = await getPatient(apiClient, createdPatient!.id);
@@ -597,7 +618,7 @@ describe('Patient Module E2E Tests', () => {
     test('should prevent access to patient-only operations after deletion', async () => {
       // Create a patient
       const testData = generateTestPatientData();
-      const { data: createdPatient } = await createPatient(apiClient, testData);
+      const { data: createdPatient } = await createPatientAndReauth(apiClient, testData);
       
       // Delete the patient (which removes the patient role)
       const { response } = await deletePatient(apiClient, createdPatient!.id);
@@ -609,7 +630,7 @@ describe('Patient Module E2E Tests', () => {
       
       // Try to create another patient - system behavior determines if this is allowed
       const newPatientData = generateTestPatientData();
-      const { response: createResponse, data: newPatientData2 } = await createPatient(apiClient, newPatientData);
+      const { response: createResponse, data: newPatientData2 } = await createPatientAndReauth(apiClient, newPatientData);
       
       // Should either be forbidden (403) or the system should allow recreation of patient profile
       // If recreation succeeds, it demonstrates the role system is working correctly
@@ -823,9 +844,12 @@ describe('Patient Module E2E Tests', () => {
     }, 10000); // Add explicit timeout
 
     test('should handle concurrent updates to same patient', async () => {
-      // Create a patient
+      // Create a patient (this will revoke the session)
       const testData = generateTestPatientData();
       const { data: patient } = await createPatient(apiClient, testData);
+      
+      // Re-authenticate to get fresh token with patient role
+      await apiClient.signin(userCredentials.email, userCredentials.password);
       
       // Perform concurrent updates
       const updates = [
