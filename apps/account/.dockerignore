@@ -3,8 +3,22 @@
 # Ignore everything
 *
 
-# Allow only what we need for the Docker build
-!dist/
-!docker-entrypoint.sh
-!Caddyfile
-!Dockerfile
+# Allow root workspace files
+!package.json
+!bun.lockb
+
+# Allow apps/account files
+!apps/
+!apps/account/
+!apps/account/**
+
+# Allow required packages
+!packages/
+!packages/sdk/
+!packages/sdk/**
+!packages/ui/
+!packages/ui/**
+!packages/api-spec/
+!packages/api-spec/**
+!packages/typescript-config/
+!packages/typescript-config/**

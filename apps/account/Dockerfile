@@ -4,15 +4,15 @@ FROM oven/bun:1 AS builder
 WORKDIR /app
 
 # Copy workspace files
-COPY package.json bun.lockb ./
+COPY package.json bun.lock ./
 COPY apps/account/package.json ./apps/account/
 COPY packages/sdk/package.json ./packages/sdk/
 COPY packages/ui/package.json ./packages/ui/
-COPY packages/api-spec/package.json ./packages/api-spec/
+COPY specs/api/package.json ./specs/api/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
 
 # Install dependencies
-RUN bun install --frozen-lockfile
+RUN bun install
 
 # Copy all source files
 COPY . .
@@ -23,6 +23,10 @@ RUN bun run build
 
 # Production stage using Caddy to serve the SPA
 FROM caddy:2.8-alpine
+
+LABEL org.opencontainers.image.source=https://github.com/monobaselabs/monobase
+LABEL org.opencontainers.image.description="Monobase Account App"
+LABEL org.opencontainers.image.licenses=MIT
 
 # Copy the dist folder to Caddy's default serve directory
 COPY --from=builder /app/apps/account/dist /srv

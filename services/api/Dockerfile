@@ -13,6 +13,7 @@ WORKDIR /specs
 # Copy specs source (assumes build from monorepo root)
 COPY specs/api/package.json ./
 COPY specs/api/src ./src/
+COPY specs/api/scripts ./scripts/
 COPY specs/api/tspconfig.yaml ./
 
 # Install spec dependencies and build using bun (faster than npm)
@@ -21,6 +22,10 @@ RUN bun run build
 
 # Stage 2: Build API Application  
 FROM oven/bun:1.2.21-alpine
+
+LABEL org.opencontainers.image.source=https://github.com/monobaselabs/monobase
+LABEL org.opencontainers.image.description="Monobase API Service"
+LABEL org.opencontainers.image.licenses=MIT
 
 WORKDIR /app
 
@@ -34,7 +39,8 @@ COPY --from=spec-builder /specs/package.json ./specs/api/
 # Copy API service files (assumes build from monorepo root)
 COPY services/api/package.json ./
 RUN cat package.json | \
-    sed 's/"@monobase\/api-spec": "workspace:\*"/"@monobase\/api-spec": "file:specs\/api"/' > package.temp.json && \
+    sed 's/"@monobase\/api-spec": "workspace:\*"/"@monobase\/api-spec": "file:specs\/api"/' | \
+    sed 's/"@monobase\/typescript-config": "workspace:\*",//' > package.temp.json && \
     mv package.temp.json package.json
 
 # Install dependencies

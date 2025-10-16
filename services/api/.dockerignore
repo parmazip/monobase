@@ -1,0 +1,29 @@
+# Whitelist approach: Ignore everything except what's needed for Docker build
+
+# Ignore everything
+*
+
+# Allow root workspace files
+!package.json
+!bun.lockb
+
+# Allow specs/api files needed for build
+!specs/
+!specs/api/
+!specs/api/package.json
+!specs/api/src/
+!specs/api/src/**
+!specs/api/scripts/
+!specs/api/scripts/**
+!specs/api/tspconfig.yaml
+
+# Allow services/api files needed for build
+!services/
+!services/api/
+!services/api/package.json
+!services/api/src/
+!services/api/src/**
+!services/api/scripts/
+!services/api/scripts/**
+!services/api/tsconfig.json
+!services/api/drizzle.config.ts
