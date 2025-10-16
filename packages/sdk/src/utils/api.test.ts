@@ -5,7 +5,6 @@ import {
   normalizeStringField,
   sanitizeObject,
 } from './api'
-import type { PaginatedResponse } from '../api'
 
 describe('mapPaginatedResponse', () => {
   test('maps data correctly using mapper function', () => {

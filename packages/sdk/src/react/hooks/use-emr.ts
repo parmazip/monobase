@@ -7,7 +7,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import type { UseQueryOptions, UseMutationOptions } from '@tanstack/react-query'
+import type { UseQueryOptions } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   listConsultations,
@@ -70,31 +70,31 @@ export function useConsultation(
 export function useCreateConsultation(
   options?: {
     toastSuccess?: boolean,
+    onSuccess?: (data: ConsultationNote) => void
     toastError?: boolean,
-  } & UseMutationOptions<ConsultationNote, Error, CreateConsultationRequest>
+    onError?: (error: Error) => void
+  }
 ) {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: createConsultation,
-    onSuccess: (data, variables, context) => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.emrConsultations() })
       
       if (options?.toastSuccess !== false) {
         toast.success('Consultation created successfully')
       }
       
-      options?.onSuccess?.(data, variables, context)
+      options?.onSuccess?.(data)
     },
-    onError: (error, variables, context) => {
+    onError: (error) => {
       if (options?.toastError !== false) {
         toast.error('Failed to create consultation')
       }
       
-      options?.onError?.(error, variables, context)
+      options?.onError?.(error as Error)
     },
-    onMutate: options?.onMutate,
-    onSettled: options?.onSettled,
   })
 }
 
@@ -104,14 +104,16 @@ export function useCreateConsultation(
 export function useUpdateConsultation(
   options?: {
     toastSuccess?: boolean,
+    onSuccess?: (data: ConsultationNote) => void
     toastError?: boolean,
-  } & UseMutationOptions<ConsultationNote, Error, { id: string; data: UpdateConsultationRequest }>
+    onError?: (error: Error) => void
+  }
 ) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, data }) => updateConsultation(id, data),
-    onSuccess: (data, variables, context) => {
+    mutationFn: ({ id, data }: { id: string; data: UpdateConsultationRequest }) => updateConsultation(id, data),
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.emrConsultation(variables.id) })
       queryClient.invalidateQueries({ queryKey: queryKeys.emrConsultations() })
       
@@ -119,17 +121,15 @@ export function useUpdateConsultation(
         toast.success('Consultation updated successfully')
       }
       
-      options?.onSuccess?.(data, variables, context)
+      options?.onSuccess?.(data)
     },
-    onError: (error, variables, context) => {
+    onError: (error) => {
       if (options?.toastError !== false) {
         toast.error('Failed to update consultation')
       }
       
-      options?.onError?.(error, variables, context)
+      options?.onError?.(error as Error)
     },
-    onMutate: options?.onMutate,
-    onSettled: options?.onSettled,
   })
 }
 
