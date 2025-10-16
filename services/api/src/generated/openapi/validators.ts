@@ -892,6 +892,7 @@ export const InvoiceSchema = z.object({
   total: z.number().int().gte(0),
   currency: z.string().regex(/^[A-Z]{3}$/),
   paymentCaptureMethod: z.enum(["automatic", "manual"]),
+  issuedAt: z.string().datetime().transform((str) => new Date(str)).optional(),
   paymentDueAt: z.string().datetime().transform((str) => new Date(str)).optional(),
   lineItems: z.array(InvoiceLineItemSchema),
   paymentStatus: z.enum(["pending", "requires_capture", "processing", "succeeded", "failed", "canceled"]).optional(),
@@ -963,7 +964,9 @@ export const NotificationSchema = z.object({
   relatedEntity: z.string().uuid().optional(),
   status: z.enum(["queued", "sent", "delivered", "read", "failed", "expired", "unread"]),
   sentAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  deliveredAt: z.string().datetime().transform((str) => new Date(str)).optional(),
   readAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   consentValidated: z.boolean()
 });
 
@@ -1550,6 +1553,7 @@ export const ListAuditLogsQuery = z.object({
   action: AuditActionSchema.optional(),
   startDate: z.string().datetime().transform((str) => new Date(str)).optional(),
   endDate: z.string().datetime().transform((str) => new Date(str)).optional(),
+  orderBy: z.string().optional(),
   offset: z.coerce.number().int().gte(0).optional(),
   limit: z.coerce.number().int().gte(1).lte(100).optional(),
   page: z.coerce.number().int().gte(1).optional(),

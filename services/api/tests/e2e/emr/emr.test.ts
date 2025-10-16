@@ -72,12 +72,13 @@ describe('EMR Module E2E Tests', () => {
   });
 
   beforeEach(async () => {
-    // Sign up users
-    await providerClient.signup();
-    await patientClient.signup();
-    await anotherPatientClient.signup();
+    // Sign up users and capture credentials for re-authentication
+    const providerCredentials = await providerClient.signup();
+    const patientCredentials = await patientClient.signup();
+    const anotherPatientCredentials = await anotherPatientClient.signup();
     
     // Create provider profile with proper role
+    // NOTE: This endpoint revokes the session after adding 'provider' role
     const provider = await providerClient.createProviderProfile({
       providerType: 'pharmacist',
       yearsOfExperience: faker.number.int({ min: 1, max: 30 }),
@@ -85,12 +86,21 @@ describe('EMR Module E2E Tests', () => {
     });
     providerId = provider.id;
     
+    // Re-authenticate to get fresh token with provider role
+    // The session was revoked by createProviderProfile to force role refresh
+    await providerClient.signin(providerCredentials.email, providerCredentials.password);
+    
     // Create patient profiles with proper roles
+    // NOTE: These endpoints also revoke sessions after adding 'patient' role
     const patient = await patientClient.createPatientProfile();
     patientId = patient.id;
     
     const anotherPatient = await anotherPatientClient.createPatientProfile();
     anotherPatientId = anotherPatient.id;
+    
+    // Re-authenticate patient clients to get fresh tokens with patient role
+    await patientClient.signin(patientCredentials.email, patientCredentials.password);
+    await anotherPatientClient.signin(anotherPatientCredentials.email, anotherPatientCredentials.password);
   }, 30000);
 
   describe('Consultation Creation', () => {

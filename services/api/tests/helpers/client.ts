@@ -147,13 +147,13 @@ export class ApiClient {
   
   /**
    * Create a new user and bind this client to it
-   * Returns the user object
+   * Returns the user object and credentials for potential re-authentication
    */
   async signup(options?: {
     email?: string;
     password?: string;
     name?: string;
-  }): Promise<any> {
+  }): Promise<{ user: any; email: string; password: string }> {
     const credentials = {
       email: options?.email || generateUniqueEmail(),
       password: options?.password || faker.internet.password({ length: 12, prefix: 'Aa1!' }),
@@ -187,7 +187,12 @@ export class ApiClient {
     const data = await signInResponse.json();
     this.currentUser = data.user;
     
-    return this.currentUser;
+    // Return user and credentials for potential re-authentication
+    return {
+      user: this.currentUser,
+      email: credentials.email,
+      password: credentials.password
+    };
   }
   
   /**
