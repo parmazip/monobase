@@ -3,10 +3,22 @@
   "version": "0.1.0",
   "type": "module",
   "exports": {
-    "./api": "./src/api.ts",
-    "./utils/*": "./src/utils/*.ts",
-    "./services/*": "./src/services/*.ts",
-    "./react/*": "./src/react/*"
+    "./api": {
+      "types": "./src/api.ts",
+      "default": "./src/api.ts"
+    },
+    "./utils/*": {
+      "types": "./src/utils/*.ts",
+      "default": "./src/utils/*.ts"
+    },
+    "./services/*": {
+      "types": "./src/services/*.ts",
+      "default": "./src/services/*.ts"
+    },
+    "./react/*": {
+      "types": "./src/react/*",
+      "default": "./src/react/*"
+    }
   },
   "files": ["src"],
   "scripts": {
