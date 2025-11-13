@@ -144,13 +144,13 @@ export function transformProviderForCard(provider: Provider) {
  * Compute provider title based on type and experience
  */
 function computeProviderTitle(providerType: string, yearsOfExperience?: number): string {
-  if (providerType === 'pharmacist') {
-    const years = yearsOfExperience ?? 0
-    if (years >= 15) return 'Senior Pharmacist'
-    if (years >= 10) return 'Clinical Pharmacist'
-    if (years >= 5) return 'Consultant Pharmacist'
-    return 'Pharmacist'
-  }
+  const years = yearsOfExperience ?? 0
+
+  // Generic experience-based titles
+  if (years >= 15) return 'Senior Provider'
+  if (years >= 10) return 'Experienced Provider'
+  if (years >= 5) return 'Provider'
+
   return 'Healthcare Provider'
 }
 
@@ -214,8 +214,8 @@ export function useUpdateMyProvider(options?: {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (updates: ProviderUpdateRequest) =>
-      providerService.updateMyProvider(updates),
+    mutationFn: ({ providerId, updates }: { providerId: string; updates: ProviderUpdateRequest }) =>
+      providerService.updateMyProvider(providerId, updates),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['provider', 'me'] })
       queryClient.invalidateQueries({ queryKey: queryKeys.providers() })

@@ -66,7 +66,7 @@ function OnboardingPage() {
     pharmacy?: PrimaryPharmacyData
   }>({})
 
-  const totalSteps = 4
+  const totalSteps = 2
 
   const handlePersonalInfoSubmit = (data: PersonalInfo) => {
     setFormData(prev => ({ ...prev, personal: data }))
@@ -104,7 +104,6 @@ function OnboardingPage() {
         dateOfBirth: formData.personal.dateOfBirth,
         gender: formData.personal.gender,
         avatar: formData.personal.avatar,
-        primaryAddress: formData.address,
         languagesSpoken: [detectedLanguage],
         timezone: detectedTimezone,
       }).catch(error => {
@@ -119,18 +118,6 @@ function OnboardingPage() {
 
       // Then create patient profile with provider and pharmacy info
       await createPatientMutation.mutateAsync({
-        primaryCareProvider: formData.provider?.hasProvider ? {
-          name: formData.provider.name,
-          specialty: formData.provider.specialty || null,
-          phone: formData.provider.phone || null,
-          fax: formData.provider.fax || null,
-        } : null,
-        primaryPharmacy: data.hasPharmacy ? {
-          name: data.name,
-          address: data.address || null,
-          phone: data.phone || null,
-          fax: data.fax || null,
-        } : null,
       })
 
       // Navigate to dashboard on success
@@ -150,8 +137,6 @@ function OnboardingPage() {
     switch (step) {
       case 1: return <UserCheck className="w-5 h-5" />
       case 2: return <MapPin className="w-5 h-5" />
-      case 3: return <Stethoscope className="w-5 h-5" />
-      case 4: return <Pill className="w-5 h-5" />
       default: return null
     }
   }
@@ -160,8 +145,6 @@ function OnboardingPage() {
     switch (step) {
       case 1: return 'Personal Information'
       case 2: return 'Address (Optional)'
-      case 3: return 'Primary Care Provider'
-      case 4: return 'Primary Pharmacy'
       default: return ''
     }
   }
@@ -170,8 +153,6 @@ function OnboardingPage() {
     switch (step) {
       case 1: return 'Tell us about yourself'
       case 2: return 'Where can we reach you? You can skip this step for now.'
-      case 3: return 'Do you have a primary care provider?'
-      case 4: return 'Where do you prefer to fill prescriptions?'
       default: return ''
     }
   }
@@ -186,7 +167,7 @@ function OnboardingPage() {
           <div className="flex justify-center mb-4">
             <Logo variant="horizontal" size="xl" />
           </div>
-          <h1 className="text-3xl font-headline font-bold text-foreground">Welcome to Parmazip</h1>
+          <h1 className="text-3xl font-headline font-bold text-foreground">Welcome to Monobase</h1>
           <p className="text-muted-foreground mt-2 font-body">Let's set up your patient profile</p>
         </div>
 
@@ -234,28 +215,6 @@ function OnboardingPage() {
               />
             )}
 
-            {/* Step 3: Primary Care Provider */}
-            {currentStep === 3 && (
-              <PrimaryCareProviderForm
-                onSubmit={handleProviderSubmit}
-                defaultValues={formData.provider}
-                mode="create"
-                showButtons={false}
-                formId="step-3-form"
-              />
-            )}
-
-            {/* Step 4: Primary Pharmacy */}
-            {currentStep === 4 && (
-              <PrimaryPharmacyForm
-                onSubmit={handlePharmacySubmit}
-                defaultValues={formData.pharmacy}
-                mode="create"
-                showButtons={false}
-                formId="step-4-form"
-              />
-            )}
-
             {/* Navigation Buttons */}
             <div className="flex justify-between mt-6">
               {/* Back Button */}
@@ -299,43 +258,12 @@ function OnboardingPage() {
                   <Button
                     type="submit"
                     disabled={isLoading}
-                    onClick={() => {
-                      const forms = document.querySelectorAll('form')
-                      if (forms[0]) {
-                        forms[0].requestSubmit()
-                      }
-                    }}
+                    onClick={handlePharmacySubmit}
                   >
                     Next
                     <ChevronRight className="w-4 h-4 ml-2" />
                   </Button>
                 </>
-              )}
-
-              {/* Step 3: Next Button */}
-              {currentStep === 3 && (
-                <Button
-                  type="submit"
-                  form="step-3-form"
-                  className="ml-auto"
-                  disabled={isLoading}
-                >
-                  Next
-                  <ChevronRight className="w-4 h-4 ml-2" />
-                </Button>
-              )}
-
-              {/* Step 4: Complete Setup Button */}
-              {currentStep === 4 && (
-                <Button
-                  type="submit"
-                  form="step-4-form"
-                  className="ml-auto"
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Creating Profile...' : 'Complete Setup'}
-                  <ChevronRight className="w-4 h-4 ml-2" />
-                </Button>
               )}
             </div>
           </CardContent>

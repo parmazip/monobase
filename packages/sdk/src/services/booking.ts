@@ -303,7 +303,56 @@ function mapApiBookingToFrontend(apiBooking: ApiBooking): Booking {
 // ============================================================================
 
 /**
+ * List booking events with filters
+ */
+export interface ListBookingEventsParams {
+  owner?: string
+  context?: string
+  locationType?: 'video' | 'phone' | 'in-person'
+  status?: 'draft' | 'active' | 'paused' | 'archived'
+  availableFrom?: Date
+  availableTo?: Date
+  tags?: string[]
+  offset?: number
+  limit?: number
+}
+
+export async function listBookingEvents(params?: ListBookingEventsParams): Promise<PaginatedResponse<BookingEvent>> {
+  const queryParams = sanitizeObject({
+    owner: params?.owner,
+    context: params?.context,
+    locationType: params?.locationType,
+    status: params?.status,
+    availableFrom: params?.availableFrom ? formatDate(params.availableFrom, { format: 'iso' }) : undefined,
+    availableTo: params?.availableTo ? formatDate(params.availableTo, { format: 'iso' }) : undefined,
+    tags: params?.tags?.join(','),
+    offset: params?.offset,
+    limit: params?.limit,
+  }, { nullable: [] })
+
+  const response = await apiGet<PaginatedResponse<ApiBookingEvent>>('/booking/events', queryParams)
+
+  return {
+    data: response.data.map(mapApiBookingEventToFrontend),
+    pagination: response.pagination,
+  }
+}
+
+/**
+ * Get a single booking event by ID
+ */
+export async function getBookingEvent(eventId: string, params?: { expand?: string }): Promise<BookingEvent> {
+  const queryParams = sanitizeObject({
+    expand: params?.expand,
+  }, { nullable: [] })
+
+  const response = await apiGet<ApiBookingEvent>(`/booking/events/${eventId}`, queryParams)
+  return mapApiBookingEventToFrontend(response)
+}
+
+/**
  * Search providers with filters
+ * @deprecated Use listBookingEvents() instead - this endpoint no longer exists
  */
 export interface SearchProvidersParams {
   q?: string
@@ -339,6 +388,7 @@ export async function searchProviders(params: SearchProvidersParams): Promise<Pa
 
 /**
  * Get provider (Person) with available slots and event data
+ * @deprecated Use getBookingEvent() instead - /booking/providers endpoint no longer exists
  */
 export async function getProviderWithSlots(providerId: string): Promise<ProviderWithSlots> {
   const response = await apiGet<ApiPersonWithSlots>(`/booking/providers/${providerId}`, {

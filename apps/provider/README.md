@@ -1,6 +1,6 @@
 # Provider App - FULLY MIGRATED ✅
 
-Provider portal for the Monobase healthcare platform with **100% feature parity** from the original Parmazip implementation.
+Provider portal for the Monobase healthcare platform with **100% feature parity** from the original implementation.
 
 ## Migration Status
 
@@ -80,7 +80,7 @@ apps/provider/           → Business logic & provider-specific features
 - Medical records access and editing
 - Consultation tracking and notes
 - Video consultations with WebRTC
-- Prescription management
+- Treatment management
 
 ### Financial
 - Earnings analytics with period breakdowns
@@ -122,7 +122,7 @@ VITE_ONESIGNAL_APP_TAG=provider
 
 ## Migration Notes
 
-This app was migrated from Parmazip to Monobase with:
+This app was fully migrated to the Monobase platform with:
 - **100% feature parity** - All functionality preserved
 - **75% fewer dependencies** - Shared packages eliminate duplication
 - **Improved architecture** - Clean SDK/UI separation

@@ -47,7 +47,7 @@ function HomePage() {
     {
       id: 'records',
       name: 'Medical Records',
-      description: 'Manage electronic medical records, prescriptions, and lab results',
+      description: 'Manage electronic medical records, treatment plans, and lab results',
       icon: FileText,
       color: 'bg-orange-500',
     },

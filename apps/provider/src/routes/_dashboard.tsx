@@ -55,11 +55,6 @@ function DashboardLayout() {
           icon: Calendar,
         },
         {
-          title: "Medical Records",
-          url: "/medical-records",
-          icon: FileText,
-        },
-        {
           title: "Billing",
           url: "/billing",
           icon: CreditCard,

@@ -23,22 +23,22 @@ import { BookingWidget, type BookingTimeSlot, type BookingProvider } from "@mono
 import { BookingWidgetSkeleton } from "@monobase/ui/booking/components/booking-widget-skeleton"
 import { useProviderWithSlots } from '@monobase/sdk/react/hooks/use-booking'
 
-// Website-specific type aliases  
-type Pharmacist = BookingProvider
+// Website-specific type aliases
+type Provider = BookingProvider
 type SimpleTimeSlot = BookingTimeSlot
 import { patientAppUrl } from '@/utils/config'
 
-export function PharmacistProfileContent(): React.JSX.Element {
+export function ProviderProfileContent(): React.JSX.Element {
   const params = useParams()
   const router = useRouter()
 
   // Fetch provider data with slots and event using single API call
-  const pharmacistId = params.pharmacistId as string
-  const { data, isLoading: isLoadingPharmacist, error: pharmacistQueryError } = useProviderWithSlots(pharmacistId)
-  const pharmacist = data?.provider
+  const providerId = params.professionalId as string
+  const { data, isLoading: isLoadingProvider, error: providerQueryError } = useProviderWithSlots(providerId)
+  const provider = data?.provider
   const slots = data?.slots || []
   const event = data?.event
-  const pharmacistError = pharmacistQueryError?.message || null
+  const providerError = providerQueryError?.message || null
 
   // Handler for controlled BookingWidget
   const handleSlotSelect = (slot: any) => {
@@ -47,7 +47,7 @@ export function PharmacistProfileContent(): React.JSX.Element {
     window.open(bookingUrl, '_blank')
   }
 
-  if (isLoadingPharmacist) {
+  if (isLoadingProvider) {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -76,14 +76,14 @@ export function PharmacistProfileContent(): React.JSX.Element {
     )
   }
 
-  if (!pharmacist || pharmacistError) {
+  if (!provider || providerError) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Card className="max-w-md w-full">
           <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">Pharmacist not found</p>
-            <Button className="w-full mt-4" onClick={() => router.push('/pharmacists')}>
-              Back to Pharmacists
+            <p className="text-center text-muted-foreground">Provider not found</p>
+            <Button className="w-full mt-4" onClick={() => router.push('/professionals')}>
+              Back to Providers
             </Button>
           </CardContent>
         </Card>
@@ -102,18 +102,18 @@ export function PharmacistProfileContent(): React.JSX.Element {
               <CardContent className="p-6">
                 <div className="flex items-start gap-4">
                   <Avatar className="w-24 h-24">
-                    <AvatarImage src={pharmacist.avatar} alt={pharmacist.name} />
+                    <AvatarImage src={provider.avatar} alt={provider.name} />
                     <AvatarFallback className="text-xl">
-                      {pharmacist.name.split(' ').map((n: string) => n[0]).join('')}
+                      {provider.name.split(' ').map((n: string) => n[0]).join('')}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1">
-                    <h1 className="text-2xl font-bold" data-testid="pharmacist-name">{pharmacist.name}</h1>
-                    <p className="text-lg text-muted-foreground" data-testid="pharmacist-title">{"Pharmacist"}</p>
+                    <h1 className="text-2xl font-bold" data-testid="provider-name">{provider.name}</h1>
+                    <p className="text-lg text-muted-foreground" data-testid="provider-title">{"Provider"}</p>
 
                     {/* Display all specialties */}
-                    <div className="flex flex-wrap gap-1 mt-2" data-testid="pharmacist-specializations">
-                      {pharmacist.specialties?.map((specialty: string) => (
+                    <div className="flex flex-wrap gap-1 mt-2" data-testid="provider-specializations">
+                      {provider.specialties?.map((specialty: string) => (
                         <Badge key={specialty} variant="outline" className="text-xs">
                           {specialty}
                         </Badge>
@@ -121,9 +121,9 @@ export function PharmacistProfileContent(): React.JSX.Element {
                     </div>
 
                     {/* Display all practice locations with icon */}
-                    {(pharmacist.serviceLocations?.length || 0) > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2" data-testid="pharmacist-locations">
-                        {pharmacist.serviceLocations?.map((location: string) => (
+                    {(provider.serviceLocations?.length || 0) > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2" data-testid="provider-locations">
+                        {provider.serviceLocations?.map((location: string) => (
                           <Badge key={location} variant="secondary" className="text-xs">
                             {location}
                           </Badge>
@@ -134,7 +134,7 @@ export function PharmacistProfileContent(): React.JSX.Element {
                     {/* Experience with icon */}
                     <div className="flex items-center gap-1.5 mt-3">
                       <Badge variant="secondary" className="text-xs">
-                        {pharmacist.yearsOfExperience} years experience
+                        {provider.yearsOfExperience} years experience
                       </Badge>
                     </div>
 
@@ -153,12 +153,12 @@ export function PharmacistProfileContent(): React.JSX.Element {
             {/* About Section */}
             <Card>
               <CardHeader>
-                <CardTitle>About {pharmacist.name.split(',')[0]}</CardTitle>
+                <CardTitle>About {provider.name.split(',')[0]}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Biography */}
                 <div>
-                  <p className="text-muted-foreground leading-relaxed" data-testid="pharmacist-bio">{pharmacist.biography}</p>
+                  <p className="text-muted-foreground leading-relaxed" data-testid="provider-bio">{provider.biography}</p>
                 </div>
 
                 {/* Quick Stats Grid */}
@@ -169,7 +169,7 @@ export function PharmacistProfileContent(): React.JSX.Element {
                       <Clock className="w-4 h-4 text-primary" />
                       <span className="text-sm font-medium">Experience</span>
                     </div>
-                    <p className="text-lg font-semibold" data-testid="years-experience">{pharmacist.yearsOfExperience} years</p>
+                    <p className="text-lg font-semibold" data-testid="years-experience">{provider.yearsOfExperience} years</p>
                   </div>
 
                   {/* Languages */}
@@ -178,8 +178,8 @@ export function PharmacistProfileContent(): React.JSX.Element {
                       <Languages className="w-4 h-4 text-primary" />
                       <span className="text-sm font-medium">Languages</span>
                     </div>
-                    <div className="flex flex-wrap gap-1" data-testid="pharmacist-languages">
-                      {pharmacist.languages?.map((lang: string) => (
+                    <div className="flex flex-wrap gap-1" data-testid="provider-languages">
+                      {provider.languages?.map((lang: string) => (
                         <Badge key={lang} variant="secondary" className="text-xs">
                           {lang}
                         </Badge>
@@ -194,7 +194,7 @@ export function PharmacistProfileContent(): React.JSX.Element {
           {/* Right Column - Booking Widget */}
           <div className="space-y-6">
             <BookingWidget
-              provider={pharmacist as any}
+              provider={provider as any}
               slots={slots as any}
               event={event as any}
               onSlotSelect={handleSlotSelect}

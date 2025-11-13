@@ -1,14 +1,14 @@
 import { Page, Locator } from '@playwright/test';
 
-export class PharmacistDetailPage {
+export class ProviderDetailPage {
   readonly page: Page;
-  readonly pharmacistName: Locator;
-  readonly pharmacistTitle: Locator;
-  readonly pharmacistRating: Locator;
-  readonly pharmacistReviewCount: Locator;
-  readonly pharmacistBio: Locator;
-  readonly pharmacistSpecializations: Locator;
-  readonly pharmacistLanguages: Locator;
+  readonly providerName: Locator;
+  readonly providerTitle: Locator;
+  readonly providerRating: Locator;
+  readonly providerReviewCount: Locator;
+  readonly providerBio: Locator;
+  readonly providerSpecializations: Locator;
+  readonly providerLanguages: Locator;
   readonly consultationFee: Locator;
   readonly yearsExperience: Locator;
   readonly backButton: Locator;
@@ -29,13 +29,13 @@ export class PharmacistDetailPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.pharmacistName = page.locator('[data-testid="pharmacist-name"]');
-    this.pharmacistTitle = page.locator('[data-testid="pharmacist-title"]');
-    this.pharmacistRating = page.locator('[data-testid="pharmacist-rating"]');
-    this.pharmacistReviewCount = page.locator('[data-testid="pharmacist-review-count"]');
-    this.pharmacistBio = page.locator('[data-testid="pharmacist-bio"]');
-    this.pharmacistSpecializations = page.locator('[data-testid="pharmacist-specializations"]');
-    this.pharmacistLanguages = page.locator('[data-testid="pharmacist-languages"]');
+    this.providerName = page.locator('[data-testid="provider-name"]');
+    this.providerTitle = page.locator('[data-testid="provider-title"]');
+    this.providerRating = page.locator('[data-testid="provider-rating"]');
+    this.providerReviewCount = page.locator('[data-testid="provider-review-count"]');
+    this.providerBio = page.locator('[data-testid="provider-bio"]');
+    this.providerSpecializations = page.locator('[data-testid="provider-specializations"]');
+    this.providerLanguages = page.locator('[data-testid="provider-languages"]');
     this.consultationFee = page.locator('[data-testid="consultation-fee"]');
     this.yearsExperience = page.locator('[data-testid="years-experience"]');
     this.backButton = page.getByRole('button', { name: /back/i });
@@ -55,8 +55,8 @@ export class PharmacistDetailPage {
     this.noSlotsMessage = page.getByText(/no available slots/i);
   }
 
-  async goto(pharmacistId: string) {
-    await this.page.goto(`/pharmacists/${pharmacistId}`);
+  async goto(providerId: string) {
+    await this.page.goto(`/professionals/${providerId}`);
   }
 
   async goBack() {
@@ -64,15 +64,15 @@ export class PharmacistDetailPage {
     await this.page.waitForLoadState('networkidle');
   }
 
-  async getPharmacistInfo() {
+  async getProviderInfo() {
     return {
-      name: await this.pharmacistName.textContent(),
-      title: await this.pharmacistTitle.textContent(),
-      rating: await this.pharmacistRating.textContent(),
-      reviewCount: await this.pharmacistReviewCount.textContent(),
-      bio: await this.pharmacistBio.textContent(),
-      specializations: await this.pharmacistSpecializations.textContent(),
-      languages: await this.pharmacistLanguages.textContent(),
+      name: await this.providerName.textContent(),
+      title: await this.providerTitle.textContent(),
+      rating: await this.providerRating.textContent(),
+      reviewCount: await this.providerReviewCount.textContent(),
+      bio: await this.providerBio.textContent(),
+      specializations: await this.providerSpecializations.textContent(),
+      languages: await this.providerLanguages.textContent(),
       fee: await this.consultationFee.textContent(),
       experience: await this.yearsExperience.textContent(),
     };

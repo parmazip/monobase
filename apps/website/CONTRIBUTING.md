@@ -18,7 +18,7 @@ This guide covers website app-specific development details. **For shared fronten
 
 ## App Overview
 
-**Purpose**: Marketing Website for Parmazip Healthcare Platform
+**Purpose**: Marketing Website for Monobase Healthcare Platform
 
 **Features**:
 - Provider/pharmacist search and discovery
@@ -349,7 +349,7 @@ import { requireGuest } from '@/services/guards'
 export default async function HomePage() {
   await requireGuest()  // Redirects to dashboard if authenticated
 
-  return <div>Welcome to Parmazip</div>
+  return <div>Welcome to Monobase</div>
 }
 ```
 
@@ -417,10 +417,10 @@ Export `metadata` object for static pages:
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Find a Pharmacist - Parmazip',
+  title: 'Find a Pharmacist - Monobase',
   description: 'Search and book appointments with licensed pharmacists',
   openGraph: {
-    title: 'Find a Pharmacist - Parmazip',
+    title: 'Find a Pharmacist - Monobase',
     description: 'Search and book appointments with licensed pharmacists',
   },
 }
@@ -444,10 +444,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const provider = await getProvider(pharmacistId)
 
   return {
-    title: `${provider.name} - Parmazip`,
+    title: `${provider.name} - Monobase`,
     description: provider.bio,
     openGraph: {
-      title: `${provider.name} - Parmazip`,
+      title: `${provider.name} - Monobase`,
       description: provider.bio,
       images: [provider.imageUrl],
     },

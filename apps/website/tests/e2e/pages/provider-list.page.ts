@@ -1,6 +1,6 @@
 import { Page, Locator } from '@playwright/test';
 
-export class PharmacistListPage {
+export class ProviderListPage {
   readonly page: Page;
   readonly searchInput: Locator;
   readonly filterInsurance: Locator;
@@ -8,7 +8,7 @@ export class PharmacistListPage {
   readonly filterLanguage: Locator;
   readonly filterDateTime: Locator;
   readonly sortDropdown: Locator;
-  readonly pharmacistCards: Locator;
+  readonly providerCards: Locator;
   readonly loadMoreButton: Locator;
   readonly noResultsMessage: Locator;
   readonly clearFiltersButton: Locator;
@@ -21,17 +21,17 @@ export class PharmacistListPage {
     this.filterLanguage = page.getByRole('combobox', { name: /language/i });
     this.filterDateTime = page.getByRole('combobox', { name: /availability/i });
     this.sortDropdown = page.getByRole('combobox', { name: /sort by/i });
-    this.pharmacistCards = page.locator('[data-testid="pharmacist-card"]');
+    this.providerCards = page.locator('[data-testid="provider-card"]');
     this.loadMoreButton = page.getByRole('button', { name: /load more/i });
-    this.noResultsMessage = page.getByText(/no pharmacists found/i);
+    this.noResultsMessage = page.getByText(/no providers found/i);
     this.clearFiltersButton = page.getByRole('button', { name: /clear all/i });
   }
 
   async goto() {
-    await this.page.goto('/pharmacists');
+    await this.page.goto('/professionals');
   }
 
-  async searchPharmacists(query: string) {
+  async searchProviders(query: string) {
     await this.searchInput.clear();
     await this.searchInput.fill(query);
     // Search is auto-triggered on input change (no search button)
@@ -76,22 +76,22 @@ export class PharmacistListPage {
     await this.page.waitForLoadState('networkidle');
   }
 
-  async getPharmacistCount(): Promise<number> {
-    return await this.pharmacistCards.count();
+  async getProviderCount(): Promise<number> {
+    return await this.providerCards.count();
   }
 
-  async getPharmacistNames(): Promise<string[]> {
+  async getProviderNames(): Promise<string[]> {
     const names: string[] = [];
-    const count = await this.pharmacistCards.count();
+    const count = await this.providerCards.count();
     for (let i = 0; i < count; i++) {
-      const name = await this.pharmacistCards.nth(i).locator('[data-testid="pharmacist-name"]').textContent();
+      const name = await this.providerCards.nth(i).locator('[data-testid="provider-name"]').textContent();
       if (name) names.push(name);
     }
     return names;
   }
 
-  async clickPharmacistCard(index: number = 0) {
-    await this.pharmacistCards.nth(index).click();
+  async clickProviderCard(index: number = 0) {
+    await this.providerCards.nth(index).click();
     await this.page.waitForLoadState('networkidle');
   }
 
@@ -134,20 +134,20 @@ export class PharmacistListPage {
     });
   }
 
-  async waitForPharmacistsToLoad() {
-    await this.page.waitForSelector('[data-testid="pharmacist-card"]', {
+  async waitForProvidersToLoad() {
+    await this.page.waitForSelector('[data-testid="provider-card"]', {
       state: 'visible',
       timeout: 10000
     });
   }
 
-  async getPharmacistRating(index: number = 0): Promise<string | null> {
-    return await this.pharmacistCards.nth(index).locator('[data-testid="pharmacist-rating"]').textContent();
+  async getProviderRating(index: number = 0): Promise<string | null> {
+    return await this.providerCards.nth(index).locator('[data-testid="provider-rating"]').textContent();
   }
 
-  async getPharmacistSpecializations(index: number = 0): Promise<string[]> {
+  async getProviderSpecializations(index: number = 0): Promise<string[]> {
     const specializations: string[] = [];
-    const specs = await this.pharmacistCards.nth(index).locator('[data-testid="pharmacist-specialization"]').all();
+    const specs = await this.providerCards.nth(index).locator('[data-testid="provider-specialization"]').all();
     for (const spec of specs) {
       const text = await spec.textContent();
       if (text) specializations.push(text);

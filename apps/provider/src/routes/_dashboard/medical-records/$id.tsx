@@ -298,13 +298,13 @@ function MedicalRecordDetailPage() {
         </Card>
       )}
 
-      {/* Prescriptions */}
+      {/* Treatment Plan */}
       {note.prescriptions && note.prescriptions.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Pill className="h-5 w-5" />
-              Prescriptions
+              Treatment Plan
             </CardTitle>
           </CardHeader>
           <CardContent>

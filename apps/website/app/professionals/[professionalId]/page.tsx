@@ -3,9 +3,9 @@
 import { Suspense } from 'react'
 import { SiteHeader } from '@/components/layout/site-header'
 import { useSession, useSignOut } from '@monobase/sdk/react/hooks/use-auth'
-import { PharmacistProfileContent } from './pharmacist-profile-content'
+import { ProviderProfileContent } from './provider-profile-content'
 
-export default function PharmacistProfilePage(): React.JSX.Element {
+export default function ProviderProfilePage(): React.JSX.Element {
   const { data: session, isLoading } = useSession()
   const signOut = useSignOut()
 
@@ -21,7 +21,7 @@ export default function PharmacistProfilePage(): React.JSX.Element {
         onSignOut={handleSignOut}
       />
       <Suspense fallback={<div>Loading...</div>}>
-        <PharmacistProfileContent />
+        <ProviderProfileContent />
       </Suspense>
     </>
   )

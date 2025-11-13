@@ -317,7 +317,7 @@ function BillingSettingsPage() {
               <p className="font-semibold text-gray-900">Secure Payment Processing</p>
               <p className="text-sm text-gray-700 mt-1">
                 All payment processing is handled securely by Stripe. Your financial information
-                is encrypted and never stored on our servers. Parmazip is PCI DSS compliant.
+                is encrypted and never stored on our servers. Monobase is PCI DSS compliant.
               </p>
             </div>
           </div>

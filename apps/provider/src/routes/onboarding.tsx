@@ -72,7 +72,7 @@ function OnboardingPage() {
   const createMerchantMutation = useCreateMyMerchantAccount()
   const onboardingMutation = useGetMyOnboardingUrl()
 
-  const totalSteps = 4
+  const totalSteps = 3
 
   const handlePersonalInfoSubmit = (data: PersonalInfo) => {
     setFormData(prev => ({ ...prev, personal: data }))
@@ -85,6 +85,7 @@ function OnboardingPage() {
   }
 
   const handleSkipAddress = () => {
+    // Skip to step 3 (Professional Information)
     setCurrentStep(3)
   }
 
@@ -104,7 +105,6 @@ function OnboardingPage() {
         dateOfBirth: formData.personal.dateOfBirth,
         gender: formData.personal.gender,
         avatar: formData.personal.avatar,
-        primaryAddress: formData.address,
         languagesSpoken: [detectedLanguage],
         timezone: detectedTimezone,
       }).catch(error => {
@@ -117,13 +117,11 @@ function OnboardingPage() {
         }
       })
 
-      // Create provider profile
+      // Create provider profile with bio and years
       await createProviderMutation.mutateAsync({
-        providerType: 'pharmacist',
-        yearsOfExperience: data.yearsOfExperience,
+        providerType: data.providerType || 'general',
         biography: data.biography,
-        minorAilmentsSpecialties: data.minorAilmentsSpecialties,
-        minorAilmentsPracticeLocations: data.minorAilmentsPracticeLocations,
+        yearsOfExperience: data.yearsOfExperience,
       })
 
       setCurrentStep(4)
@@ -244,35 +242,17 @@ function OnboardingPage() {
                 defaultValues={formData.address || { country: detectedCountry }}
                 mode="create"
                 showButtons={false}
+                formId="step-2-form"
               />
             )}
 
             {/* Step 3: Professional Information */}
             {currentStep === 3 && (
               <ProviderForm
-                defaultValues={formData.provider}
                 onSubmit={handleProviderSubmit}
-                isLoading={isLoading}
+                defaultValues={{}}
                 showButtons={false}
                 formId="step-3-form"
-              />
-            )}
-
-            {/* Step 4: Merchant Account Setup */}
-            {currentStep === 4 && (
-              <MerchantAccountSetup
-                account={merchantAccount?.account ? {
-                  id: merchantAccount.account.id,
-                  metadata: {
-                    onboardingStartedAt: merchantAccount.account.metadata?.onboardingStartedAt?.toISOString(),
-                  }
-                } : null}
-                status={status}
-                isLoading={merchantLoading || createMerchantMutation.isPending || onboardingMutation.isPending}
-                onSetupAccount={handleSetupMerchantAccount}
-                onSubmit={handleMerchantAccountSubmit}
-                onSkip={handleSkipMerchantAccount}
-                showButtons={false}
               />
             )}
 
@@ -308,21 +288,14 @@ function OnboardingPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    className="ml-auto mr-2"
                     onClick={handleSkipAddress}
-                    disabled={isLoading}
                   >
-                    Skip for now
+                    Skip
                   </Button>
                   <Button
-                    type="button"
-                    disabled={isLoading}
-                    onClick={() => {
-                      const forms = document.querySelectorAll('form')
-                      if (forms[0]) {
-                        forms[0].requestSubmit()
-                      }
-                    }}
+                    type="submit"
+                    form="step-2-form"
+                    className="ml-auto"
                   >
                     Next
                     <ChevronRight className="w-4 h-4 ml-2" />

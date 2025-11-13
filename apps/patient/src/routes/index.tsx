@@ -141,7 +141,7 @@ function HomePage() {
           <div className="flex flex-col items-center space-y-4">
             <Logo variant="horizontal" size="md" />
             <p className="text-sm text-muted-foreground">
-              © 2024 Parmazip Healthcare. All rights reserved.
+              © 2024 Monobase Healthcare. All rights reserved.
             </p>
             <div className="flex items-center space-x-6 text-xs text-muted-foreground">
               <span>HIPAA Compliant</span>

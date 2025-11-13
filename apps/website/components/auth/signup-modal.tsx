@@ -27,12 +27,12 @@ import { patientSignupUrl, providerSignupUrl } from '@/utils/config'
 
 interface SignupModalProps {
   trigger?: React.ReactNode
-  defaultSelection?: 'patient' | 'pharmacist'
+  defaultSelection?: 'patient' | 'provider'
 }
 
 export function SignupModal({ trigger, defaultSelection }: SignupModalProps): React.JSX.Element {
   const [open, setOpen] = useState(false)
-  const [hoveredCard, setHoveredCard] = useState<'patient' | 'pharmacist' | null>(defaultSelection || null)
+  const [hoveredCard, setHoveredCard] = useState<'patient' | 'provider' | null>(defaultSelection || null)
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -47,10 +47,10 @@ export function SignupModal({ trigger, defaultSelection }: SignupModalProps): Re
       <DialogContent className="sm:max-w-3xl max-w-3xl p-0 overflow-hidden">
         <DialogHeader className="p-8 pb-0">
           <DialogTitle className="text-2xl font-headline">
-            How would you like to use Parmazip?
+            How would you like to use Monobase?
           </DialogTitle>
           <DialogDescription className="text-base mt-2">
-            Choose your account type to get started with professional pharmacy services
+            Choose your account type to get started with professional healthcare services
           </DialogDescription>
         </DialogHeader>
         
@@ -71,14 +71,14 @@ export function SignupModal({ trigger, defaultSelection }: SignupModalProps): Re
                 </div>
                 <CardTitle className="text-xl font-headline">I'm a Patient</CardTitle>
                 <CardDescription className="text-sm mt-2">
-                  Get professional pharmacy care from home
+                  Get professional healthcare from home
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-6 flex flex-col flex-1">
                 <div className="space-y-3 flex-1">
                   <div className="flex items-start space-x-3">
                     <Video className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
-                    <p className="text-sm text-gray-600">Video consultations with licensed pharmacists</p>
+                    <p className="text-sm text-gray-600">Video consultations with licensed providers</p>
                   </div>
                   <div className="flex items-start space-x-3">
                     <PillIcon className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
@@ -98,23 +98,23 @@ export function SignupModal({ trigger, defaultSelection }: SignupModalProps): Re
             </Card>
           </Link>
 
-          {/* Pharmacist Card */}
+          {/* Provider Card */}
           <Link
             href={providerSignupUrl}
             className="block"
-            onMouseEnter={() => setHoveredCard('pharmacist')}
+            onMouseEnter={() => setHoveredCard('provider')}
             onMouseLeave={() => setHoveredCard(null)}
           >
             <Card className={`h-full flex flex-col cursor-pointer transition-all hover:shadow-xl ${
-              hoveredCard === 'pharmacist' ? 'ring-2 ring-primary shadow-xl scale-[1.02]' : ''
+              hoveredCard === 'provider' ? 'ring-2 ring-primary shadow-xl scale-[1.02]' : ''
             }`}>
               <CardHeader>
                 <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-4">
                   <Stethoscope className="w-6 h-6 text-white" />
                 </div>
-                <CardTitle className="text-xl font-headline">I'm a Pharmacist</CardTitle>
+                <CardTitle className="text-xl font-headline">I'm a Provider</CardTitle>
                 <CardDescription className="text-sm mt-2">
-                  Provide professional pharmacy services online
+                  Provide professional healthcare services online
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-6 flex flex-col flex-1">
@@ -133,8 +133,8 @@ export function SignupModal({ trigger, defaultSelection }: SignupModalProps): Re
                   </div>
                 </div>
                 
-                <Button className="w-full mt-6" variant={hoveredCard === 'pharmacist' ? 'default' : 'outline'}>
-                  Sign up as Pharmacist
+                <Button className="w-full mt-6" variant={hoveredCard === 'provider' ? 'default' : 'outline'}>
+                  Sign up as Provider
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </CardContent>

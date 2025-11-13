@@ -13,13 +13,16 @@ const validateNPI = (npi: string): boolean => {
   let sum = 0;
   for (let i = 0; i < 9; i++) {
     let digit = digits[i];
+    if (digit === undefined) return false; // Type guard for undefined
     if (i % 2 === 0) {
       digit *= 2;
       if (digit > 9) digit -= 9;
     }
     sum += digit;
   }
-  return (10 - (sum % 10)) % 10 === digits[9];
+  const lastDigit = digits[9];
+  if (lastDigit === undefined) return false; // Type guard for undefined
+  return (10 - (sum % 10)) % 10 === lastDigit;
 };
 
 const containsPHI = (value: string): boolean => {
@@ -889,6 +892,7 @@ export const InvoiceSchema = z.object({
   total: z.number().int().gte(0),
   currency: z.string().regex(/^[A-Z]{3}$/),
   paymentCaptureMethod: z.enum(["automatic", "manual"]),
+  issuedAt: z.string().datetime().transform((str) => new Date(str)).optional(),
   paymentDueAt: z.string().datetime().transform((str) => new Date(str)).optional(),
   lineItems: z.array(InvoiceLineItemSchema),
   paymentStatus: z.enum(["pending", "requires_capture", "processing", "succeeded", "failed", "canceled"]).optional(),
@@ -960,7 +964,9 @@ export const NotificationSchema = z.object({
   relatedEntity: z.string().uuid().optional(),
   status: z.enum(["queued", "sent", "delivered", "read", "failed", "expired", "unread"]),
   sentAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  deliveredAt: z.string().datetime().transform((str) => new Date(str)).optional(),
   readAt: z.string().datetime().transform((str) => new Date(str)).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   consentValidated: z.boolean()
 });
 
@@ -1547,6 +1553,7 @@ export const ListAuditLogsQuery = z.object({
   action: AuditActionSchema.optional(),
   startDate: z.string().datetime().transform((str) => new Date(str)).optional(),
   endDate: z.string().datetime().transform((str) => new Date(str)).optional(),
+  orderBy: z.string().optional(),
   offset: z.coerce.number().int().gte(0).optional(),
   limit: z.coerce.number().int().gte(1).lte(100).optional(),
   page: z.coerce.number().int().gte(1).optional(),
@@ -1554,6 +1561,7 @@ export const ListAuditLogsQuery = z.object({
   q: z.string().max(500).optional(),
   sort: z.string().optional(),
 });
+export type ListAuditLogsQuery = z.infer<typeof ListAuditLogsQuery>;
 
 export const ListAuditLogsResponse = z.object({
   data: z.array(AuditLogEntrySchema),
@@ -1570,6 +1578,7 @@ export const ListAuditLogsResponse = z.object({
 });
 
 export const CreateInvoiceBody = CreateInvoiceRequestSchema;
+export type CreateInvoiceBody = z.infer<typeof CreateInvoiceBody>;
 
 export const CreateInvoiceResponse = InvoiceSchema;
 
@@ -1585,6 +1594,7 @@ export const ListInvoicesQuery = z.object({
   q: z.string().max(500).optional(),
   sort: z.string().optional(),
 });
+export type ListInvoicesQuery = z.infer<typeof ListInvoicesQuery>;
 
 export const ListInvoicesResponse = z.object({
   data: z.array(InvoiceSchema),
@@ -1603,100 +1613,121 @@ export const ListInvoicesResponse = z.object({
 export const GetInvoiceParams = z.object({
   invoice: UUIDSchema,
 });
+export type GetInvoiceParams = z.infer<typeof GetInvoiceParams>;
 
 export const GetInvoiceQuery = z.object({
   expand: z.string().optional(),
 });
+export type GetInvoiceQuery = z.infer<typeof GetInvoiceQuery>;
 
 export const GetInvoiceResponse = InvoiceSchema;
 
 export const UpdateInvoiceParams = z.object({
   invoice: UUIDSchema,
 });
+export type UpdateInvoiceParams = z.infer<typeof UpdateInvoiceParams>;
 
 export const UpdateInvoiceBody = UpdateInvoiceRequestSchema;
+export type UpdateInvoiceBody = z.infer<typeof UpdateInvoiceBody>;
 
 export const UpdateInvoiceResponse = InvoiceSchema;
 
 export const DeleteInvoiceParams = z.object({
   invoice: UUIDSchema,
 });
+export type DeleteInvoiceParams = z.infer<typeof DeleteInvoiceParams>;
 
 export const DeleteInvoiceResponse = z.void();
 
 export const CaptureInvoicePaymentParams = z.object({
   invoice: UUIDSchema,
 });
+export type CaptureInvoicePaymentParams = z.infer<typeof CaptureInvoicePaymentParams>;
 
 export const CaptureInvoicePaymentResponse = InvoiceSchema;
 
 export const FinalizeInvoiceParams = z.object({
   invoice: UUIDSchema,
 });
+export type FinalizeInvoiceParams = z.infer<typeof FinalizeInvoiceParams>;
 
 export const FinalizeInvoiceResponse = InvoiceSchema;
 
 export const MarkInvoiceUncollectibleParams = z.object({
   invoice: UUIDSchema,
 });
+export type MarkInvoiceUncollectibleParams = z.infer<typeof MarkInvoiceUncollectibleParams>;
 
 export const MarkInvoiceUncollectibleResponse = InvoiceSchema;
 
 export const PayInvoiceParams = z.object({
   invoice: UUIDSchema,
 });
+export type PayInvoiceParams = z.infer<typeof PayInvoiceParams>;
 
 export const PayInvoiceBody = PaymentRequestSchema;
+export type PayInvoiceBody = z.infer<typeof PayInvoiceBody>;
 
 export const PayInvoiceResponse = PaymentResponseSchema;
 
 export const RefundInvoicePaymentParams = z.object({
   invoice: UUIDSchema,
 });
+export type RefundInvoicePaymentParams = z.infer<typeof RefundInvoicePaymentParams>;
 
 export const RefundInvoicePaymentBody = RefundRequestSchema;
+export type RefundInvoicePaymentBody = z.infer<typeof RefundInvoicePaymentBody>;
 
 export const RefundInvoicePaymentResponse = RefundResponseSchema;
 
 export const VoidInvoiceParams = z.object({
   invoice: UUIDSchema,
 });
+export type VoidInvoiceParams = z.infer<typeof VoidInvoiceParams>;
 
 export const VoidInvoiceResponse = InvoiceSchema;
 
 export const CreateMerchantAccountBody = CreateMerchantAccountRequestSchema;
+export type CreateMerchantAccountBody = z.infer<typeof CreateMerchantAccountBody>;
 
 export const CreateMerchantAccountResponse = MerchantAccountSchema;
 
 export const GetMerchantAccountParams = z.object({
   merchantAccount: z.union([UUIDSchema, z.enum(["me"])]),
 });
+export type GetMerchantAccountParams = z.infer<typeof GetMerchantAccountParams>;
 
 export const GetMerchantAccountQuery = z.object({
   expand: z.string().optional(),
 });
+export type GetMerchantAccountQuery = z.infer<typeof GetMerchantAccountQuery>;
 
 export const GetMerchantAccountResponse = MerchantAccountSchema;
 
 export const GetMerchantDashboardParams = z.object({
   merchantAccount: z.union([UUIDSchema, z.enum(["me"])]),
 });
+export type GetMerchantDashboardParams = z.infer<typeof GetMerchantDashboardParams>;
 
 export const GetMerchantDashboardResponse = DashboardResponseSchema;
 
 export const OnboardMerchantAccountParams = z.object({
   merchantAccount: UUIDSchema,
 });
+export type OnboardMerchantAccountParams = z.infer<typeof OnboardMerchantAccountParams>;
 
 export const OnboardMerchantAccountBody = OnboardingRequestSchema;
+export type OnboardMerchantAccountBody = z.infer<typeof OnboardMerchantAccountBody>;
 
 export const OnboardMerchantAccountResponse = OnboardingResponseSchema;
 
 export const HandleStripeWebhookBody = z.unknown();
+export type HandleStripeWebhookBody = z.infer<typeof HandleStripeWebhookBody>;
 
 export const HandleStripeWebhookResponse = z.unknown();
 
 export const CreateBookingBody = BookingCreateRequestSchema;
+export type CreateBookingBody = z.infer<typeof CreateBookingBody>;
 
 export const CreateBookingResponse = BookingSchema;
 
@@ -1714,6 +1745,7 @@ export const ListBookingsQuery = z.object({
   q: z.string().max(500).optional(),
   sort: z.string().optional(),
 });
+export type ListBookingsQuery = z.infer<typeof ListBookingsQuery>;
 
 export const ListBookingsResponse = z.object({
   data: z.array(BookingSchema),
@@ -1732,42 +1764,52 @@ export const ListBookingsResponse = z.object({
 export const GetBookingParams = z.object({
   booking: UUIDSchema,
 });
+export type GetBookingParams = z.infer<typeof GetBookingParams>;
 
 export const GetBookingQuery = z.object({
   expand: z.string().optional(),
 });
+export type GetBookingQuery = z.infer<typeof GetBookingQuery>;
 
 export const GetBookingResponse = BookingSchema;
 
 export const CancelBookingParams = z.object({
   booking: UUIDSchema,
 });
+export type CancelBookingParams = z.infer<typeof CancelBookingParams>;
 
 export const CancelBookingBody = BookingActionRequestSchema;
+export type CancelBookingBody = z.infer<typeof CancelBookingBody>;
 
 export const CancelBookingResponse = BookingSchema;
 
 export const ConfirmBookingParams = z.object({
   booking: UUIDSchema,
 });
+export type ConfirmBookingParams = z.infer<typeof ConfirmBookingParams>;
 
 export const ConfirmBookingBody = BookingActionRequestSchema;
+export type ConfirmBookingBody = z.infer<typeof ConfirmBookingBody>;
 
 export const ConfirmBookingResponse = BookingSchema;
 
 export const MarkNoShowBookingParams = z.object({
   booking: UUIDSchema,
 });
+export type MarkNoShowBookingParams = z.infer<typeof MarkNoShowBookingParams>;
 
 export const MarkNoShowBookingBody = BookingActionRequestSchema;
+export type MarkNoShowBookingBody = z.infer<typeof MarkNoShowBookingBody>;
 
 export const MarkNoShowBookingResponse = BookingSchema;
 
 export const RejectBookingParams = z.object({
   booking: UUIDSchema,
 });
+export type RejectBookingParams = z.infer<typeof RejectBookingParams>;
 
 export const RejectBookingBody = BookingActionRequestSchema;
+export type RejectBookingBody = z.infer<typeof RejectBookingBody>;
 
 export const RejectBookingResponse = BookingSchema;
 
@@ -1787,6 +1829,7 @@ export const ListBookingEventsQuery = z.object({
   q: z.string().max(500).optional(),
   sort: z.string().optional(),
 });
+export type ListBookingEventsQuery = z.infer<typeof ListBookingEventsQuery>;
 
 export const ListBookingEventsResponse = z.object({
   data: z.array(BookingEventSchema),
@@ -1803,44 +1846,53 @@ export const ListBookingEventsResponse = z.object({
 });
 
 export const CreateBookingEventBody = BookingEventCreateRequestSchema;
+export type CreateBookingEventBody = z.infer<typeof CreateBookingEventBody>;
 
 export const CreateBookingEventResponse = BookingEventSchema;
 
 export const GetBookingEventParams = z.object({
   event: z.union([UUIDSchema, z.enum(["me"])]),
 });
+export type GetBookingEventParams = z.infer<typeof GetBookingEventParams>;
 
 export const GetBookingEventQuery = z.object({
   expand: z.string().optional(),
 });
+export type GetBookingEventQuery = z.infer<typeof GetBookingEventQuery>;
 
 export const GetBookingEventResponse = BookingEventSchema;
 
 export const UpdateBookingEventParams = z.object({
   event: UUIDSchema,
 });
+export type UpdateBookingEventParams = z.infer<typeof UpdateBookingEventParams>;
 
 export const UpdateBookingEventBody = BookingEventUpdateRequestSchema;
+export type UpdateBookingEventBody = z.infer<typeof UpdateBookingEventBody>;
 
 export const UpdateBookingEventResponse = BookingEventSchema;
 
 export const DeleteBookingEventParams = z.object({
   event: UUIDSchema,
 });
+export type DeleteBookingEventParams = z.infer<typeof DeleteBookingEventParams>;
 
 export const DeleteBookingEventResponse = z.void();
 
 export const CreateScheduleExceptionParams = z.object({
   event: UUIDSchema,
 });
+export type CreateScheduleExceptionParams = z.infer<typeof CreateScheduleExceptionParams>;
 
 export const CreateScheduleExceptionBody = ScheduleExceptionCreateRequestSchema;
+export type CreateScheduleExceptionBody = z.infer<typeof CreateScheduleExceptionBody>;
 
 export const CreateScheduleExceptionResponse = ScheduleExceptionSchema;
 
 export const ListScheduleExceptionsParams = z.object({
   event: UUIDSchema,
 });
+export type ListScheduleExceptionsParams = z.infer<typeof ListScheduleExceptionsParams>;
 
 export const ListScheduleExceptionsQuery = z.object({
   offset: z.coerce.number().int().gte(0).optional(),
@@ -1850,6 +1902,7 @@ export const ListScheduleExceptionsQuery = z.object({
   q: z.string().max(500).optional(),
   sort: z.string().optional(),
 });
+export type ListScheduleExceptionsQuery = z.infer<typeof ListScheduleExceptionsQuery>;
 
 export const ListScheduleExceptionsResponse = z.object({
   data: z.array(ScheduleExceptionSchema),
@@ -1869,6 +1922,7 @@ export const GetScheduleExceptionParams = z.object({
   event: UUIDSchema,
   exception: UUIDSchema,
 });
+export type GetScheduleExceptionParams = z.infer<typeof GetScheduleExceptionParams>;
 
 export const GetScheduleExceptionResponse = ScheduleExceptionSchema;
 
@@ -1876,32 +1930,38 @@ export const DeleteScheduleExceptionParams = z.object({
   event: UUIDSchema,
   exception: UUIDSchema,
 });
+export type DeleteScheduleExceptionParams = z.infer<typeof DeleteScheduleExceptionParams>;
 
 export const DeleteScheduleExceptionResponse = z.void();
 
 export const ListEventSlotsParams = z.object({
   event: UUIDSchema,
 });
+export type ListEventSlotsParams = z.infer<typeof ListEventSlotsParams>;
 
 export const ListEventSlotsQuery = z.object({
   startTime: z.string().datetime().transform((str) => new Date(str)).optional(),
   endTime: z.string().datetime().transform((str) => new Date(str)).optional(),
   status: SlotStatusSchema.optional(),
 });
+export type ListEventSlotsQuery = z.infer<typeof ListEventSlotsQuery>;
 
 export const ListEventSlotsResponse = z.array(TimeSlotSchema);
 
 export const GetTimeSlotParams = z.object({
   slotId: UUIDSchema,
 });
+export type GetTimeSlotParams = z.infer<typeof GetTimeSlotParams>;
 
 export const GetTimeSlotQuery = z.object({
   expand: z.string().optional(),
 });
+export type GetTimeSlotQuery = z.infer<typeof GetTimeSlotQuery>;
 
 export const GetTimeSlotResponse = TimeSlotSchema;
 
 export const CreateChatRoomBody = CreateChatRoomRequestSchema;
+export type CreateChatRoomBody = z.infer<typeof CreateChatRoomBody>;
 
 export const CreateChatRoomResponse = ChatRoomSchema;
 
@@ -1917,6 +1977,7 @@ export const ListChatRoomsQuery = z.object({
   q: z.string().max(500).optional(),
   sort: z.string().optional(),
 });
+export type ListChatRoomsQuery = z.infer<typeof ListChatRoomsQuery>;
 
 export const ListChatRoomsResponse = z.object({
   data: z.array(ChatRoomSchema),
@@ -1935,12 +1996,14 @@ export const ListChatRoomsResponse = z.object({
 export const GetChatRoomParams = z.object({
   room: UUIDSchema,
 });
+export type GetChatRoomParams = z.infer<typeof GetChatRoomParams>;
 
 export const GetChatRoomResponse = ChatRoomSchema;
 
 export const GetChatMessagesParams = z.object({
   room: UUIDSchema,
 });
+export type GetChatMessagesParams = z.infer<typeof GetChatMessagesParams>;
 
 export const GetChatMessagesQuery = z.object({
   messageType: MessageTypeSchema.optional(),
@@ -1951,6 +2014,7 @@ export const GetChatMessagesQuery = z.object({
   q: z.string().max(500).optional(),
   sort: z.string().optional(),
 });
+export type GetChatMessagesQuery = z.infer<typeof GetChatMessagesQuery>;
 
 export const GetChatMessagesResponse = z.object({
   data: z.array(ChatMessageSchema),
@@ -1969,36 +2033,44 @@ export const GetChatMessagesResponse = z.object({
 export const SendChatMessageParams = z.object({
   room: UUIDSchema,
 });
+export type SendChatMessageParams = z.infer<typeof SendChatMessageParams>;
 
 export const SendChatMessageBody = z.union([SendTextMessageRequestSchema, StartVideoCallRequestSchema]);
+export type SendChatMessageBody = z.infer<typeof SendChatMessageBody>;
 
 export const SendChatMessageResponse = ChatMessageSchema;
 
 export const EndVideoCallParams = z.object({
   room: UUIDSchema,
 });
+export type EndVideoCallParams = z.infer<typeof EndVideoCallParams>;
 
 export const EndVideoCallResponse = VideoCallEndResponseSchema;
 
 export const JoinVideoCallParams = z.object({
   room: UUIDSchema,
 });
+export type JoinVideoCallParams = z.infer<typeof JoinVideoCallParams>;
 
 export const JoinVideoCallBody = JoinVideoCallRequestSchema;
+export type JoinVideoCallBody = z.infer<typeof JoinVideoCallBody>;
 
 export const JoinVideoCallResponse = VideoCallJoinResponseSchema;
 
 export const LeaveVideoCallParams = z.object({
   room: UUIDSchema,
 });
+export type LeaveVideoCallParams = z.infer<typeof LeaveVideoCallParams>;
 
 export const LeaveVideoCallResponse = LeaveVideoCallResponseSchema;
 
 export const UpdateVideoCallParticipantParams = z.object({
   room: UUIDSchema,
 });
+export type UpdateVideoCallParticipantParams = z.infer<typeof UpdateVideoCallParticipantParams>;
 
 export const UpdateVideoCallParticipantBody = UpdateParticipantRequestSchema;
+export type UpdateVideoCallParticipantBody = z.infer<typeof UpdateVideoCallParticipantBody>;
 
 export const UpdateVideoCallParticipantResponse = CallParticipantSchema;
 
@@ -2018,6 +2090,7 @@ export const ListEmailQueueItemsQuery = z.object({
   q: z.string().max(500).optional(),
   sort: z.string().optional(),
 });
+export type ListEmailQueueItemsQuery = z.infer<typeof ListEmailQueueItemsQuery>;
 
 export const ListEmailQueueItemsResponse = z.object({
   data: z.array(EmailQueueItemSchema),
@@ -2036,20 +2109,24 @@ export const ListEmailQueueItemsResponse = z.object({
 export const GetEmailQueueItemParams = z.object({
   queue: UUIDSchema,
 });
+export type GetEmailQueueItemParams = z.infer<typeof GetEmailQueueItemParams>;
 
 export const GetEmailQueueItemResponse = EmailQueueItemSchema;
 
 export const CancelEmailQueueItemParams = z.object({
   queue: UUIDSchema,
 });
+export type CancelEmailQueueItemParams = z.infer<typeof CancelEmailQueueItemParams>;
 
 export const CancelEmailQueueItemBody = CancelEmailRequestSchema;
+export type CancelEmailQueueItemBody = z.infer<typeof CancelEmailQueueItemBody>;
 
 export const CancelEmailQueueItemResponse = EmailQueueItemSchema;
 
 export const RetryEmailQueueItemParams = z.object({
   queue: UUIDSchema,
 });
+export type RetryEmailQueueItemParams = z.infer<typeof RetryEmailQueueItemParams>;
 
 export const RetryEmailQueueItemResponse = EmailQueueItemSchema;
 
@@ -2063,6 +2140,7 @@ export const ListEmailTemplatesQuery = z.object({
   q: z.string().max(500).optional(),
   sort: z.string().optional(),
 });
+export type ListEmailTemplatesQuery = z.infer<typeof ListEmailTemplatesQuery>;
 
 export const ListEmailTemplatesResponse = z.object({
   data: z.array(EmailTemplateSchema),
@@ -2079,32 +2157,39 @@ export const ListEmailTemplatesResponse = z.object({
 });
 
 export const CreateEmailTemplateBody = CreateTemplateRequestSchema;
+export type CreateEmailTemplateBody = z.infer<typeof CreateEmailTemplateBody>;
 
 export const CreateEmailTemplateResponse = EmailTemplateSchema;
 
 export const GetEmailTemplateParams = z.object({
   template: UUIDSchema,
 });
+export type GetEmailTemplateParams = z.infer<typeof GetEmailTemplateParams>;
 
 export const GetEmailTemplateResponse = EmailTemplateSchema;
 
 export const UpdateEmailTemplateParams = z.object({
   template: UUIDSchema,
 });
+export type UpdateEmailTemplateParams = z.infer<typeof UpdateEmailTemplateParams>;
 
 export const UpdateEmailTemplateBody = UpdateTemplateRequestSchema;
+export type UpdateEmailTemplateBody = z.infer<typeof UpdateEmailTemplateBody>;
 
 export const UpdateEmailTemplateResponse = EmailTemplateSchema;
 
 export const TestEmailTemplateParams = z.object({
   template: UUIDSchema,
 });
+export type TestEmailTemplateParams = z.infer<typeof TestEmailTemplateParams>;
 
 export const TestEmailTemplateBody = TestTemplateRequestSchema;
+export type TestEmailTemplateBody = z.infer<typeof TestEmailTemplateBody>;
 
 export const TestEmailTemplateResponse = TestTemplateResultSchema;
 
 export const CreateConsultationBody = CreateConsultationRequestSchema;
+export type CreateConsultationBody = z.infer<typeof CreateConsultationBody>;
 
 export const CreateConsultationResponse = ConsultationNoteSchema;
 
@@ -2118,6 +2203,7 @@ export const ListConsultationsQuery = z.object({
   q: z.string().max(500).optional(),
   sort: z.string().optional(),
 });
+export type ListConsultationsQuery = z.infer<typeof ListConsultationsQuery>;
 
 export const ListConsultationsResponse = z.object({
   data: z.array(ConsultationNoteSchema),
@@ -2136,20 +2222,24 @@ export const ListConsultationsResponse = z.object({
 export const GetConsultationParams = z.object({
   consultation: UUIDSchema,
 });
+export type GetConsultationParams = z.infer<typeof GetConsultationParams>;
 
 export const GetConsultationResponse = ConsultationNoteSchema;
 
 export const UpdateConsultationParams = z.object({
   consultation: UUIDSchema,
 });
+export type UpdateConsultationParams = z.infer<typeof UpdateConsultationParams>;
 
 export const UpdateConsultationBody = UpdateConsultationRequestSchema;
+export type UpdateConsultationBody = z.infer<typeof UpdateConsultationBody>;
 
 export const UpdateConsultationResponse = ConsultationNoteSchema;
 
 export const FinalizeConsultationParams = z.object({
   consultation: UUIDSchema,
 });
+export type FinalizeConsultationParams = z.infer<typeof FinalizeConsultationParams>;
 
 export const FinalizeConsultationResponse = ConsultationNoteSchema;
 
@@ -2162,6 +2252,7 @@ export const ListEMRPatientsQuery = z.object({
   q: z.string().max(500).optional(),
   sort: z.string().optional(),
 });
+export type ListEMRPatientsQuery = z.infer<typeof ListEMRPatientsQuery>;
 
 export const ListEMRPatientsResponse = z.object({
   data: z.array(PatientSchema),
@@ -2190,6 +2281,7 @@ export const ListNotificationsQuery = z.object({
   q: z.string().max(500).optional(),
   sort: z.string().optional(),
 });
+export type ListNotificationsQuery = z.infer<typeof ListNotificationsQuery>;
 
 export const ListNotificationsResponse = z.object({
   data: z.array(NotificationSchema),
@@ -2208,6 +2300,7 @@ export const ListNotificationsResponse = z.object({
 export const MarkAllNotificationsAsReadQuery = z.object({
   type: NotificationTypeSchema.optional(),
 });
+export type MarkAllNotificationsAsReadQuery = z.infer<typeof MarkAllNotificationsAsReadQuery>;
 
 export const MarkAllNotificationsAsReadResponse = z.object({
   markedCount: z.number().int()
@@ -2216,12 +2309,14 @@ export const MarkAllNotificationsAsReadResponse = z.object({
 export const GetNotificationParams = z.object({
   notif: UUIDSchema,
 });
+export type GetNotificationParams = z.infer<typeof GetNotificationParams>;
 
 export const GetNotificationResponse = NotificationSchema;
 
 export const MarkNotificationAsReadParams = z.object({
   notif: UUIDSchema,
 });
+export type MarkNotificationAsReadParams = z.infer<typeof MarkNotificationAsReadParams>;
 
 export const MarkNotificationAsReadResponse = NotificationSchema;
 
@@ -2234,6 +2329,7 @@ export const ListPatientsQuery = z.object({
   q: z.string().max(500).optional(),
   sort: z.string().optional(),
 });
+export type ListPatientsQuery = z.infer<typeof ListPatientsQuery>;
 
 export const ListPatientsResponse = z.object({
   data: z.array(PatientSchema),
@@ -2250,34 +2346,41 @@ export const ListPatientsResponse = z.object({
 });
 
 export const CreatePatientBody = PatientCreateRequestSchema;
+export type CreatePatientBody = z.infer<typeof CreatePatientBody>;
 
 export const CreatePatientResponse = PatientSchema;
 
 export const GetPatientParams = z.object({
   patient: z.union([UUIDSchema, z.enum(["me"])]),
 });
+export type GetPatientParams = z.infer<typeof GetPatientParams>;
 
 export const GetPatientQuery = z.object({
   expand: z.string().optional(),
 });
+export type GetPatientQuery = z.infer<typeof GetPatientQuery>;
 
 export const GetPatientResponse = PatientSchema;
 
 export const UpdatePatientParams = z.object({
   patient: UUIDSchema,
 });
+export type UpdatePatientParams = z.infer<typeof UpdatePatientParams>;
 
 export const UpdatePatientBody = PatientUpdateRequestSchema;
+export type UpdatePatientBody = z.infer<typeof UpdatePatientBody>;
 
 export const UpdatePatientResponse = PatientSchema;
 
 export const DeletePatientParams = z.object({
   patient: UUIDSchema,
 });
+export type DeletePatientParams = z.infer<typeof DeletePatientParams>;
 
 export const DeletePatientResponse = z.void();
 
 export const CreatePersonBody = PersonCreateRequestSchema;
+export type CreatePersonBody = z.infer<typeof CreatePersonBody>;
 
 export const CreatePersonResponse = PersonSchema;
 
@@ -2289,6 +2392,7 @@ export const ListPersonsQuery = z.object({
   q: z.string().max(500).optional(),
   sort: z.string().optional(),
 });
+export type ListPersonsQuery = z.infer<typeof ListPersonsQuery>;
 
 export const ListPersonsResponse = z.object({
   data: z.array(PersonSchema),
@@ -2307,14 +2411,17 @@ export const ListPersonsResponse = z.object({
 export const GetPersonParams = z.object({
   person: z.union([UUIDSchema, z.enum(["me"])]),
 });
+export type GetPersonParams = z.infer<typeof GetPersonParams>;
 
 export const GetPersonResponse = PersonSchema;
 
 export const UpdatePersonParams = z.object({
   person: UUIDSchema,
 });
+export type UpdatePersonParams = z.infer<typeof UpdatePersonParams>;
 
 export const UpdatePersonBody = PersonUpdateRequestSchema;
+export type UpdatePersonBody = z.infer<typeof UpdatePersonBody>;
 
 export const UpdatePersonResponse = PersonSchema;
 
@@ -2330,6 +2437,7 @@ export const ListProvidersQuery = z.object({
   q: z.string().max(500).optional(),
   sort: z.string().optional(),
 });
+export type ListProvidersQuery = z.infer<typeof ListProvidersQuery>;
 
 export const ListProvidersResponse = z.object({
   data: z.array(ProviderSchema),
@@ -2346,34 +2454,41 @@ export const ListProvidersResponse = z.object({
 });
 
 export const CreateProviderBody = ProviderCreateRequestSchema;
+export type CreateProviderBody = z.infer<typeof CreateProviderBody>;
 
 export const CreateProviderResponse = ProviderSchema;
 
 export const GetProviderParams = z.object({
   provider: z.union([UUIDSchema, z.enum(["me"])]),
 });
+export type GetProviderParams = z.infer<typeof GetProviderParams>;
 
 export const GetProviderQuery = z.object({
   expand: z.string().optional(),
 });
+export type GetProviderQuery = z.infer<typeof GetProviderQuery>;
 
 export const GetProviderResponse = ProviderSchema;
 
 export const UpdateProviderParams = z.object({
   provider: UUIDSchema,
 });
+export type UpdateProviderParams = z.infer<typeof UpdateProviderParams>;
 
 export const UpdateProviderBody = ProviderUpdateRequestSchema;
+export type UpdateProviderBody = z.infer<typeof UpdateProviderBody>;
 
 export const UpdateProviderResponse = ProviderSchema;
 
 export const DeleteProviderParams = z.object({
   provider: UUIDSchema,
 });
+export type DeleteProviderParams = z.infer<typeof DeleteProviderParams>;
 
 export const DeleteProviderResponse = z.void();
 
 export const CreateReviewBody = CreateReviewRequestSchema;
+export type CreateReviewBody = z.infer<typeof CreateReviewBody>;
 
 export const CreateReviewResponse = ReviewSchema;
 
@@ -2389,6 +2504,7 @@ export const ListReviewsQuery = z.object({
   q: z.string().max(500).optional(),
   sort: z.string().optional(),
 });
+export type ListReviewsQuery = z.infer<typeof ListReviewsQuery>;
 
 export const ListReviewsResponse = z.object({
   data: z.array(ReviewSchema),
@@ -2407,12 +2523,14 @@ export const ListReviewsResponse = z.object({
 export const GetReviewParams = z.object({
   review: UUIDSchema,
 });
+export type GetReviewParams = z.infer<typeof GetReviewParams>;
 
 export const GetReviewResponse = ReviewSchema;
 
 export const DeleteReviewParams = z.object({
   review: UUIDSchema,
 });
+export type DeleteReviewParams = z.infer<typeof DeleteReviewParams>;
 
 export const DeleteReviewResponse = z.void();
 
@@ -2426,6 +2544,7 @@ export const ListFilesQuery = z.object({
   q: z.string().max(500).optional(),
   sort: z.string().optional(),
 });
+export type ListFilesQuery = z.infer<typeof ListFilesQuery>;
 
 export const ListFilesResponse = z.object({
   data: z.array(StoredFileSchema),
@@ -2442,29 +2561,34 @@ export const ListFilesResponse = z.object({
 });
 
 export const UploadFileBody = FileUploadRequestSchema;
+export type UploadFileBody = z.infer<typeof UploadFileBody>;
 
 export const UploadFileResponse = FileUploadResponseSchema;
 
 export const GetFileParams = z.object({
   file: UUIDSchema,
 });
+export type GetFileParams = z.infer<typeof GetFileParams>;
 
 export const GetFileResponse = StoredFileSchema;
 
 export const DeleteFileParams = z.object({
   file: UUIDSchema,
 });
+export type DeleteFileParams = z.infer<typeof DeleteFileParams>;
 
 export const DeleteFileResponse = z.void();
 
 export const CompleteFileUploadParams = z.object({
   file: UUIDSchema,
 });
+export type CompleteFileUploadParams = z.infer<typeof CompleteFileUploadParams>;
 
 export const CompleteFileUploadResponse = StoredFileSchema;
 
 export const GetFileDownloadParams = z.object({
   file: UUIDSchema,
 });
+export type GetFileDownloadParams = z.infer<typeof GetFileDownloadParams>;
 
 export const GetFileDownloadResponse = FileDownloadResponseSchema;

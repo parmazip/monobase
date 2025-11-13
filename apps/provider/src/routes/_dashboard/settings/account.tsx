@@ -65,7 +65,8 @@ function AccountSettingsPage() {
           <PersonalInfoForm
             defaultValues={person || undefined}
             onSubmit={async (data) => {
-              await updatePersonalInfo.mutateAsync(data)
+              if (!person?.id) return
+              await updatePersonalInfo.mutateAsync({ personId: person.id, data })
             }}
             mode="edit"
             memberSince={person?.createdAt}
@@ -83,7 +84,8 @@ function AccountSettingsPage() {
           <ContactInfoForm
             defaultValues={person?.contactInfo}
             onSubmit={async (data) => {
-              await updateContactInfo.mutateAsync(data)
+              if (!person?.id) return
+              await updateContactInfo.mutateAsync({ personId: person.id, data })
             }}
           />
         </CardContent>
@@ -98,7 +100,8 @@ function AccountSettingsPage() {
           <AddressForm
             defaultValues={person?.primaryAddress}
             onSubmit={async (data) => {
-              await updateAddress.mutateAsync(data)
+              if (!person?.id) return
+              await updateAddress.mutateAsync({ personId: person.id, data })
             }}
           />
         </CardContent>
@@ -113,7 +116,8 @@ function AccountSettingsPage() {
           <PreferencesForm
             defaultValues={person || undefined}
             onSubmit={async (data) => {
-              await updatePreferences.mutateAsync(data)
+              if (!person?.id) return
+              await updatePreferences.mutateAsync({ personId: person.id, data })
             }}
           />
         </CardContent>

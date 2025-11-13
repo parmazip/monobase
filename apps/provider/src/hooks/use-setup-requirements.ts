@@ -7,7 +7,7 @@ import { useMyMerchantAccountStatus } from '@monobase/sdk/react/hooks/use-billin
  *
  * Requirements:
  * - Complete account setup (person profile with required fields)
- * - Complete professional profile (provider with biography and specialties)
+ * - Complete professional profile (provider with biography, min 10 characters)
  * - Complete merchant account setup (Stripe onboarding complete)
  *
  * @returns Setup requirements status
@@ -27,10 +27,7 @@ export function useSetupRequirements() {
   // Check if professional profile is complete
   const professionalComplete = !!(
     provider?.biography &&
-    provider?.minorAilmentsSpecialties &&
-    provider?.minorAilmentsSpecialties.length > 0 &&
-    provider?.minorAilmentsPracticeLocations &&
-    provider?.minorAilmentsPracticeLocations.length > 0
+    provider.biography.length >= 10  // Match form's minimum requirement
   )
 
   // Merchant account complete from hook

@@ -670,7 +670,7 @@ namespace BookingModule {
     @doc("List booking events. Public endpoint with optional authentication for personalization.")
     @operationId("listBookingEvents")
     @get
-    @useAuth([bearerAuth, Http.NoAuth])
+    @useAuth(bearerAuth | Http.NoAuth)
     @route("/events")
     listBookingEvents(
       @doc("Filter by event owner (person ID)")

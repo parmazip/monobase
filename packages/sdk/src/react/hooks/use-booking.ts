@@ -3,7 +3,10 @@ import { toast } from 'sonner'
 import {
   searchProviders,
   getProviderWithSlots,
+  listBookingEvents,
+  getBookingEvent,
   type SearchProvidersParams,
+  type ListBookingEventsParams,
   type ProviderWithSlots,
   type BookingTimeSlot,
 } from '../../services/booking'
@@ -12,11 +15,66 @@ import { ApiError, apiGet } from '../../api'
 import type { components } from '@monobase/api-spec/types'
 
 // ============================================================================
-// Provider Search Hooks
+// Booking Events Hooks
+// ============================================================================
+
+/**
+ * Hook to list booking events with filters
+ */
+export function useListBookingEvents(params?: ListBookingEventsParams) {
+  return useQuery({
+    queryKey: ['booking', 'events', params],
+    queryFn: () => listBookingEvents(params),
+    retry: (failureCount, error) => {
+      // Don't retry on client errors (4xx)
+      if (error instanceof ApiError && error.status >= 400 && error.status < 500) {
+        return false
+      }
+      return failureCount < 3
+    },
+  })
+}
+
+/**
+ * Hook to get a single booking event by ID
+ */
+export function useBookingEvent(eventId: string, options?: {
+  enabled?: boolean
+  expand?: string
+  onError?: (error: Error) => void
+}) {
+  return useQuery({
+    queryKey: ['booking', 'events', eventId, options?.expand],
+    queryFn: () => getBookingEvent(eventId, { expand: options?.expand }),
+    enabled: options?.enabled !== false && !!eventId,
+    retry: (failureCount, error) => {
+      // Don't retry on 404 (event not found)
+      if (error instanceof ApiError && error.status === 404) {
+        return false
+      }
+      return failureCount < 3
+    },
+    meta: {
+      onError: (error: Error) => {
+        console.error('Failed to fetch booking event:', error)
+        if (error instanceof ApiError) {
+          toast.error(error.message || 'Failed to load booking event')
+        } else {
+          toast.error('Failed to load booking event. Please try again.')
+        }
+        options?.onError?.(error)
+      },
+    },
+  })
+}
+
+// ============================================================================
+// Provider Search Hooks (Deprecated)
 // ============================================================================
 
 /**
  * Hook to search providers with filters
+ * @deprecated Use useListBookingEvents() instead - /booking/providers endpoint no longer exists
  */
 export function useSearchProviders(params: SearchProvidersParams) {
   return useQuery({
@@ -34,6 +92,7 @@ export function useSearchProviders(params: SearchProvidersParams) {
 
 /**
  * Hook to get provider with available slots and event data
+ * @deprecated Use useBookingEvent() instead - /booking/providers endpoint no longer exists
  */
 export function useProviderWithSlots(providerId: string, options?: {
   enabled?: boolean

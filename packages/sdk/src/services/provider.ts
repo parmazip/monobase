@@ -188,9 +188,10 @@ export async function createMyProvider(
  * Update current user's provider profile
  */
 export async function updateMyProvider(
+  providerId: string,
   updates: ProviderUpdateRequest
 ): Promise<Provider> {
-  return updateProvider('me', updates)
+  return updateProvider(providerId, updates)
 }
 
 /**

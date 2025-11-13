@@ -44,8 +44,8 @@ export interface RefundData {
 }
 
 export interface ConnectAccountData {
-  email: string;
-  country: string;
+  email?: string; // Optional - collected during Stripe onboarding if not provided
+  country?: string; // Optional - collected during Stripe onboarding if not provided
   businessType: 'individual' | 'company';
   refreshUrl: string;
   returnUrl: string;
@@ -102,6 +102,10 @@ export class BillingService {
       this.logger.info({ url: this.config.url }, 'Using custom Stripe URL');
     }
 
+    this.logger.info({ 
+      key: this.config.secretKey,
+      stripeOptions
+    }, 'stripe.initialize')
     this.stripe = new Stripe(this.config.secretKey, stripeOptions);
 
     return this.stripe;

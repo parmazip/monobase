@@ -299,7 +299,7 @@ function SecureConsentPage() {
                     I agree to the privacy policy and security measures
                   </label>
                   <p className="text-gray-600 mt-1">
-                    I understand that Parmazip uses industry-standard encryption and security measures to protect my personal health information. I have read and understood the privacy policy and agree to the collection, use, and disclosure of my information as described.
+                    I understand that Monobase uses industry-standard encryption and security measures to protect my personal health information. I have read and understood the privacy policy and agree to the collection, use, and disclosure of my information as described.
                   </p>
                 </div>
               </div>

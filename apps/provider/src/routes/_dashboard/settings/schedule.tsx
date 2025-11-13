@@ -387,7 +387,7 @@ function SchedulePage() {
                 Directory Visibility
               </CardTitle>
               <CardDescription>
-                Control whether you appear in the patient app's pharmacist directory
+                Control whether you appear in the patient app's provider directory
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
@@ -464,7 +464,7 @@ function SchedulePage() {
               <p className="text-sm font-medium">Public Visibility</p>
               <p className="text-xs text-muted-foreground">
                 {allRequirementsMet
-                  ? 'Toggle to appear in the pharmacist directory'
+                  ? 'Toggle to appear in the provider directory'
                   : 'Complete all requirements above to enable'}
               </p>
             </div>
@@ -492,7 +492,7 @@ function SchedulePage() {
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Currently Hidden</AlertTitle>
               <AlertDescription>
-                Your profile is hidden from the pharmacist directory. Enable visibility to allow patients
+                Your profile is hidden from the provider directory. Enable visibility to allow patients
                 to find you and book appointments.
               </AlertDescription>
             </Alert>
@@ -503,7 +503,7 @@ function SchedulePage() {
               <Check className="h-4 w-4 text-green-600" />
               <AlertTitle className="text-green-900">Publicly Visible</AlertTitle>
               <AlertDescription className="text-green-800">
-                Your profile is visible in the pharmacist directory. Patients can find you and book
+                Your profile is visible in the provider directory. Patients can find you and book
                 appointments based on your availability schedule below.
               </AlertDescription>
             </Alert>
@@ -727,7 +727,7 @@ function SchedulePage() {
               {pendingVisibilityAction === 'enable' ? (
                 <>
                   <p className="mb-2">
-                    Your profile will appear in the pharmacist directory.
+                    Your profile will appear in the provider directory.
                   </p>
                   <p className="mb-2">
                     Patients will be able to:
@@ -745,7 +745,7 @@ function SchedulePage() {
               ) : (
                 <>
                   <p className="mb-2">
-                    Your profile will be hidden from the pharmacist directory.
+                    Your profile will be hidden from the provider directory.
                   </p>
                   <p className="mb-2">
                     This means:

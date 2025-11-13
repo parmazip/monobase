@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { PharmacistListPage } from '../pages/pharmacist-list.page';
+import { ProviderListPage } from '../pages/provider-list.page';
 import { makeTestProvider } from '../fixtures/test-data';
 import {
   createTestProvider,
@@ -11,8 +11,8 @@ import {
 
 let testProviders: CreatedProvider[] = [];
 
-test.describe('Pharmacist List Page - Dynamic Providers', () => {
-  let pharmacistListPage: PharmacistListPage;
+test.describe('Provider List Page - Dynamic Providers', () => {
+  let providerListPage: ProviderListPage;
 
   test.beforeAll(async ({ browser }) => {
     const context = await browser.newContext();
@@ -81,29 +81,29 @@ test.describe('Pharmacist List Page - Dynamic Providers', () => {
   });
 
   test.beforeEach(async ({ page }) => {
-    pharmacistListPage = new PharmacistListPage(page);
-    await pharmacistListPage.goto();
+    providerListPage = new ProviderListPage(page);
+    await providerListPage.goto();
   });
 
   test('should display all created providers on page load', async () => {
-    await pharmacistListPage.waitForPharmacistsToLoad();
-    const count = await pharmacistListPage.getPharmacistCount();
+    await providerListPage.waitForProvidersToLoad();
+    const count = await providerListPage.getProviderCount();
 
     // Should show at least our 3 created providers
     expect(count).toBeGreaterThanOrEqual(3);
 
     // Verify our test providers are visible
-    const names = await pharmacistListPage.getPharmacistNames();
+    const names = await providerListPage.getProviderNames();
     for (const provider of testProviders) {
       expect(names).toContainEqual(expect.stringContaining(provider.name));
     }
   });
 
   test('should filter by specialty - Diabetes Care', async () => {
-    await pharmacistListPage.filterBySpecialization('Diabetes Care');
+    await providerListPage.filterBySpecialization('Diabetes Care');
 
-    const names = await pharmacistListPage.getPharmacistNames();
-    const count = await pharmacistListPage.getPharmacistCount();
+    const names = await providerListPage.getProviderNames();
+    const count = await providerListPage.getProviderCount();
 
     // Should find at least our TestProvider One
     expect(count).toBeGreaterThanOrEqual(1);
@@ -111,10 +111,10 @@ test.describe('Pharmacist List Page - Dynamic Providers', () => {
   });
 
   test('should filter by specialty - Pediatric Pharmacy', async () => {
-    await pharmacistListPage.filterBySpecialization('Pediatric Pharmacy');
+    await providerListPage.filterBySpecialization('Pediatric Pharmacy');
 
-    const names = await pharmacistListPage.getPharmacistNames();
-    const count = await pharmacistListPage.getPharmacistCount();
+    const names = await providerListPage.getProviderNames();
+    const count = await providerListPage.getProviderCount();
 
     // Should find at least our TestProvider Two
     expect(count).toBeGreaterThanOrEqual(1);
@@ -122,10 +122,10 @@ test.describe('Pharmacist List Page - Dynamic Providers', () => {
   });
 
   test('should filter by language - Spanish', async () => {
-    await pharmacistListPage.filterByLanguage('Spanish');
+    await providerListPage.filterByLanguage('Spanish');
 
-    const names = await pharmacistListPage.getPharmacistNames();
-    const count = await pharmacistListPage.getPharmacistCount();
+    const names = await providerListPage.getProviderNames();
+    const count = await providerListPage.getProviderCount();
 
     // Should find at least TestProvider One (Spanish speaker)
     expect(count).toBeGreaterThanOrEqual(1);
@@ -133,10 +133,10 @@ test.describe('Pharmacist List Page - Dynamic Providers', () => {
   });
 
   test('should filter by language - Mandarin', async () => {
-    await pharmacistListPage.filterByLanguage('Mandarin');
+    await providerListPage.filterByLanguage('Mandarin');
 
-    const names = await pharmacistListPage.getPharmacistNames();
-    const count = await pharmacistListPage.getPharmacistCount();
+    const names = await providerListPage.getProviderNames();
+    const count = await providerListPage.getProviderCount();
 
     // Should find at least TestProvider Two (Mandarin speaker)
     expect(count).toBeGreaterThanOrEqual(1);
@@ -144,10 +144,10 @@ test.describe('Pharmacist List Page - Dynamic Providers', () => {
   });
 
   test('should filter by city/location - New York', async () => {
-    await pharmacistListPage.searchPharmacists('New York');
+    await providerListPage.searchProviders('New York');
 
-    const names = await pharmacistListPage.getPharmacistNames();
-    const count = await pharmacistListPage.getPharmacistCount();
+    const names = await providerListPage.getProviderNames();
+    const count = await providerListPage.getProviderCount();
 
     // Should find at least TestProvider One (New York)
     expect(count).toBeGreaterThanOrEqual(1);
@@ -155,10 +155,10 @@ test.describe('Pharmacist List Page - Dynamic Providers', () => {
   });
 
   test('should filter by city/location - Chicago', async () => {
-    await pharmacistListPage.searchPharmacists('Chicago');
+    await providerListPage.searchProviders('Chicago');
 
-    const names = await pharmacistListPage.getPharmacistNames();
-    const count = await pharmacistListPage.getPharmacistCount();
+    const names = await providerListPage.getProviderNames();
+    const count = await providerListPage.getProviderCount();
 
     // Should find at least TestProvider Three (Chicago)
     expect(count).toBeGreaterThanOrEqual(1);
@@ -167,38 +167,38 @@ test.describe('Pharmacist List Page - Dynamic Providers', () => {
 
   test('should clear filters and show all providers again', async () => {
     // Apply multiple filters first
-    await pharmacistListPage.filterByInsurance(true);
-    await pharmacistListPage.filterByLanguage('English');
+    await providerListPage.filterByInsurance(true);
+    await providerListPage.filterByLanguage('English');
 
     // Get filtered count
-    const filteredCount = await pharmacistListPage.getPharmacistCount();
+    const filteredCount = await providerListPage.getProviderCount();
 
     // Clear all filters
-    await pharmacistListPage.clearAllFilters();
+    await providerListPage.clearAllFilters();
 
     // Should show all providers again
-    const countAfterClear = await pharmacistListPage.getPharmacistCount();
+    const countAfterClear = await providerListPage.getProviderCount();
     expect(countAfterClear).toBeGreaterThanOrEqual(filteredCount);
     expect(countAfterClear).toBeGreaterThanOrEqual(3); // At least our test providers
 
     // Verify all test providers are visible again
-    const names = await pharmacistListPage.getPharmacistNames();
+    const names = await providerListPage.getProviderNames();
     for (const provider of testProviders) {
       expect(names).toContainEqual(expect.stringContaining(provider.name));
     }
   });
 
   test('should navigate to detail page when clicking provider by name', async ({ page }) => {
-    await pharmacistListPage.waitForPharmacistsToLoad();
+    await providerListPage.waitForProvidersToLoad();
 
     // Find and click on TestProvider One by name
     const targetProvider = testProviders[0]!;
-    const providerCards = pharmacistListPage.pharmacistCards;
+    const providerCards = providerListPage.providerCards;
     const count = await providerCards.count();
 
     let cardIndex = -1;
     for (let i = 0; i < count; i++) {
-      const nameElement = providerCards.nth(i).locator('[data-testid="pharmacist-name"]');
+      const nameElement = providerCards.nth(i).locator('[data-testid="provider-name"]');
       const name = await nameElement.textContent();
       if (name?.includes(targetProvider.name)) {
         cardIndex = i;
@@ -209,23 +209,23 @@ test.describe('Pharmacist List Page - Dynamic Providers', () => {
     expect(cardIndex).toBeGreaterThanOrEqual(0);
 
     // Click the found provider card
-    await pharmacistListPage.clickPharmacistCard(cardIndex);
+    await providerListPage.clickProviderCard(cardIndex);
 
     // Verify navigation to detail page
-    await expect(page).toHaveURL(/\/pharmacist\/.+/);
+    await expect(page).toHaveURL(/\/professional\/.+/);
 
     // Verify the detail page shows the correct pharmacist
-    const nameElement = page.locator('[data-testid="pharmacist-name"]');
+    const nameElement = page.locator('[data-testid="provider-name"]');
     await expect(nameElement).toContainText(targetProvider.name);
   });
 
   test('should search pharmacists by name', async () => {
     const targetProvider = testProviders[1]!; // TestProvider Two
 
-    await pharmacistListPage.searchPharmacists(targetProvider.name);
+    await providerListPage.searchProviders(targetProvider.name);
 
-    const names = await pharmacistListPage.getPharmacistNames();
-    const count = await pharmacistListPage.getPharmacistCount();
+    const names = await providerListPage.getProviderNames();
+    const count = await providerListPage.getProviderCount();
 
     // Should find the specific provider
     expect(count).toBeGreaterThanOrEqual(1);
@@ -233,10 +233,10 @@ test.describe('Pharmacist List Page - Dynamic Providers', () => {
   });
 
   test('should filter by insurance acceptance', async () => {
-    await pharmacistListPage.filterByInsurance(true);
+    await providerListPage.filterByInsurance(true);
 
-    const names = await pharmacistListPage.getPharmacistNames();
-    const count = await pharmacistListPage.getPharmacistCount();
+    const names = await providerListPage.getProviderNames();
+    const count = await providerListPage.getProviderCount();
 
     // Should find at least TestProvider One and Two (both accept insurance)
     expect(count).toBeGreaterThanOrEqual(2);
@@ -248,9 +248,9 @@ test.describe('Pharmacist List Page - Dynamic Providers', () => {
   });
 
   test('should sort pharmacists by experience', async () => {
-    await pharmacistListPage.sortBy('experience');
+    await providerListPage.sortBy('experience');
 
-    const names = await pharmacistListPage.getPharmacistNames();
+    const names = await providerListPage.getProviderNames();
 
     // Find positions of our test providers in the sorted list
     const indexOne = names.findIndex(n => n?.includes('Dr. TestProvider One')); // 10 years
@@ -268,37 +268,37 @@ test.describe('Pharmacist List Page - Dynamic Providers', () => {
   });
 
   test('should show no results message for non-existent search', async () => {
-    await pharmacistListPage.searchPharmacists('NonExistentProvider12345XYZ');
+    await providerListPage.searchProviders('NonExistentProvider12345XYZ');
 
-    const isNoResultsVisible = await pharmacistListPage.isNoResultsVisible();
+    const isNoResultsVisible = await providerListPage.isNoResultsVisible();
     expect(isNoResultsVisible).toBe(true);
 
-    const count = await pharmacistListPage.getPharmacistCount();
+    const count = await providerListPage.getProviderCount();
     expect(count).toBe(0);
   });
 
   test('should handle multiple filters simultaneously', async () => {
     // Apply multiple filters that match TestProvider One
-    await pharmacistListPage.filterByInsurance(true);
-    await pharmacistListPage.filterByLanguage('Spanish');
-    await pharmacistListPage.filterBySpecialization('Diabetes Care');
+    await providerListPage.filterByInsurance(true);
+    await providerListPage.filterByLanguage('Spanish');
+    await providerListPage.filterBySpecialization('Diabetes Care');
 
     // Verify results include TestProvider One
-    const count = await pharmacistListPage.getPharmacistCount();
+    const count = await providerListPage.getProviderCount();
     expect(count).toBeGreaterThanOrEqual(1);
 
-    const names = await pharmacistListPage.getPharmacistNames();
+    const names = await providerListPage.getProviderNames();
     expect(names).toContainEqual(expect.stringContaining('Dr. TestProvider One'));
   });
 });
 
-test.describe('Pharmacist List Page - DateTime Filtering', () => {
-  let pharmacistListPage: PharmacistListPage;
+test.describe('Provider List Page - DateTime Filtering', () => {
+  let providerListPage: ProviderListPage;
 
   test.beforeEach(async ({ page }) => {
-    pharmacistListPage = new PharmacistListPage(page);
-    await pharmacistListPage.goto();
-    await pharmacistListPage.waitForPharmacistsToLoad();
+    providerListPage = new ProviderListPage(page);
+    await providerListPage.goto();
+    await providerListPage.waitForProvidersToLoad();
   });
 
   test('should send availableFrom/availableTo parameters when filtering by Today', async ({ page }) => {
@@ -309,7 +309,7 @@ test.describe('Pharmacist List Page - DateTime Filtering', () => {
     );
 
     // Apply datetime filter
-    await pharmacistListPage.filterByDateTime('Today');
+    await providerListPage.filterByDateTime('Today');
 
     // Wait for and capture the request
     const request = await requestPromise;
@@ -338,7 +338,7 @@ test.describe('Pharmacist List Page - DateTime Filtering', () => {
       request.url().includes('availableFrom')
     );
 
-    await pharmacistListPage.filterByDateTime('Today Morning');
+    await providerListPage.filterByDateTime('Today Morning');
 
     const request = await requestPromise;
     const url = new URL(request.url());
@@ -357,7 +357,7 @@ test.describe('Pharmacist List Page - DateTime Filtering', () => {
       request.url().includes('availableFrom')
     );
 
-    await pharmacistListPage.filterByDateTime('Today Afternoon');
+    await providerListPage.filterByDateTime('Today Afternoon');
 
     const request = await requestPromise;
     const url = new URL(request.url());
@@ -376,7 +376,7 @@ test.describe('Pharmacist List Page - DateTime Filtering', () => {
       request.url().includes('availableFrom')
     );
 
-    await pharmacistListPage.filterByDateTime('Today Evening');
+    await providerListPage.filterByDateTime('Today Evening');
 
     const request = await requestPromise;
     const url = new URL(request.url());
@@ -395,7 +395,7 @@ test.describe('Pharmacist List Page - DateTime Filtering', () => {
       request.url().includes('availableFrom')
     );
 
-    await pharmacistListPage.filterByDateTime('Tomorrow');
+    await providerListPage.filterByDateTime('Tomorrow');
 
     const request = await requestPromise;
     const url = new URL(request.url());
@@ -418,7 +418,7 @@ test.describe('Pharmacist List Page - DateTime Filtering', () => {
       request.url().includes('availableFrom')
     );
 
-    await pharmacistListPage.filterByDateTime('Tomorrow Morning');
+    await providerListPage.filterByDateTime('Tomorrow Morning');
 
     const request = await requestPromise;
     const url = new URL(request.url());
@@ -434,14 +434,14 @@ test.describe('Pharmacist List Page - DateTime Filtering', () => {
 
   test('should not send datetime parameters when filter is set to Any Time', async ({ page }) => {
     // First apply a datetime filter
-    await pharmacistListPage.filterByDateTime('Today');
+    await providerListPage.filterByDateTime('Today');
 
     // Then clear it by selecting "Any Time"
     const requestPromise = page.waitForRequest(request =>
       request.url().includes('/providers')
     );
 
-    await pharmacistListPage.filterByDateTime('Any Time');
+    await providerListPage.filterByDateTime('Any Time');
 
     const request = await requestPromise;
     const url = new URL(request.url());
@@ -453,7 +453,7 @@ test.describe('Pharmacist List Page - DateTime Filtering', () => {
 
   test('should clear datetime filter when clicking Clear All button', async ({ page }) => {
     // Apply datetime filter
-    await pharmacistListPage.filterByDateTime('Today Morning');
+    await providerListPage.filterByDateTime('Today Morning');
 
     // Set up request listener before clearing
     const requestPromise = page.waitForRequest(request =>
@@ -461,7 +461,7 @@ test.describe('Pharmacist List Page - DateTime Filtering', () => {
     );
 
     // Clear all filters
-    await pharmacistListPage.clearAllFilters();
+    await providerListPage.clearAllFilters();
 
     const request = await requestPromise;
     const url = new URL(request.url());
@@ -473,22 +473,22 @@ test.describe('Pharmacist List Page - DateTime Filtering', () => {
 
   test('should filter providers by availability when datetime filter is applied', async () => {
     // Get initial count
-    const initialCount = await pharmacistListPage.getPharmacistCount();
+    const initialCount = await providerListPage.getProviderCount();
 
     // Apply datetime filter for today
-    await pharmacistListPage.filterByDateTime('Today');
-    await pharmacistListPage.page.waitForLoadState('networkidle');
+    await providerListPage.filterByDateTime('Today');
+    await providerListPage.page.waitForLoadState('networkidle');
 
     // Get filtered count
-    const filteredCount = await pharmacistListPage.getPharmacistCount();
+    const filteredCount = await providerListPage.getProviderCount();
 
     // Filtered count should be >= 0 (may filter out some or all providers)
     expect(filteredCount).toBeGreaterThanOrEqual(0);
 
     // If there are filtered results, they should have availability indicated
     if (filteredCount > 0) {
-      const firstCardAvailability = await pharmacistListPage.page
-        .locator('[data-testid="pharmacist-card"]')
+      const firstCardAvailability = await providerListPage.page
+        .locator('[data-testid="provider-card"]')
         .first()
         .textContent();
 
@@ -499,7 +499,7 @@ test.describe('Pharmacist List Page - DateTime Filtering', () => {
 
   test('should combine datetime filter with other filters', async ({ page }) => {
     // Apply datetime filter
-    await pharmacistListPage.filterByDateTime('Tomorrow Afternoon');
+    await providerListPage.filterByDateTime('Tomorrow Afternoon');
 
     // Apply language filter
     const requestPromise = page.waitForRequest(request =>
@@ -507,7 +507,7 @@ test.describe('Pharmacist List Page - DateTime Filtering', () => {
       request.url().includes('availableFrom')
     );
 
-    await pharmacistListPage.filterByLanguage('English');
+    await providerListPage.filterByLanguage('English');
 
     const request = await requestPromise;
     const url = new URL(request.url());

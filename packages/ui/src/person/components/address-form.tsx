@@ -22,6 +22,7 @@ interface AddressFormProps {
   onCancel?: () => void
   onSkip?: () => void
   required?: boolean // Whether fields are required
+  formId?: string // Optional form ID for external submit buttons
 }
 
 // Get all country names from the library
@@ -52,7 +53,8 @@ export function AddressForm({
   showButtons = true,
   onCancel,
   onSkip,
-  required = false
+  required = false,
+  formId
 }: AddressFormProps) {
   // Use detected country or provided default
   const getDefaultCountryCode = () => {
@@ -92,7 +94,7 @@ export function AddressForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+      <form id={formId} onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <FormField
           control={form.control}
           name="street1"

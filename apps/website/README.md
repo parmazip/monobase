@@ -1,6 +1,6 @@
 # Marketing Website
 
-Public-facing marketing website for the Parmazip Healthcare Platform. Built with Next.js for optimal SEO, provider discovery, and public information about platform features.
+Public-facing marketing website for the Monobase Healthcare Platform. Built with Next.js for optimal SEO, provider discovery, and public information about platform features.
 
 ## Tech Stack
 
@@ -45,7 +45,7 @@ bun run lint         # Run ESLint
 This app consumes the API service at `services/api`. Before implementing API features:
 
 1. Check the OpenAPI spec: `specs/api/dist/openapi/openapi.json`
-2. Use generated types from `@parmazip/api-spec`
+2. Use generated types from `@monobase/api-spec`
 3. Follow Next.js Server Component patterns for data fetching
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for comprehensive API integration workflow.
@@ -98,4 +98,4 @@ src/
 
 ---
 
-**Part of the Parmazip Healthcare Platform monorepo**
+**Part of the Monobase Healthcare Platform monorepo**

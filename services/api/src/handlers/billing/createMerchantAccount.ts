@@ -62,16 +62,16 @@ export async function createMerchantAccount(
     throw new ForbiddenError('You can only create merchant accounts for yourself');
   }
 
-  // Extract email from contactInfo JSONB field
+  // Extract email from contactInfo JSONB field (optional - Stripe collects during onboarding)
   const email = person.contactInfo?.email;
   if (!email) {
-    throw new ValidationError('Person must have an email in contact info');
+    logger.warn({ personId }, 'Person missing email - will be collected during Stripe onboarding');
   }
 
-  // Extract country from primaryAddress JSONB field
+  // Extract country from primaryAddress JSONB field (optional - Stripe collects during onboarding)
   const country = person.primaryAddress?.country;
   if (!country || country.length !== 2) {
-    throw new ValidationError('Person must have a valid 2-letter ISO country code in their primary address');
+    logger.warn({ personId, country }, 'Person missing valid country code - will be collected during Stripe onboarding');
   }
   
   // Check if person already has a merchant account
@@ -91,8 +91,8 @@ export async function createMerchantAccount(
     logger.info({ personId, email, country }, 'Creating Stripe Connect account');
 
     const connectAccount = await billing.createConnectAccount({
-      email,
-      country,
+      email: email || undefined, // Pass if available, undefined if not
+      country: country || undefined, // Pass if available, undefined if not
       businessType,
       refreshUrl,
       returnUrl,
@@ -114,8 +114,8 @@ export async function createMerchantAccount(
         stripeAccountStatus: 'pending',
         onboardingComplete: false,
         onboardingUrl: connectAccount.onboardingUrl,
-        email,
-        country,
+        ...(email && { email }), // Only include if available
+        ...(country && { country }), // Only include if available
         businessType,
         createdBy: user.id,
         createdAt: new Date().toISOString()

@@ -97,28 +97,29 @@ export async function onboardMerchantAccount(
         });
       }
 
-      // Extract email from contactInfo JSONB field
+      // Extract email from contactInfo JSONB field (optional - Stripe collects during onboarding)
       const email = person.contactInfo?.email;
       if (!email) {
-        throw new BusinessLogicError(
-          'Cannot create Stripe account: person must have an email in contact info',
-          'MISSING_PERSON_EMAIL'
-        );
+        logger.warn({
+          personId: merchantAccount.person,
+          merchantAccountId
+        }, 'Person missing email - will be collected during Stripe onboarding');
       }
 
-      // Extract country from primaryAddress JSONB field
+      // Extract country from primaryAddress JSONB field (optional - Stripe collects during onboarding)
       const country = person.primaryAddress?.country;
       if (!country || country.length !== 2) {
-        throw new BusinessLogicError(
-          'Cannot create Stripe account: person must have a valid 2-letter ISO country code in their primary address',
-          'INVALID_COUNTRY_CODE'
-        );
+        logger.warn({
+          personId: merchantAccount.person,
+          merchantAccountId,
+          country
+        }, 'Person missing valid country code - will be collected during Stripe onboarding');
       }
 
       // Create Stripe Connect account
       const connectAccount = await billing.createConnectAccount({
-        email,
-        country,
+        email: email || undefined,
+        country: country || undefined,
         businessType: 'individual',
         refreshUrl,
         returnUrl,
@@ -138,8 +139,8 @@ export async function onboardMerchantAccount(
           stripeAccountStatus: 'pending',
           onboardingComplete: false,
           onboardingUrl: connectAccount.onboardingUrl,
-          email,
-          country,
+          ...(email && { email }),
+          ...(country && { country }),
           businessType: 'individual',
           createdAt: new Date().toISOString(),
           createdLate: true

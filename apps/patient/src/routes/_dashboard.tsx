@@ -58,25 +58,9 @@ function DashboardLayout() {
           badge: confirmedAppointmentsCount > 0 ? confirmedAppointmentsCount : null,
         },
         {
-          title: "Medical Records",
-          url: "/medical-records",
-          icon: FileText,
-        },
-        {
           title: "Providers",
           url: "/providers",
           icon: Stethoscope,
-        },
-        {
-          title: "Billing",
-          url: "/billing",
-          icon: CreditCard,
-        },
-        {
-          title: "Notifications",
-          url: "/notifications",
-          icon: Bell,
-          badge: unreadCount > 0 ? unreadCount : null,
         },
       ]
     },
@@ -87,11 +71,6 @@ function DashboardLayout() {
           title: "Account Settings",
           url: "/settings/account",
           icon: User,
-        },
-        {
-          title: "Healthcare Settings",
-          url: "/settings/healthcare",
-          icon: Activity,
         },
         {
           title: "Security",

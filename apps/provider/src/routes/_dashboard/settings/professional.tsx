@@ -40,7 +40,8 @@ function ProfessionalSettingsPage() {
           <ProviderForm
             defaultValues={provider || undefined}
             onSubmit={async (data) => {
-              await updateProvider.mutateAsync(data)
+              if (!provider?.id) return
+              await updateProvider.mutateAsync({ providerId: provider.id, updates: data })
             }}
             isLoading={updateProvider.isPending}
           />

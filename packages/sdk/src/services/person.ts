@@ -201,7 +201,7 @@ export async function createMyPerson(data: CreatePersonData): Promise<Person> {
 /**
  * Update the current user's personal information
  */
-export async function updateMyPersonalInfo(data: PersonalInfo): Promise<Person> {
+export async function updateMyPersonalInfo(personId: string, data: PersonalInfo): Promise<Person> {
   const updateData = sanitizeObject({
     firstName: data.firstName,
     lastName: data.lastName,
@@ -215,14 +215,14 @@ export async function updateMyPersonalInfo(data: PersonalInfo): Promise<Person> 
   }, {
     nullable: ['lastName', 'middleName', 'dateOfBirth', 'gender', 'avatar']
   })
-  const apiPerson = await apiPatch<ApiPerson>('/persons/me', updateData)
+  const apiPerson = await apiPatch<ApiPerson>(`/persons/${personId}`, updateData)
   return mapApiPersonToFrontend(apiPerson)
 }
 
 /**
  * Update the current user's contact information
  */
-export async function updateMyContactInfo(data: ContactInfo): Promise<Person> {
+export async function updateMyContactInfo(personId: string, data: ContactInfo): Promise<Person> {
   const updateData = sanitizeObject({
     contactInfo: {
       email: data.email,
@@ -231,14 +231,14 @@ export async function updateMyContactInfo(data: ContactInfo): Promise<Person> {
   }, {
     nullable: ['contactInfo']
   })
-  const apiPerson = await apiPatch<ApiPerson>('/persons/me', updateData)
+  const apiPerson = await apiPatch<ApiPerson>(`/persons/${personId}`, updateData)
   return mapApiPersonToFrontend(apiPerson)
 }
 
 /**
  * Update the current user's address
  */
-export async function updateMyAddress(data: OptionalAddress): Promise<Person> {
+export async function updateMyAddress(personId: string, data: OptionalAddress): Promise<Person> {
   const updateData = sanitizeObject({
     primaryAddress: {
       street1: data.street1,
@@ -251,20 +251,20 @@ export async function updateMyAddress(data: OptionalAddress): Promise<Person> {
   }, {
     nullable: ['primaryAddress', 'primaryAddress.street2']
   })
-  const apiPerson = await apiPatch<ApiPerson>('/persons/me', updateData)
+  const apiPerson = await apiPatch<ApiPerson>(`/persons/${personId}`, updateData)
   return mapApiPersonToFrontend(apiPerson)
 }
 
 /**
  * Update the current user's preferences
  */
-export async function updateMyPreferences(data: Preferences): Promise<Person> {
+export async function updateMyPreferences(personId: string, data: Preferences): Promise<Person> {
   const updateData = sanitizeObject({
     languagesSpoken: data.languagesSpoken,
     timezone: data.timezone,
   }, {
     nullable: ['languagesSpoken', 'timezone']
   })
-  const apiPerson = await apiPatch<ApiPerson>('/persons/me', updateData)
+  const apiPerson = await apiPatch<ApiPerson>(`/persons/${personId}`, updateData)
   return mapApiPersonToFrontend(apiPerson)
 }

@@ -718,7 +718,7 @@ function EarningsPage() {
                       <SelectItem value="all">All Types</SelectItem>
                       <SelectItem value="consultation">Consultation</SelectItem>
                       <SelectItem value="follow-up">Follow-up</SelectItem>
-                      <SelectItem value="prescription">Prescription</SelectItem>
+                      <SelectItem value="prescription">Treatment</SelectItem>
                       <SelectItem value="lab-test">Lab Test</SelectItem>
                     </SelectContent>
                   </Select>

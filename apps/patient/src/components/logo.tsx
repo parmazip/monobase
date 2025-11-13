@@ -23,13 +23,13 @@ export function Logo({
 
   // Use white logo for dark theme, regular for light theme
   const logoSrc = theme === 'dark'
-    ? '/images/logos/logo-horizontal-white.png'
-    : '/images/logos/logo-horizontal.png'
+    ? '/images/logos/logo-horizontal-white.svg'
+    : '/images/logos/logo-horizontal.svg'
 
   return (
     <img
       src={logoSrc}
-      alt="Parmazip"
+      alt="Monobase"
       className={cn(
         'object-contain',
         sizeClasses[size],
