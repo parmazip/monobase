@@ -9,9 +9,10 @@ import { Button } from '../../components/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/card'
 import { Separator } from '../../components/separator'
 import { Alert, AlertDescription } from '../../components/alert'
-import type { BookingTimeSlot, BookingProvider, BookingEventData } from '@monobase/sdk/services/booking'
+import type { BookingTimeSlot, BookingProvider, CreateBookingEventData } from '@monobase/sdk/services/booking'
 
-export type { BookingTimeSlot, BookingProvider, BookingEventData }
+export type BookingEventData = CreateBookingEventData
+export type { BookingTimeSlot, BookingProvider }
 
 export interface BookingWidgetProps {
   provider: BookingProvider

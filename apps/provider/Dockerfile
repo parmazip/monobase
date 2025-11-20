@@ -1,10 +1,10 @@
 # Production stage using Caddy to serve the pre-built SPA
 # NOTE: This Dockerfile expects the app to be built BEFORE running docker build
-# Run: bun run build (from apps/account)
+# Run: bun run build (from apps/provider)
 FROM caddy:2.8-alpine
 
 LABEL org.opencontainers.image.source=https://github.com/parmazip/monobase
-LABEL org.opencontainers.image.description="Monobase Account Application"
+LABEL org.opencontainers.image.description="Monobase Provider Application"
 
 # Create user with UID 101 to match K8s security context
 RUN addgroup -g 101 -S caddy-k8s && \

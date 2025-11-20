@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:docker": "./build-docker.sh",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "bun test src/",
