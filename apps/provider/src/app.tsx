@@ -7,16 +7,14 @@ import { useSession } from '@monobase/sdk/react/hooks/use-auth'
 import { useMyPerson } from '@monobase/sdk/react/hooks/use-person'
 import { useMyProvider } from '@monobase/sdk/react/hooks/use-provider'
 import { useOneSignal } from '@/hooks/use-onesignal'
-import { apiBaseUrl } from '@/utils/config'
+import { getRuntimeConfig } from '@/utils/config'
 import { Loading } from '@/components/loading'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
+import { useState, useEffect } from 'react'
 
 const router = createRouter()
-
-// Initialize OneSignal push notifications (optional - only if VITE_ONESIGNAL_APP_ID is set)
-initializeOneSignal()
 
 /**
  * Inner app component that provides auth context to router
@@ -59,10 +57,30 @@ function InnerApp() {
 
 /**
  * Root app component with all providers
+ * Fetches runtime config and initializes services before rendering
  */
 function App() {
+  const [config, setConfig] = useState<{ apiUrl: string; onesignalAppId: string } | null>(null)
+
+  useEffect(() => {
+    getRuntimeConfig().then(runtimeConfig => {
+      console.log('[App] Runtime config loaded:', runtimeConfig)
+      setConfig(runtimeConfig)
+      
+      // Initialize OneSignal with runtime config (optional - only if app ID is set)
+      if (runtimeConfig.onesignalAppId) {
+        initializeOneSignal()
+      }
+    })
+  }, [])
+
+  // Show loading while fetching runtime config
+  if (!config) {
+    return <Loading />
+  }
+
   return (
-    <ApiProvider apiBaseUrl={apiBaseUrl}>
+    <ApiProvider apiBaseUrl={config.apiUrl}>
       <InnerApp />
       <TanStackDevtools
         plugins={[

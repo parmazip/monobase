@@ -8,3 +8,4 @@
 !.next/static/
 !public/
 !Dockerfile
+!docker-entrypoint.sh

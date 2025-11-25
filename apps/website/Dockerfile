@@ -1,39 +1,41 @@
-# Production stage using Node.js to serve the pre-built Next.js app
+# Production image for pre-built Next.js app
 # NOTE: This Dockerfile expects the app to be built BEFORE running docker build
 # Run: bun run build (from apps/website)
-FROM node:22-alpine
+FROM oven/bun:1-alpine
 
 LABEL org.opencontainers.image.source=https://github.com/parmazip/monobase
 LABEL org.opencontainers.image.description="Monobase Website Application"
 
-# Create user with UID 101 to match K8s security context
-RUN addgroup -g 101 -S nextjs-k8s && \
-    adduser -u 101 -S -G nextjs-k8s nextjs-k8s
-
 WORKDIR /app
 
-# Copy the PRE-BUILT Next.js output
-# IMPORTANT: Must run build before docker build (bun run build)
+ENV NODE_ENV=production \
+    PORT=3000 \
+    HOSTNAME="0.0.0.0" \
+    NEXT_TELEMETRY_DISABLED=1
+
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+# Copy docker entrypoint script for runtime config
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+
+# Copy pre-built standalone output (preserves monorepo structure)
 COPY .next/standalone ./
-COPY .next/static ./.next/static
-COPY public ./public
 
-# Create necessary directories with proper permissions for non-root user
-RUN mkdir -p /tmp && \
-    chown -R 101:101 /app /tmp && \
-    chmod -R 755 /app /tmp
+# Copy static files to correct monorepo path
+COPY .next/static ./apps/website/.next/static
 
-# Set environment variables for runtime configuration
-ENV PORT=8080
-ENV NODE_ENV=production
-ENV API_URL="http://localhost:7213"
-ENV NEXT_TELEMETRY_DISABLED=1
+# Copy public folder to correct monorepo path
+COPY public ./apps/website/public
 
-# Switch to non-root user
-USER 101:101
+# Set ownership for non-root user
+RUN chown -R 1001:1001 /app && \
+    chmod +x /docker-entrypoint.sh
 
-# Expose port (8080 for non-root)
-EXPOSE 8080
+USER nextjs
 
-# Start Next.js server
-CMD ["node", "server.js"]
+EXPOSE 3000
+
+# Use entrypoint to set runtime env vars before starting server
+ENTRYPOINT ["/docker-entrypoint.sh"]
+CMD ["bun", "apps/website/server.js"]
